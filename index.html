@@ -42,7 +42,6 @@ header{position:sticky;top:0;z-index:50;height:52px;display:flex;align-items:cen
   border-bottom:1px solid rgba(255,255,255,.18);box-shadow:0 4px 24px rgba(20,40,80,.18);}
 header .logo{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);flex-shrink:0;}
 .ttl h1{font-size:14px;font-weight:800;letter-spacing:.3px;white-space:nowrap;}
-.ttl p{font-size:10px;color:rgba(255,255,255,.82);white-space:nowrap;}
 .ver-pill{display:inline-block;font-size:10px;font-weight:700;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);
   padding:0 7px;border-radius:999px;margin-left:6px;vertical-align:1px;}
 .nav{display:flex;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);border-radius:999px;padding:2px;margin-left:14px;flex-shrink:0;}
@@ -307,7 +306,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 
 /* ── Responsive ── */
 @media (max-width:1280px){ .tiles{grid-template-columns:repeat(4,minmax(0,1fr));} .tile.wide,.tiles .tile:last-child{grid-column:span 2;} }   /* 4 欄時 2+1+1 / 1+1+2，兩排剛好填滿 */
-@media (max-width:1100px){ .sites{grid-template-columns:repeat(2,minmax(0,1fr));} .two,.mgrid{grid-template-columns:minmax(0,1fr);} .ttl p{display:none;} }
+@media (max-width:1100px){ .sites{grid-template-columns:repeat(2,minmax(0,1fr));} .two,.mgrid{grid-template-columns:minmax(0,1fr);} }
 @media (max-width:760px){
   header{padding:0 10px;gap:8px;} .ttl{display:none;} .nav{margin-left:0;} .nav button{padding:5px 7px;font-size:11px;} .nav button i{display:none;}
   .hbtn .lb{display:none;} .hbtn{padding:0 9px;} #aboutBtn{display:none;} header .logo{width:26px;height:26px;}
@@ -406,7 +405,6 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
   <img class="logo" src="auo-logo.png" alt="AUO">
   <div class="ttl">
     <h1>畫檢 AOI 監控平台<span class="ver-pill" id="ver"></span></h1>
-    <p>上線前 · 上線後 進度與能力矩陣｜各廠區共同維護</p>
   </div>
   <nav class="nav" id="nav">
     <button data-pg="overview" class="on"><i>📊 </i>總覽</button>
@@ -441,7 +439,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='1.3.1', SCHEMA=1, STALE_DAYS=14, LOG_CAP=1500;
+const APP_VER='1.3.2', SCHEMA=1, STALE_DAYS=14, LOG_CAP=1500;
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','items','techs','hws','steps','lines'];
 const STAGES=[

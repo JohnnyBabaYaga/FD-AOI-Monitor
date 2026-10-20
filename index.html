@@ -334,7 +334,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 #gd-pop .gd-f{display:flex;align-items:center;gap:6px;margin-top:12px;}
 #gd-pop .gd-n{margin-right:auto;font-size:11px;color:var(--sub);}
 #gd-pop .gd-x{position:absolute;top:8px;right:10px;background:none;border:none;cursor:pointer;color:var(--sub);font-size:15px;line-height:1;padding:2px;}
-#gd-hint{display:none;position:fixed;right:80px;bottom:22px;width:260px;z-index:1500;background:var(--surf);color:var(--text);
+#gd-hint{display:none;position:fixed;right:80px;bottom:22px;width:260px;z-index:85;background:var(--surf);color:var(--text);
   border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.18);}
 #gd-hint .gd-ht{font-size:12.5px;font-weight:700;}
 #gd-hint .gd-hd{font-size:11.5px;color:var(--sub);margin:3px 0 10px;line-height:1.55;}
@@ -428,6 +428,12 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v2.4：重複產線 ── */
+.banner.bad{background:color-mix(in srgb,var(--warn) 9%,#fff);border-color:color-mix(in srgb,var(--warn) 40%,transparent);color:#9a2f18;}
+.dupg{border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:10px;}
+.dupg-h{font-weight:800;font-size:12.5px;margin-bottom:4px;}
+.dupr{display:flex;gap:8px;align-items:flex-start;padding:6px 4px;border-top:1px dashed var(--border);cursor:pointer;font-size:12px;line-height:1.5;}
+.dupr input{margin-top:3px;}
 /* ── v2.3：技術能力分類 ── */
 .tcat-h{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 8px;border-radius:5px;margin:8px 0 2px;}
 .tc-pre{background:#eef0fb;color:#4b4fa8;} .tc-meas{background:#e6f4fb;color:#1c6a8e;} .tc-det{background:#f2effc;color:#6340a8;} .tc-post{background:#eef6ee;color:#2f6a3a;}
@@ -508,7 +514,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.3', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500;
+const APP_VER='2.4', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500;
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -741,6 +747,35 @@ const lineSub=l=>[(l.forms||[]).map(formName).filter(Boolean).join('+'),hwName(l
 function nextOf(l){ const p=lineProg(l); if(!p.cur) return null; return {step:p.cur,text:l.nextNote||p.cur.name,due:(l.plan||{})[p.cur.id]||''}; }
 function golive(l){ const s=stepsSorted().find(x=>x.key==='golive'); if(s){ const a=(l.done||{})[s.id], pl=(l.plan||{})[s.id]; if(a||pl) return {d:a||pl,act:!!a}; }
   const g=(l.ms||{}).golive||{}; return g.actual||g.plan?{d:g.actual||g.plan,act:!!g.actual}:null; }
+/** 重複產線：同廠區、同線別（不分大小寫、忽略空白），且產品別有重疊 → 視為同一條線被建了兩次 */
+function dupGroups(){
+  const by={}; liveLines().forEach(l=>{ const k=l.site+'|'+String(l.line||'').replace(/\s+/g,'').toUpperCase(); if(k.endsWith('|')) return; (by[k]=by[k]||[]).push(l); });
+  const out=[];
+  Object.values(by).forEach(ls=>{ if(ls.length<2) return; const used=new Set();
+    ls.forEach(a=>{ if(used.has(a.id)) return; const g=[a]; used.add(a.id);
+      ls.forEach(x=>{ if(!used.has(x.id)&&g.some(y=>lineProds(y).some(p=>lineProds(x).includes(p)))){ g.push(x); used.add(x.id); } });
+      if(g.length>1) out.push(g); }); });
+  return out;
+}
+/** 預設建議保留資料較完整的那筆：完成關卡多 → 有版本號 → 有 KPI → 較新 */
+const dupScore=l=>Object.keys(l.done||{}).length*10+((l.sw||{}).ver?3:0)+Object.keys(l.kpi||{}).length+Object.keys(l.plan||{}).length*.5;
+function openDup(){
+  const gs=dupGroups(); if(!gs.length){ toast('目前沒有重複的產線'); return; }
+  openModal(`<div class="md-h"><b>⚠ 重複的產線（${gs.length} 組）</b><button class="x" onclick="closeModal()">✕</button></div>
+  <div class="md-d">同廠區、同線別、產品別重疊的產線出現多筆，通常是兩個人同時新增了同一條線。請選擇要<b>保留</b>的那一筆，其他會刪除（GitHub 歷史版本可以找回）。預設已幫你選資料較完整的一筆。</div>
+  ${gs.map((g,gi)=>{ const best=g.slice().sort((a,b)=>dupScore(b)-dupScore(a)||String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
+    return `<div class="dupg"><div class="dupg-h">${esc(g[0].site)} · ${esc(g[0].line)}</div>
+      ${g.map(l=>{ const p=lineProg(l); return `<label class="dupr"><input type="radio" name="dup-${gi}" value="${l.id}" ${l.id===best.id?'checked':''}>
+        <span><b>${esc(lineLabel(l))}</b> <span class="muted">· ${esc(lineSub(l))}</span><br>
+        <span class="muted" style="font-size:11px">${p.stage} ${STAGES[STG_IDX[p.stage]].name} ${p.pct}% · ${esc(platName((l.sw||{}).plat)||'未設定版本')} ${esc((l.sw||{}).ver||'')} · ${esc(l.updatedBy||'')} ${relTime(l.updatedAt)}</span></span></label>`; }).join('')}
+      <div style="text-align:right;margin-top:6px"><button class="btn sm pri" onclick="keepDup(${gi})">保留選取的這筆，刪除其他</button></div></div>`; }).join('')}`,true);
+}
+function keepDup(gi){
+  const g=dupGroups()[gi]; if(!g) return; const sel=$(`#modal input[name="dup-${gi}"]:checked`); if(!sel) return;
+  const keep=byId('lines',sel.value);
+  g.filter(l=>l.id!==keep.id).forEach(l=>removeEnt('lines',l.id,`重複產線：保留 ${l.site} ${lineLabel(keep)}（${keep.updatedBy||''}），刪除另一筆（${l.updatedBy||''} 建立）`));
+  toast('✅ 已處理重複產線','ok'); if(dupGroups().length) openDup(); else closeModal();
+}
 const isOverdue=l=>{ const n=nextOf(l); return !!(n&&n.due&&daysFromToday(n.due)<0); };
 const isStale=l=>daysSince(l.updatedAt)>STALE_DAYS;
 function kpiLatest(l){ const k=l.kpi||{}; const ds=Object.keys(k).sort(); return ds.length?{d:ds[ds.length-1],...k[ds[ds.length-1]]}:null; }
@@ -789,7 +824,8 @@ function renderOverview(){
   const regions=[]; for(const s of sites){ let r=regions.find(x=>x.name===(s.region||'其他')); if(!r) regions.push(r={name:s.region||'其他',sites:[]}); r.sites.push(s); }
   const demoBanner=hasDemo()?`<div class="banner"><span>🧪 目前有 <b>5 條示範例</b>${GI('demo')}（虛構產線，標示「示範例」，用來看平台效果）。${DB.lines.some(l=>l.demo&&l.demoGen&&!l.deleted)?'示範例已發布到雲端，全部門都看得到；正式開始填寫前請清除。':'正式使用前請清除；本機示範例不會上傳雲端。'}</span><button class="btn sm" onclick="clearDemo()">清除示範例</button></div>`:'';
   const nameBanner=!USER.name?`<div class="banner"><span>👤 請先設定你的名字，變更紀錄才知道是誰更新的。</span><button class="btn sm" onclick="openUser()">設定</button></div>`:'';
-  el.innerHTML=`${nameBanner}${demoBanner}
+  const dg=dupGroups(), dupBanner=dg.length?`<div class="banner bad"><span>⚠ 發現 <b>${dg.length} 組重複的產線</b>${GI('dup')}（${esc(dg.map(g=>g[0].site+' '+g[0].line).join('、'))}），可能是兩個人同時新增了同一條線。</span><button class="btn sm" onclick="openDup()">處理</button></div>`:'';
+  el.innerHTML=`${nameBanner}${dupBanner}${demoBanner}
   <div class="sec-t">整體進度<small>${sites.length} 個廠區 · ${live('products').length} 個產品 · 截至 ${new Date().toLocaleString('zh-TW',{hour12:false})}</small></div>
   <div class="tiles">
     <div class="card tile wide"><div class="k">PDCA 階段分佈${GI('pdca')}</div><div style="margin-top:8px">${pdcaBar(cnt)}</div>${stageLegend()}</div>
@@ -941,7 +977,7 @@ function matrixTable(ls,items,techs){
     ${techs.map(t=>`<th class="vt g-te" title="${esc(t.name)}${t.note?'：'+esc(t.note):''}"><div>${esc(t.name)}</div></th>`).join('')}
     <th class="g-pd" style="text-align:left">階段</th><th class="g-pd" style="text-align:left">目前關卡</th>
   </tr></thead><tbody>`;
-  let curSite=null, lastProd=null;
+  let curSite=null, lastProd=null; const dupIds=new Set(dupGroups().flat().map(x=>x.id));
   for(const l of ls){
     if(l.site!==curSite){ curSite=l.site; lastProd=null; const s=byId('sites',l.site)||{}; const st=siteStats(l.site); const n=ls.filter(x=>x.site===l.site).length;
       h+=`<tr class="gp"><td colspan="${NC}"><span class="in-g">${esc(l.site)}<span>${esc(s.region||'')} · 顯示 ${n} / ${st.ls.length} 條線 · 平均完成度 ${st.pct}%${s.owner?' · 負責 '+esc(s.owner):''}</span></span></td></tr>`; }
@@ -949,7 +985,7 @@ function matrixTable(ls,items,techs){
     const fit=sw.plat?lineFit(l).find(x=>x.p.id===sw.plat):null, swOff=!!(fit&&fit.lvl!=='ok');
     h+=`<tr class="ln" data-l="${l.id}">
       <td class="stk c-pr">${prodsLabel(l)!==lastProd?`<b>${esc(prodsLabel(l))}</b>`:''}</td>
-      <td class="stk c-ln"><div class="ln-n">${esc(l.line||'?')} ${l.blocked?'<span class="tag red" title="'+esc(l.blockReason||'')+'">卡關</span>':''}${l.demo?'<span class="tag amb">示範例</span>':''}</div><div class="ln-s" title="${esc(l.vendor||'')}">${esc(lineSub(l))||'&nbsp;'}</div></td>
+      <td class="stk c-ln"><div class="ln-n">${esc(l.line||'?')} ${l.blocked?'<span class="tag red" title="'+esc(l.blockReason||'')+'">卡關</span>':''}${dupIds.has(l.id)?'<span class="tag red" title="同廠區、同線別、產品別重疊的產線有多筆，到總覽處理">重複</span>':''}${l.demo?'<span class="tag amb">示範例</span>':''}</div><div class="ln-s" title="${esc(l.vendor||'')}">${esc(lineSub(l))||'&nbsp;'}</div></td>
       ${items.map(i=>{ const v=itemSt(l,i.id), c=itemCap(l,i.id); return `<td class="s s-${v} ${isReq(l,i.id)?'req':''}" data-t="i" data-k="${i.id}" title="${esc(i.name)}：${IST[v].t}${isReq(l,i.id)?'（需求項目）':''}${c.why&&v!=='na'?'\n'+esc(c.why):''}">${IST[v].sym}</td>`; }).join('')}
       <td class="swc"><div class="sw" style="color:${swOff?'var(--amber)':'inherit'}" title="${swOff?esc(`「${fit.p.name}」${fit.lvl==='dev'?'仍在開發：'+fit.dev.map(t=>t.name).join('、'):fit.lvl==='shape'?'不支援此型態':'不支援：'+fit.miss.map(t=>t.name).join('、')}`):''}">${esc(sw.ver||'—')}</div><div class="dim">${esc(platName(sw.plat)||'未設定版本類別')}</div></td>
       ${techs.map(t=>{ const ps=techPlat(t,sw.plat), v=lineTech(l,t.id);
@@ -1174,7 +1210,7 @@ function renderQuick(){
   const el=$('#pg-quick'); const q=UI.qf=Object.assign({sites:USER.site?[USER.site]:[],mine:false},UI.qf||{});
   const ls=sortLines(liveLines().filter(l=>(!q.sites.length||q.sites.includes(l.site))&&(!q.mine||l.owner===USER.name)));
   Object.keys(QSEL).forEach(id=>{ if(!ls.some(l=>l.id===id)) delete QSEL[id]; });
-  const nSel=Object.keys(QSEL).length, stale=ls.filter(isStale).length;
+  const nSel=Object.keys(QSEL).length, stale=ls.filter(isStale).length, dupIds=new Set(dupGroups().flat().map(x=>x.id));
   el.innerHTML=`
   <div class="sec-t">✅ 快速更新${GI('quick')}<small>每週花 1 分鐘：完成的關卡按「✓ 完成」、更新預計日、有卡關就標記；沒有變化就按「無變動」。完整資料請點線別打開編輯面板。</small></div>
   <div class="card mbar">
@@ -1188,7 +1224,7 @@ function renderQuick(){
   <div class="card" style="overflow:auto;margin-top:10px">${ls.length?`<table class="tbl qtbl"><thead><tr><th style="width:1%"><input type="checkbox" id="q-all" ${nSel&&nSel===ls.length?'checked':''} title="全選"></th><th>廠區</th><th>產品別 / 線別</th><th>目前關卡</th><th>預計日</th><th></th><th>狀態</th><th>軟體版本</th><th>最後更新</th><th></th></tr></thead><tbody>
     ${ls.map(l=>{ const p=lineProg(l), nx=nextOf(l), st=isStale(l), sw=l.sw||{};
       return `<tr class="${st?'stale':''}"><td><input type="checkbox" data-qsel="${l.id}" ${QSEL[l.id]?'checked':''}></td><td><b>${esc(l.site)}</b></td>
-      <td><a href="#" data-qopen="${l.id}">${esc(lineLabel(l))}</a>${l.demo?' <span class="tag amb">示範例</span>':''}<div class="dim">${esc(lineSub(l))}</div></td>
+      <td><a href="#" data-qopen="${l.id}">${esc(lineLabel(l))}</a>${dupIds.has(l.id)?' <a href="#" class="tag red" onclick="openDup();return false" title="有重複的產線，點這裡處理">重複</a>':''}${l.demo?' <span class="tag amb">示範例</span>':''}<div class="dim">${esc(lineSub(l))}</div></td>
       <td>${pdMini(l,true)} <span style="font-weight:600">${p.complete?'✓ 全部完成':esc(p.cur.name)}</span>${l.nextNote?`<div class="dim">${esc(l.nextNote)}</div>`:''}</td>
       <td>${nx?`<input type="date" class="in" data-qplan="${l.id}" value="${esc(nx.due)}" style="width:132px"> ${nx.due?dueTag(nx.due):''}`:''}</td>
       <td>${nx?`<button class="btn sm pri" data-qdone="${l.id}" title="把「${esc(nx.step.name)}」標記為今天完成">✓ 完成</button>`:''}</td>
@@ -1727,6 +1763,11 @@ function merge3(b,l,r,path,cf){
   if(isObj(l)&&isObj(r)){ const bb=isObj(b)?b:{}, out={};
     for(const k of new Set([...Object.keys(l),...Object.keys(r)])){ const v=merge3(bb[k],l[k],r[k],path?path+'.'+k:k,cf); if(v!==undefined) out[k]=v; }
     return out; }
+  // 清單類欄位（勾選的演算法、檢測項目、型態、產品別…）逐項合併：我加的加上去、我取消的拿掉，其他人的勾選保留
+  const prim=a=>Array.isArray(a)&&a.every(x=>x===null||typeof x!=='object');
+  if(prim(l)&&prim(r)&&(b===undefined||b===null||prim(b))){
+    const B=new Set(b||[]), L=new Set(l), add=l.filter(x=>!B.has(x)), del=new Set([...B].filter(x=>!L.has(x)));
+    const out=r.filter(x=>!del.has(x)); add.forEach(x=>{ if(!out.includes(x)) out.push(x); }); return out; }
   if(!/(^|\.)(updatedAt|updatedBy)$/.test(path)) cf.push(path);
   return clone(l); // 同一欄位兩人都改 → 後儲存者為準（並提示）
 }
@@ -1947,6 +1988,7 @@ const GL={
   focus:['本期重點','廠區負責人自己寫的一段話：這陣子在忙什麼、要大家知道什麼。按卡片右上的 <b>✎ 重點</b> 編輯。'],
   next:['下一步','<b>自動</b>：就是這條線的<b>目前關卡</b>與它的預計日，不用另外填。需要補充時才寫「下一步說明」。總覽的「接下來要做」與「接下來 30 天」都從這裡來。'],
   forms:['型態','產品的型態：矩形、異形、曲面異形、二合一、三合一、防窺屏…（產線可複選）。<br>在「主檔設定 → 產品設定」中，每個產品別可以加入不同型態、各自勾選檢測項目；型態也決定哪些軟體版本能用。'],
+  dup:['重複產線','同廠區、同線別（不分大小寫）、產品別有重疊的產線出現多筆，通常是兩個人同時新增了同一條線。按「處理」選要保留的那一筆，其他刪除（GitHub 歷史版本可找回）。'],
   tcat:['技術能力分類','<b>前處理</b>：取像後、演算法前的影像處理（對位、校正、Moiré 抑制），由<b>型態</b>決定需要哪些。<br><b>演算法・量測</b>：算數值（亮度、色度、Mura 指標）。<b>演算法・檢測</b>：找缺陷（點線、Mura、異物）。檢測項目只連演算法。<br><b>判定 / 整合</b>：演算法之後（ADC、判等、資料輸出、MES、Recipe 工具），當成版本能力與產線開關來看。'],
   prodset:['產品設定','<b>產品別 → 型態 → 檢測項目</b>：每個「產品別 × 型態」組合各自勾選要檢的項目，右邊自動算出建議軟體版本。<br>產線選了產品別與型態後，需求檢測項目就是這些組合的聯集。'],
   req:['需求檢測項目','這條線的「產品別 × 型態」組合在主檔「產品設定」勾選的檢測項目（多個組合取聯集）。矩陣用淡藍底標示，沒具備的就算缺口。'],

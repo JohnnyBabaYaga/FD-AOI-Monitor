@@ -424,13 +424,13 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .mt.ti th.pc,.mt.ti td.pc,.mt.tf th.pc,.mt.tf td.pc{text-align:center;}
 .mt tr.gh th.pc{white-space:normal;}
 .pcell{display:flex;flex-direction:column;align-items:center;gap:3px;}
-.pst{border:1px solid var(--border2);border-radius:6px;font-size:11px;font-weight:700;padding:3px 0;width:88px;cursor:pointer;background:#fff;color:#a0aab9;}
+.pst{border:1px solid var(--border2);border-radius:6px;font-size:13px;line-height:16px;font-weight:700;padding:3px 0;width:56px;cursor:pointer;background:#fff;color:#a0aab9;}
 .pst:hover{filter:brightness(.97);border-color:var(--accent);}
 .pst-ok{background:#E1F5EE;border-color:#9ed9c2;color:#0F6E56;} .pst-dev{background:#FAEEDA;border-color:#ecc98b;color:#854F0B;} .pst-plan{background:#eef2f7;border-color:#cbd5e3;color:#3d4d66;}
 .mt td .in.pv{width:88px;height:22px;font-size:10.5px;padding:0 6px;text-align:center;}
 .mt td .in.pv:disabled{visibility:hidden;}
 .tag.it-t{background:#eef3fb;color:#2c5394;font-weight:600;} .tag.fm-t{background:#eef0fb;color:#4b4fa8;font-weight:600;}
-.ips{border:1px solid transparent;border-radius:6px;font-size:10.5px;font-weight:700;padding:3px 0;width:80px;cursor:pointer;}
+.ips{border:1px solid transparent;border-radius:6px;font-size:13px;line-height:16px;font-weight:700;padding:3px 0;width:56px;cursor:pointer;}
 .ips:hover{border-color:var(--accent);}
 .ips-ok{background:#E1F5EE;color:#0F6E56;} .ips-dev{background:#FAEEDA;color:#854F0B;} .ips-plan{background:#eef2f7;color:#3d4d66;}
 .ips-no{background:#fff;border-color:var(--border);color:#a0aab9;} .ips-unk{background:#f1ecfb;color:#6b4fb3;}
@@ -488,8 +488,8 @@ tr.hd-stk.gh>th.pc{box-shadow:0 -3px 0 #fff,inset 0 -2px 0 color-mix(in srgb,var
 .pk-r input{margin:0;flex-shrink:0;}
 .pk-t{flex:1;min-width:0;}
 .pk-d{display:flex;gap:3px;margin-left:auto;flex-shrink:0;}
-.pd{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--border2);background:#fff;vertical-align:-2px;}
-.pd-ok{background:#9ed9c2;border-color:#7fc8ab;} .pd-dev{background:#ecc98b;border-color:#e0b46a;} .pd-plan{background:#cbd5e3;border-color:#b5c2d4;}
+.pd{display:inline-block;width:14px;text-align:center;font-style:normal;font-size:12px;font-weight:700;line-height:14px;}
+.pd-ok{color:#0F6E56;} .pd-dev{color:#b5770f;} .pd-plan{color:#3d4d66;} .pd-no{color:#c0c8d4;}
 .pn{display:inline-block;width:14px;text-align:center;font-style:normal;font-size:11px;}
 .pk-prev{margin-top:12px;}
 .pk-ph{font-size:11px;font-weight:700;color:var(--sub);margin-bottom:5px;}
@@ -583,7 +583,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.9', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='2.9.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -595,6 +595,7 @@ const STG_IDX={P:0,D:1,C:2,A:3};
 // 檢測項目在一條線上的狀態：由「軟體版本 → 技術能力 → 檢測項目」自動推算，不再手動填
 const IST={ok:{t:'已具備',sym:'●'},off:{t:'可開啟',sym:'○'},dev:{t:'開發中',sym:'◐'},gap:{t:'缺口',sym:'✕'},unk:{t:'未設定對應技術',sym:'?'},na:{t:'不需',sym:'·'}};
 const PST=[{k:'',t:'不支援'},{k:'plan',t:'規劃中'},{k:'dev',t:'開發中'},{k:'ok',t:'已釋出'}];   // 技術能力在各版本的開發進度
+const PSYM={ok:'●',dev:'◐',plan:'○','':'—'};   // 狀態統一用符號表示：● 已釋出 / 可檢、◐ 開發中、○ 規劃中、— 不支援
 const LTS=[{k:'on',t:'已開啟'},{k:'off',t:'未開啟'}];                                       // 產線上的技術能力（版本已釋出的預設開啟）
 const SHAPES=[{k:'rect',t:'矩形'},{k:'free',t:'異形'}];
 const PSHAPES=[{k:'rect',t:'矩形'},{k:'free',t:'異形'},{k:'both',t:'矩形 + 異形'}];
@@ -770,7 +771,7 @@ const lineOwner=l=>(l&&l.owner)||((l&&byId('sites',l.site))||{}).owner||'';
 const people=()=>[...new Set([...live('sites').map(s=>s.owner),...liveLines().map(l=>l.owner),USER.name].map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
 /** 檢測項目在某個版本的能力（由技術能力 × 版本推算）：需要的演算法全部已釋出 → ok；有不支援 → no；有規劃中 → plan；其餘 → dev */
 function itemPlatSt(i,pid){ const ts=itemTechs(i); if(!ts.length) return 'unk'; const ss=ts.map(t=>techPlat(t,pid)); return ss.every(s=>s==='ok')?'ok':ss.includes('')?'no':ss.includes('plan')?'plan':'dev'; }
-const IPS={ok:['● 可檢','ok'],dev:['◐ 開發中','dev'],plan:['○ 規劃中','plan'],no:['— 不支援','no'],unk:['? 未設定','unk']};
+const IPS={ok:['●','可檢'],dev:['◐','開發中'],plan:['○','規劃中'],no:['—','不支援'],unk:['?','未設定']};
 /** 需求檢測項目 = 這條線每個「產品別 × 型態」組合在主檔設定的檢測項目聯集 */
 function reqOf(pids,forms){ const s=new Set(); (pids||[]).forEach(p=>{ const fr=((byId('products',p)||{}).fr)||{}; (forms||[]).forEach(f=>(fr[f]||[]).forEach(i=>s.add(i))); });
   return [...s].filter(i=>{ const x=byId('items',i); return x&&!x.deleted; }); }
@@ -1188,7 +1189,7 @@ function renderDrawer(){
       ${sw.plat?(TCATS.map(g=>{ const ts=rel.filter(t=>tcat(t)===g.k); if(!ts.length) return '';
         return `<div class="tcat-h tc-${g.k}">${g.k==='meas'||g.k==='det'?'演算法・':''}${g.t}</div>`+ts.map(t=>{ const its=live('items').filter(i=>(i.techs||[]).includes(t.id)).map(i=>i.name);
         return `<div class="srow"><span class="n">${esc(t.name)}${its.length?`<div class="muted" style="font-size:10.5px">可檢：${esc(its.join('、'))}</div>`:''}</span>${seg('techs.'+t.id,LTS,lineTech(w,t.id))}</div>`; }).join(''); }).join('')||'<div class="empty">此版本尚未設定已釋出的功能（主檔設定 → 技術能力 × 版本）</div>')
-        +(notRel.length?`<div class="muted" style="font-size:11px;margin-top:8px">尚未釋出：${notRel.map(t=>`${esc(t.name)}（${PST.find(x=>x.k===techPlat(t,sw.plat)).t}）`).join('、')}</div>`:''):''}
+        +(notRel.length?`<div class="muted" style="font-size:11px;margin-top:8px">尚未釋出：${notRel.map(t=>`${PSYM[techPlat(t,sw.plat)]} ${esc(t.name)}`).join('、')}</div>`:''):''}
     </details>
 
     <details class="ds" data-sec="items" ${ED.open.items?'open':''}><summary><h4>檢測項目（自動推算）${GI('itemst')}<span class="r sumtxt">${req.length?`需求 ${req.length} 項：${['ok','off','dev','gap','unk'].filter(s=>cnt[s]).map(s=>`<b class="s-${s}">${IST[s].sym}</b>${cnt[s]}`).join(' ')}`:'<span class="muted">先選產品別</span>'}</span></h4></summary>
@@ -1611,7 +1612,7 @@ function renderMaster(){
       ${plats.map(p=>`<tr><td>${inp('plats',p.id,'name',p.name)}</td><td>${inp('plats',p.id,'latest',p.latest,'例：2.0.3_20260918')}</td><td>${chips(forms,f=>(p.forms||shapeForms(p.shape)).includes(f.id),f=>`mTogglePlatForm('${p.id}','${f.id}')`)}</td><td>${inp('plats',p.id,'note',p.note,'選填')}</td>
         <td class="muted" style="font-size:11px">${techs.filter(t=>techPlat(t,p.id)==='ok').length} / ${techs.length} 項</td><td class="muted" style="font-size:11px">${L.filter(l=>(l.sw||{}).plat===p.id).length} 條</td><td class="ac">${mv('plats',p.id)}</td></tr>`).join('')}</table></div></div>
 
-    <div class="card mcard full" id="m-techs"><h3>🧠 技術能力 × 版本開發進度${GI('pst')}<small>點狀態切換：不支援 → 規劃中 → 開發中 → 已釋出（版本號統一填在上方「軟體版本」）</small><button class="btn sm" onclick="mAdd('techs',{name:'新技術',note:'',cat:'det',plat:{}})">＋ 新增技術能力</button></h3>
+    <div class="card mcard full" id="m-techs"><h3>🧠 技術能力 × 版本開發進度${GI('pst')}<small>點狀態切換：— 不支援 → ○ 規劃中 → ◐ 開發中 → ● 已釋出（版本號統一填在上方「軟體版本」）</small><button class="btn sm" onclick="mAdd('techs',{name:'新技術',note:'',cat:'det',plat:{}})">＋ 新增技術能力</button></h3>
       <div class="mt-scroll"><table class="mt tp"><colgroup><col style="width:200px"><col style="width:132px">${plats.map(()=>'<col style="width:104px">').join('')}<col><col style="width:58px"><col style="width:92px"></colgroup>
       <thead><tr class="gh"><th colspan="2"></th><th colspan="${plats.length}" class="pc">各版本開發進度</th><th colspan="3"></th></tr>
       <tr><th>技術能力</th><th>分類${GI('tcat')}</th>${plats.map(p=>`<th class="pc" title="${esc(p.name)}">${platHead(p.name)}</th>`).join('')}<th>可檢測項目 / 用在型態</th><th class="pc">開啟中</th><th></th></tr></thead>
@@ -1619,11 +1620,11 @@ function renderMaster(){
         return `${ti===0||tcat(techs[ti-1])!==g?`<tr class="cat-r"><td colspan="${plats.length+5}"><span class="tcat-h tc-${g}">${g==='meas'||g==='det'?'演算法・':''}${(TCATS.find(x=>x.k===g)||{}).t}</span><span class="cat-n">${techs.filter(x=>tcat(x)===g).length} 項</span></td></tr>`:''}
         <tr class="tr-t" id="tr-${t.id}"><td>${inp('techs',t.id,'name',t.name)}</td>
         <td><select class="in" onchange="mSet('techs','${t.id}','cat',this.value)">${TCATS.map(x=>`<option value="${x.k}" ${g===x.k?'selected':''}>${x.k==='meas'||x.k==='det'?'演算法・':''}${x.t}</option>`).join('')}</select></td>
-        ${plats.map(p=>{ const s=techPlat(t,p.id); return `<td class="pc" data-pid="${p.id}"><div class="pcell"><button class="pst pst-${s||'no'}" onclick="mCyclePlat('${t.id}','${p.id}')">${PST.find(x=>x.k===s).t}</button></div></td>`; }).join('')}
+        ${plats.map(p=>{ const s=techPlat(t,p.id); return `<td class="pc" data-pid="${p.id}"><div class="pcell"><button class="pst pst-${s||'no'}" title="${esc(p.name)}：${PST.find(x=>x.k===s).t}（點一下切換）" onclick="mCyclePlat('${t.id}','${p.id}')">${PSYM[s]}</button></div></td>`; }).join('')}
         <td><div class="reqs">${its.map(i=>`<span class="tag it-t">${esc(i.name)}</span>`).join('')}${fs.map(f=>`<span class="tag fm-t">型態：${esc(f.name)}</span>`).join('')}${!its.length&&!fs.length?'<span class="muted">—</span>':''}</div></td>
         <td class="pc muted" style="font-size:11px">${L.filter(l=>lineTech(l,t.id)==='on').length} 條</td><td class="ac">${mv('techs',t.id)}</td></tr>`; }).join('')}</tbody></table></div></div>
 
-    <div class="card mcard full" id="m-items"><h3>🔍 檢測項目 → 需要的演算法<small>點「✎ 選擇」從上方技術能力清單勾選需要的演算法；右側依「技術能力 × 版本」自動推算各版本能否檢測，點格子跳到對應的技術能力</small><button class="btn sm" onclick="mAdd('items',{name:'新檢測項目',cat:'',techs:[]})">＋ 新增</button></h3>
+    <div class="card mcard full" id="m-items"><h3>🔍 檢測項目 → 需要的演算法<small>點「✎ 選擇」從上方技術能力清單勾選需要的演算法；右側依「技術能力 × 版本」自動推算各版本能否檢測（● 可檢 ◐ 開發中 ○ 規劃中 — 不支援），點格子跳到對應的技術能力</small><button class="btn sm" onclick="mAdd('items',{name:'新檢測項目',cat:'',techs:[]})">＋ 新增</button></h3>
       <div class="mt-scroll"><table class="mt ti"><colgroup><col style="width:190px"><col style="width:110px"><col>${plats.map(()=>'<col style="width:92px">').join('')}<col style="width:92px"></colgroup>
       <thead><tr class="gh"><th colspan="3"></th><th colspan="${plats.length}" class="pc">各版本能否檢測（自動）</th><th></th></tr>
       <tr><th>名稱</th><th>類別</th><th>需要的演算法</th>${plats.map(p=>`<th class="pc" title="${esc(p.name)}">${platHead(p.name)}</th>`).join('')}<th></th></tr></thead>
@@ -1631,12 +1632,13 @@ function renderMaster(){
         return `<tr><td>${inp('items',i.id,'name',i.name)}</td><td>${inp('items',i.id,'cat',i.cat,'點線 / Mura…')}</td>
         <td><div class="reqs pk-cell" onclick="mPickTechs('${i.id}')" title="點一下選擇需要的演算法">${its.length?its.map(t=>`<span class="tag tc-${tcat(t)}">${esc(t.name)}</span>`).join(''):'<span class="ist ist-unk">? 尚未設定</span>'}<span class="pk-btn">✎ 選擇</span></div></td>
         ${plats.map(p=>{ const s=itemPlatSt(i,p.id), tip=its.length?its.map(t=>`${t.name}：${PST.find(x=>x.k===techPlat(t,p.id)).t}`).join('\n')+'\n\n點一下跳到「技術能力 × 版本」':'還沒勾選需要的演算法';
-          return `<td class="pc"><button class="ips ips-${s}" title="${esc(tip)}" onclick="mJumpTech('${i.id}','${p.id}')">${IPS[s][0]}</button></td>`; }).join('')}
+          return `<td class="pc"><button class="ips ips-${s}" title="${esc(p.name)}：${IPS[s][1]}
+${esc(tip)}" onclick="mJumpTech('${i.id}','${p.id}')">${IPS[s][0]}</button></td>`; }).join('')}
         <td class="ac">${mv('items',i.id)}</td></tr>`; }).join('')}</tbody></table></div></div>
 
     <div class="card mcard full" id="m-tree"><h3>🌳 樹狀檢視：軟體版本 → 技術能力 → 檢測項目${GI('tree')}<small>上面幾張表的整理結果（唯讀）</small></h3>
       <div class="tree">${plats.map(p=>{ const can=items.filter(i=>itemTechs(i).length&&itemTechs(i).every(t=>techPlat(t,p.id)==='ok')), byS=null;
-        const node=(t,s)=>{ const its=[...items.filter(i=>(i.techs||[]).includes(t.id)).map(i=>i.name),...forms.filter(f=>(f.pre||[]).includes(t.id)).map(f=>'型態：'+f.name)]; return `<div class="tree-t st-${s}">${{ok:'●',dev:'◐',plan:'○'}[s]} ${esc(t.name)} <small>${PST.find(x=>x.k===s).t}</small></div>${its.length?`<div class="tree-i">${esc(its.join('、'))}</div>`:''}`; };
+        const node=(t,s)=>{ const its=[...items.filter(i=>(i.techs||[]).includes(t.id)).map(i=>i.name),...forms.filter(f=>(f.pre||[]).includes(t.id)).map(f=>'型態：'+f.name)]; return `<div class="tree-t st-${s}">${PSYM[s]} ${esc(t.name)}</div>${its.length?`<div class="tree-i">${esc(its.join('、'))}</div>`:''}`; };
         const no=techs.filter(t=>!techPlat(t,p.id));
         return `<div class="tree-col"><div class="tree-h">${esc(p.name)}${p.latest?` <span class="tag">最新 ${esc(p.latest)}</span>`:''}</div><div class="tree-f">${esc(formLabel(p.forms||shapeForms(p.shape)))}</div>
           <div class="tree-sum">可檢測 <b>${can.length}</b> / ${items.length} 項 · ${L.filter(l=>(l.sw||{}).plat===p.id).length} 條線使用中</div>
@@ -1704,11 +1706,11 @@ function mPickTechs(iid){
   const note={pre:'一般由型態決定，項目通常不用勾',post:'通常不用勾'};
   openModal(`<div class="md-h"><b>需要的演算法 · ${esc(it.name)}</b><button class="x" onclick="closeModal()">✕</button></div>
   <div class="md-d">從上方「技術能力 × 版本」清單勾選這個檢測項目需要的技術。勾選的技術在某個版本<b>全部已釋出</b>，這個項目在該版本才算可檢。<br>
-    右側方塊是各版本進度：<i class="pd pd-ok"></i> 已釋出 <i class="pd pd-dev"></i> 開發中 <i class="pd pd-plan"></i> 規劃中 <i class="pd pd-no"></i> 不支援（編號對照下方版本）</div>
+    右側符號是各版本進度：<i class="pd pd-ok">●</i> 已釋出 <i class="pd pd-dev">◐</i> 開發中 <i class="pd pd-plan">○</i> 規劃中 <i class="pd pd-no">—</i> 不支援（編號對照下方版本）</div>
   <div class="pk-list"><div class="pk-hd"><span>技術能力</span><span class="pk-d">${plats.map((p,k)=>`<i class="pn" title="${esc(p.name)}">${numOf(k)}</i>`).join('')}</span></div>
   ${TCATS.map(g=>{ const ts=techs.filter(t=>tcat(t)===g.k); if(!ts.length) return '';
     return `<div class="pk-g"><span class="tcat-h tc-${g.k}">${g.k==='meas'||g.k==='det'?'演算法・':''}${g.t}</span>${note[g.k]?`<span class="muted pk-n">${note[g.k]}</span>`:''}</div>`+
-    ts.map(t=>`<label class="pk-r"><input type="checkbox" value="${t.id}" ${sel.has(t.id)?'checked':''} onchange="pkPrev()"><span class="pk-t">${esc(t.name)}</span><span class="pk-d">${plats.map(p=>{ const s=techPlat(t,p.id); return `<i class="pd pd-${s||'no'}" title="${esc(p.name)}：${PST.find(x=>x.k===s).t}"></i>`; }).join('')}</span></label>`).join(''); }).join('')||'<div class="empty">上方還沒有建立技術能力</div>'}</div>
+    ts.map(t=>`<label class="pk-r"><input type="checkbox" value="${t.id}" ${sel.has(t.id)?'checked':''} onchange="pkPrev()"><span class="pk-t">${esc(t.name)}</span><span class="pk-d">${plats.map(p=>{ const s=techPlat(t,p.id); return `<i class="pd pd-${s||'no'}" title="${esc(p.name)}：${PST.find(x=>x.k===s).t}">${PSYM[s]}</i>`; }).join('')}</span></label>`).join(''); }).join('')||'<div class="empty">上方還沒有建立技術能力</div>'}</div>
   <div class="pk-prev" id="pk-prev"></div>
   <div class="md-b"><span class="muted" id="pk-cnt" style="font-size:11px;align-self:center"></span><span class="r"><button class="btn" onclick="closeModal()">取消</button><button class="btn pri" onclick="pkSave('${iid}')">儲存</button></span></div>`,true);
   pkPrev();
@@ -1716,7 +1718,7 @@ function mPickTechs(iid){
 const pkSel=()=>$$('#modal .pk-r input:checked').map(x=>x.value);
 function pkPrev(){
   const ids=pkSel(), el=$('#pk-prev'); if(!el) return;
-  el.innerHTML=`<div class="pk-ph">各版本能否檢測（依目前勾選試算）</div><div class="pk-pg">${liveSorted('plats').map((p,k)=>{ const s=itemPlatSt({techs:ids},p.id); return `<div class="pk-pi"><span>${numOf(k)} ${esc(p.name)}</span><span class="ips ips-${s}">${IPS[s][0]}</span></div>`; }).join('')}</div>`;
+  el.innerHTML=`<div class="pk-ph">各版本能否檢測（依目前勾選試算）</div><div class="pk-pg">${liveSorted('plats').map((p,k)=>{ const s=itemPlatSt({techs:ids},p.id); return `<div class="pk-pi"><span>${numOf(k)} ${esc(p.name)}</span><span class="ips ips-${s}" title="${IPS[s][1]}">${IPS[s][0]}</span></div>`; }).join('')}</div>`;
   $('#pk-cnt').textContent=`已勾選 ${ids.length} 項`;
 }
 function pkSave(iid){

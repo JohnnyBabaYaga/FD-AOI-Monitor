@@ -451,6 +451,10 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v2.9：表格標題列凍結 ── */
+tr.hd-stk>th{background:#fff;position:relative;z-index:4;box-shadow:0 -3px 0 #fff,0 3px 0 #fff;}
+tr.hd-stk.hd-last>th{box-shadow:0 -3px 0 #fff,0 1px 0 var(--border),0 6px 6px -4px rgba(20,32,56,.2);}
+tr.hd-stk.gh>th.pc{box-shadow:0 -3px 0 #fff,inset 0 -2px 0 color-mix(in srgb,var(--accent) 30%,transparent);}
 /* ── v2.6：主檔收合、型態支援版本 ── */
 .mc-all{margin-left:auto;display:flex;gap:6px;}
 .mcard>h3{cursor:pointer;user-select:none;}
@@ -579,7 +583,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.8', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='2.9', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1541,13 +1545,25 @@ function guideCreateLine(){
 // 頁面：主檔設定
 // ═══════════════════════════════════════════
 /** 版本名稱當欄位標題時分兩行：第一行到 Win7 / Win10 為止，後面換行（沒有 Win 就在第一個空白換行） */
+/** 表格標題列凍結：往下捲時表頭停在頁首下方，捲過整個表格後跟著離開。
+ *  用 translateY 移動表頭（不用 position:sticky），所以在可左右捲動的表格容器裡也有效。能力矩陣有自己的凍結，不在此列 */
+function stickyHeads(){
+  const top=$('header').getBoundingClientRect().bottom;
+  $$('.page.on table.mt, .page.on table.tbl').forEach(tb=>{
+    const rows=tb.tHead?[...tb.tHead.rows]:(tb.rows[0]&&tb.rows[0].querySelector('th')?[tb.rows[0]]:[]); if(!rows.length) return;
+    const r=tb.getBoundingClientRect(), hh=rows.reduce((s,x)=>s+x.offsetHeight,0);
+    const dy=Math.round(Math.max(0,Math.min(top-r.top,r.height-hh-4)));
+    rows.forEach((x,k)=>{ if(x._dy===dy) return; x._dy=dy; x.classList.toggle('hd-stk',dy>0); x.classList.toggle('hd-last',k===rows.length-1); [...x.cells].forEach(cl=>{ cl.style.transform=dy?`translateY(${dy}px)`:''; }); });
+  });
+}
+let STK_RAF=0; const stickySoon=()=>{ if(!STK_RAF) STK_RAF=requestAnimationFrame(()=>{ STK_RAF=0; stickyHeads(); }); };
 /** 軟體版本的最新版本號（主檔「軟體版本」填寫） */
 const platLatest=pid=>((pid&&byId('plats',pid))||{}).latest||'';
 const platHead=n=>{ n=String(n||''); const m=n.match(/^(.*?win\s*\d+)[\s_-]*(.+)$/i)||n.match(/^(\S+)\s+(.+)$/); return m?`${esc(m[1])}<br>${esc(m[2])}`:esc(n); };
 /** 主檔大區塊收合：左右並排的兩塊共用同一個 key，一起收合 */
 const MC_PAIR={'m-sites':'m-sites','m-hws':'m-sites','m-steps':'m-steps','m-data':'m-steps'};
 function mcApply(){ const st=UI.mc||{}; $$('#pg-master .mcard').forEach(cd=>{ const k=MC_PAIR[cd.id]||cd.id; cd.dataset.mc=k; const h=cd.querySelector(':scope>h3');
-  if(h&&!h.querySelector('.mc-tg')){ h.insertAdjacentHTML('afterbegin','<span class="mc-tg">▾</span>'); h.title='點標題收合 / 展開'; } cd.classList.toggle('mc-off',!!st[k]); }); allBtn('mc-allbtn',$$('#pg-master .mcard').some(cd=>!cd.classList.contains('mc-off'))); pbLabel(); }
+  if(h&&!h.querySelector('.mc-tg')){ h.insertAdjacentHTML('afterbegin','<span class="mc-tg">▾</span>'); h.title='點標題收合 / 展開'; } cd.classList.toggle('mc-off',!!st[k]); }); stickySoon(); allBtn('mc-allbtn',$$('#pg-master .mcard').some(cd=>!cd.classList.contains('mc-off'))); pbLabel(); }
 /** 合併的「全部展開 / 全部收合」按鈕：還有任何一個展開就顯示「全部收合」，否則顯示「全部展開」 */
 function allBtn(id,anyOpen){ const b=document.getElementById(id); if(b) b.textContent=anyOpen?'▾ 全部收合':'▸ 全部展開'; }
 function mcAllToggle(){ mcAll($$('#pg-master .mcard').some(cd=>!cd.classList.contains('mc-off'))); }
@@ -1556,8 +1572,8 @@ function pbAllToggle(){ pbAll($$('#m-prod .pblk').some(b=>!b.classList.contains(
 function mcToggle(k){ UI.mc=UI.mc||{}; UI.mc[k]=!UI.mc[k]; if(!UI.mc[k]) delete UI.mc[k]; saveUI(); mcApply(); }
 function mcAll(off){ UI.mc={}; if(off) $$('#pg-master .mcard').forEach(cd=>{ UI.mc[MC_PAIR[cd.id]||cd.id]=true; }); saveUI(); mcApply(); }
 /** 產品設定：每個產品別可收合（收合時只顯示型態摘要） */
-function pbToggle(pid){ UI.pc=UI.pc||{}; UI.pc[pid]=!UI.pc[pid]; if(!UI.pc[pid]) delete UI.pc[pid]; saveUI(); const b=document.getElementById('pb-'+pid); if(b) b.classList.toggle('pb-off',!!UI.pc[pid]); pbLabel(); }
-function pbAll(off){ UI.pc={}; if(off) liveSorted('products').forEach(p=>{ UI.pc[p.id]=true; }); saveUI(); $$('#m-prod .pblk').forEach(b=>b.classList.toggle('pb-off',!!off)); pbLabel(); }
+function pbToggle(pid){ UI.pc=UI.pc||{}; UI.pc[pid]=!UI.pc[pid]; if(!UI.pc[pid]) delete UI.pc[pid]; saveUI(); const b=document.getElementById('pb-'+pid); if(b) b.classList.toggle('pb-off',!!UI.pc[pid]); pbLabel(); stickySoon(); }
+function pbAll(off){ UI.pc={}; if(off) liveSorted('products').forEach(p=>{ UI.pc[p.id]=true; }); saveUI(); $$('#m-prod .pblk').forEach(b=>b.classList.toggle('pb-off',!!off)); pbLabel(); stickySoon(); }
 function renderMaster(){
   const el=$('#pg-master'), items=liveSorted('items'), plats=liveSorted('plats'), techs=techsSorted(), forms=liveSorted('forms'), prods=liveSorted('products');
   const inp=(c,id,f,v,ph,w,type)=>`<input class="in" ${type?`type="${type}"`:''} ${w?`style="width:${w}"`:''} value="${esc(v??'')}" placeholder="${esc(ph||'')}" onchange="mSet('${c}','${id}','${f}',this.value)">`;
@@ -2353,6 +2369,7 @@ function showPage(pg){
 function renderAll(){
   $('#userLb').textContent=USER.name||'未設定';
   if(UI.page==='overview') renderOverview(); else if(UI.page==='matrix') renderMatrix(); else if(UI.page==='quick') renderQuick(); else if(UI.page==='guide') renderGuide(); else renderMaster();
+  stickySoon();
   if(SYNC.state!=='sync') setSync(ghReady()?(SYNC.state==='off'?'ok':SYNC.state==='ok'&&dirtyCount()?'dirty':SYNC.state==='dirty'&&!dirtyCount()?'ok':SYNC.state):'off',SYNC.msg);
 }
 function init(){
@@ -2367,6 +2384,7 @@ function init(){
   $('#dw-ov').onclick=()=>closeDrawer(); $('#md-ov').onclick=()=>closeModal(MD_RES?false:undefined);
   $('#fileIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(f) importJSON(f); };
   document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return; if($('#modal').classList.contains('on')) closeModal(MD_RES?false:undefined); else if(ED) closeDrawer(); });
+  window.addEventListener('scroll',stickySoon,{passive:true}); window.addEventListener('resize',stickySoon);
   let rt; window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ if(UI.page==='overview') drawRoadmap(); if(UI.page==='guide') drawGantt(guideCalc()); },120); });
   window.addEventListener('beforeunload',e=>{ if(ghReady()&&dirtyCount()){ e.preventDefault(); e.returnValue=''; } });
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&ghReady()&&Date.now()-LAST_PULL>SYNC_MS) (dirtyCount()?pushNow():pullNow()); });

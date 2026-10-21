@@ -579,7 +579,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.6.2', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_MS=60*1000;   // 自動讀取：每 5 分鐘；自動上傳：存檔後 1 分鐘內（期間的修改合併成一次）
+const APP_VER='2.7', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1277,7 +1277,7 @@ function saveLine(){
   const next=cur&&!ED.isNew?merge3(ED.orig,w,cur,'',[]):clone(w);
   const msg=ED.isNew?`新增產線 ${lineLabel(next)}`:`${lineLabel(next)}：${diffMsg(ED.orig,w)}`;
   ED=null; $('#drawer').classList.remove('on'); $('#dw-ov').classList.remove('on');
-  commit('lines',next,msg); toast('✅ 已儲存'+(ghReady()?'，1 分鐘內自動上傳':'（本機）'),'ok');
+  commit('lines',next,msg); toast('✅ 已儲存'+(ghReady()?'，幾秒後自動上傳':'（本機）'),'ok');
 }
 async function deleteLine(){
   const w=ED.orig; if(!(await confirmBox(`確定刪除產線「${w.site} · ${lineLabel(w)}」？\n（會同步刪除，可從 GitHub 歷史版本找回）`,'刪除'))) return;
@@ -1891,7 +1891,7 @@ async function resetLocal(){
 //   與 AOI Calculator 相同：GitHub Contents API + 私有資料 repo + 個人權杖（只存本機）
 //   改良：以「每筆實體」為單位做 3-way merge，衝突自動重試 → 多人同時編輯不互相覆蓋
 // ═══════════════════════════════════════════
-let GH=loadJSON(LS.gh)||{}, GH_SHA=localStorage.getItem(LS.sha)||null, PUSH_T=null, LOCK=Promise.resolve(), LAST_PULL=0;
+let GH=loadJSON(LS.gh)||{}, GH_SHA=localStorage.getItem(LS.sha)||null, PUSH_T=null, PUSH_FIRST=0, RENDER_PENDING=false, LOCK=Promise.resolve(), LAST_PULL=0;
 let SYNC={state:'off',msg:''};
 const ghReady=()=>!!(GH&&GH.enabled&&GH.owner&&GH.repo&&GH.path&&GH.token);
 const apiBase=()=>(GH.api||'https://api.github.com').replace(/\/+$/,'');
@@ -1975,8 +1975,12 @@ function setSync(state,msg){
   $('#syncLb').textContent=(state==='ok'||state==='dirty')&&n?`待上傳 ${n}`:state==='off'&&n?`本機 · ${n} 筆未上傳`:a[1];
   $('#syncBtn').title=(msg||a[1])+(GH.repo?`\n${GH.owner}/${GH.repo} · ${GH.path}`:'');
 }
-/** 存檔後最多 1 分鐘內上傳；這一分鐘內的所有修改合併成一次上傳（不會因為一直編輯而一直延後） */
-function schedulePush(){ if(!ghReady()){ setSync('off'); return; } setSync('dirty','1 分鐘內自動上傳（也可以按這裡 →「⬆ 立即上傳」）'); if(PUSH_T) return; PUSH_T=setTimeout(()=>{ PUSH_T=null; pushNow(); },PUSH_MS); }
+/** 自動上傳：停止編輯 PUSH_IDLE（3 秒）後上傳；一直在編輯的話，從第一筆修改起最多 PUSH_MAX（15 秒）也會先送一次。期間的修改合併成一次上傳 */
+function schedulePush(){ if(!ghReady()){ setSync('off'); return; } setSync('dirty','停止編輯幾秒後自動上傳（也可以按這裡 →「⬆ 立即上傳」）');
+  const now=Date.now(); if(!PUSH_FIRST) PUSH_FIRST=now; clearTimeout(PUSH_T);
+  PUSH_T=setTimeout(()=>{ PUSH_T=null; pushNow(); },Math.max(0,Math.min(PUSH_IDLE,PUSH_FIRST+PUSH_MAX-now))); }
+/** 同步完成後重畫畫面；使用者正在輸入時先不重畫（避免打到一半的字被洗掉），離開欄位後再補畫 */
+function syncRender(){ const a=document.activeElement; if(a&&a.closest&&a.closest('.page,#drawer')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){ RENDER_PENDING=true; return; } RENDER_PENDING=false; renderAll(); }
 function pullNow(opts){
   opts=opts||{}; if(!ghReady()){ setSync('off'); return Promise.resolve(); }
   return withLock(async()=>{
@@ -1987,13 +1991,13 @@ function pullNow(opts){
       if(sha===GH_SHA&&!opts.force){ if(migrateV2()) renderAll(); setSync(dirtyCount()?'dirty':'ok','已是最新'); if(dirtyCount()) schedulePush(); return; }
       const cf=mergeRemote(doc); migrateV2(); GH_SHA=sha; localStorage.setItem(LS.sha,sha); saveLocal();
       setSync('ok',`已同步（雲端最後更新：${doc.meta&&doc.meta.updated?new Date(doc.meta.updated).toLocaleString('zh-TW',{hour12:false}):'—'} ${doc.meta&&doc.meta.updatedBy||''}）`);
-      reportConflicts(cf); renderAll(); if(ED) renderDrawerNotice();
+      reportConflicts(cf); syncRender(); if(ED) renderDrawerNotice();
       if(dirtyCount()) schedulePush();
     }catch(e){ setSync('err','讀取失敗：'+e.message); if(opts.loud) toast('⚠ 雲端讀取失敗：'+e.message,'err'); }
   });
 }
 function pushNow(opts){
-  opts=opts||{}; clearTimeout(PUSH_T); PUSH_T=null; if(!ghReady()){ setSync('off'); return Promise.resolve(); }
+  opts=opts||{}; clearTimeout(PUSH_T); PUSH_T=null; PUSH_FIRST=0; if(!ghReady()){ setSync('off'); return Promise.resolve(); }
   return withLock(async()=>{
     try{
       for(let attempt=0;attempt<5;attempt++){
@@ -2002,7 +2006,7 @@ function pushNow(opts){
         if(missing){ if(!opts.init){ setSync('ok','雲端尚無資料檔'); offerInit(); return; }
           for(const c of COLLS) for(const x of DB[c]) if(!x.demo&&!has(DIRTY[c],x.id)) DIRTY[c][x.id]=null; }
         if(!missing&&sha===GH_SHA&&!dirtyCount()&&!opts.force){ setSync('ok','已是最新'); return; }
-        const cf=mergeRemote(doc); migrateV2();
+        const remoteNew=!missing&&sha!==GH_SHA, cf=mergeRemote(doc); migrateV2();
         const out=buildDoc(false), snap={};
         for(const c of COLLS){ snap[c]={}; for(const id of Object.keys(DIRTY[c])){ const x=out[c].find(y=>y.id===id); if(x) snap[c][id]=clone(x); } }
         if(!dirtyCount()&&!missing&&!opts.force){ GH_SHA=sha; localStorage.setItem(LS.sha,sha); saveLocal(); setSync('ok'); reportConflicts(cf); renderAll(); return; }
@@ -2015,7 +2019,7 @@ function pushNow(opts){
           for(const c of COLLS) for(const id of Object.keys(snap[c])){ const cur=byId(c,id); if(cur&&eq(cur,snap[c][id])) delete DIRTY[c][id]; else DIRTY[c][id]=snap[c][id]; }
           for(const c of COLLS) for(const id of Object.keys(DIRTY[c])) if(!byId(c,id)) delete DIRTY[c][id];
           saveLocal(); setSync(dirtyCount()?'dirty':'ok','已同步 '+new Date().toLocaleTimeString('zh-TW',{hour12:false}));
-          reportConflicts(cf); renderAll(); if(missing) toast('✅ 雲端資料檔已建立','ok');
+          reportConflicts(cf); if(remoteNew||missing) syncRender(); if(missing) toast('✅ 雲端資料檔已建立','ok');
           if(dirtyCount()) schedulePush();
           return;
         }
@@ -2081,7 +2085,7 @@ function openCloud(note){
     <div class="muted" style="font-size:10px;margin-top:4px;line-height:1.5">只需對資料 repo 開 <b>Contents：Read and write</b>（只看不改可開 Read-only）。權杖只存在這台電腦的瀏覽器，不會寫進 HTML 或上傳。<b>請勿與 AOI Calculator / Manager Platform 共用權杖。</b></div></div>
   <details class="adv"><summary>進階：API 位址（GitHub Enterprise 才需要改）</summary>
     <div class="md-f"><label>API Base URL</label><input class="in" id="g-api" value="${esc(g.api||'')}" placeholder="https://api.github.com"></div></details>
-  <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" id="g-en" ${g.enabled||!g.repo?'checked':''} style="margin-top:3px"><span>啟用雲端同步（儲存後 1 分鐘內自動上傳；開啟頁面、每 5 分鐘、切回分頁時自動讀取最新）</span></label>
+  <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" id="g-en" ${g.enabled||!g.repo?'checked':''} style="margin-top:3px"><span>啟用雲端同步（停止編輯幾秒後自動上傳；開啟頁面、每 5 分鐘、切回分頁時自動讀取最新）</span></label>
   <div id="cl-msg"></div>
   <div class="warnbox">⚠ 資安提醒：資料會離開本機存到 GitHub。請確認符合 AUO 資安規範（含大陸廠區資料出境規定），務必使用 <b>private</b> repo，並只邀請部門同仁為 collaborator。</div>
   <div class="md-b"><button class="btn sm" onclick="testCloud()">🔌 測試連線</button><button class="btn sm" onclick="copyShare()" title="產生帶有 repo 設定（不含權杖）的網址，傳給新同仁">🔗 複製設定連結</button>
@@ -2167,7 +2171,7 @@ const GL={
   ref:['參考產線','部門內<b>最適合拿來參考</b>的一條線：能力覆蓋最多、已量產、同產品、同廠區優先；卡關的線會往後排。'],
   sched:['建議時程','從目標量產日<b>往回推</b> C → D → P 各要幾週。<br>週數優先用你填的；沒填就用<b>部門歷史中位數</b>（至少 2 條線有完整紀錄）；再沒有就用預設值。旁邊會標明是哪一種。'],
   onlyA:['只看已量產','只拿已經在 A 量產階段的線來比對，結論比較保守但比較可靠。'],
-  sync:['雲端同步','資料存在部門共用的 GitHub 私有 repo。存檔後 <b>1 分鐘內</b>自動上傳（這段時間的修改合併成一次；切換分頁或關閉前會先上傳），每 5 分鐘自動讀最新的（切回分頁時若超過 5 分鐘也會讀一次）。<br>兩個人同時改<b>不同欄位</b>會自動合併；同一欄位以後存的為準，並跳出提醒。'],
+  sync:['雲端同步','資料存在部門共用的 GitHub 私有 repo。存檔後<b>停止編輯約 3 秒</b>就自動上傳（連續編輯時最多 15 秒也會送一次，期間的修改合併成一次；切換分頁或關閉前會先上傳），每 5 分鐘自動讀最新的（切回分頁時若超過 5 分鐘也會讀一次）。<br>兩個人同時改<b>不同欄位</b>會自動合併；同一欄位以後存的為準，並跳出提醒。'],
   demo:['示範資料','5 條虛構產線（備註與線別旁標「示範例」），讓大家先熟悉平台怎麼看、怎麼填。正式開始前到「主檔設定」按「清除示範例」，所有人的畫面都會一起移除。']
 };
 const GD_HINT='名稱旁的 <span class="gi gi-demo"></span> 有白話解釋（滑鼠移上去，手機用點的）。';
@@ -2362,7 +2366,8 @@ function init(){
   let rt; window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ if(UI.page==='overview') drawRoadmap(); if(UI.page==='guide') drawGantt(guideCalc()); },120); });
   window.addEventListener('beforeunload',e=>{ if(ghReady()&&dirtyCount()){ e.preventDefault(); e.returnValue=''; } });
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&ghReady()&&Date.now()-LAST_PULL>SYNC_MS) (dirtyCount()?pushNow():pullNow()); });
-  // 切到別的分頁、最小化或關閉頁面時，還沒上傳的修改先送出，不用等 1 分鐘
+  // 切到別的分頁、最小化或關閉頁面時，還沒上傳的修改先送出
+  document.addEventListener('focusout',()=>{ if(RENDER_PENDING) setTimeout(()=>{ if(RENDER_PENDING) syncRender(); },80); });
   const flush=()=>{ if(ghReady()&&dirtyCount()) pushNow(); };
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flush(); }); window.addEventListener('pagehide',flush);
   setInterval(()=>{ if(document.visibilityState==='visible'&&ghReady()) (dirtyCount()?pushNow():pullNow()); },SYNC_MS);

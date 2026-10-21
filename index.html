@@ -448,6 +448,28 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v2.5.1：檢測項目選擇演算法視窗 ── */
+.pk-cell{cursor:pointer;align-items:center;border-radius:7px;padding:3px 4px;margin:-3px -4px;}
+.pk-cell:hover{background:var(--surf2);}
+.pk-cell .tag{font-size:10.5px;padding:2px 7px;}
+.pk-btn{font-size:10.5px;font-weight:700;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:6px;padding:1px 7px;background:#fff;white-space:nowrap;}
+.pk-list{max-height:50vh;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:0 10px 8px;}
+.pk-hd{display:flex;align-items:center;font-size:10px;color:var(--sub);font-weight:700;padding:7px 4px 5px;position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border);z-index:1;}
+.pk-g{margin-top:9px;display:flex;align-items:center;gap:6px;} .pk-g .tcat-h{margin:0;} .pk-n{font-size:10.5px;}
+.pk-r{display:flex;align-items:center;gap:8px;padding:5px 4px;border-radius:6px;cursor:pointer;font-size:12.5px;}
+.pk-r:hover{background:var(--surf2);}
+.pk-r input{margin:0;flex-shrink:0;}
+.pk-t{flex:1;min-width:0;}
+.pk-d{display:flex;gap:3px;margin-left:auto;flex-shrink:0;}
+.pd{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--border2);background:#fff;vertical-align:-2px;}
+.pd-ok{background:#9ed9c2;border-color:#7fc8ab;} .pd-dev{background:#ecc98b;border-color:#e0b46a;} .pd-plan{background:#cbd5e3;border-color:#b5c2d4;}
+.pn{display:inline-block;width:14px;text-align:center;font-style:normal;font-size:11px;}
+.pk-prev{margin-top:12px;}
+.pk-ph{font-size:11px;font-weight:700;color:var(--sub);margin-bottom:5px;}
+.pk-pg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;}
+.pk-pi{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11.5px;}
+.pk-pi .ips{cursor:default;display:inline-block;text-align:center;flex-shrink:0;}
+@media (max-width:520px){ .pk-pg{grid-template-columns:minmax(0,1fr);} }
 /* ── v2.4：重複產線 ── */
 .banner.bad{background:color-mix(in srgb,var(--warn) 9%,#fff);border-color:color-mix(in srgb,var(--warn) 40%,transparent);color:#9a2f18;}
 .dupg{border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:10px;}
@@ -534,7 +556,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.5', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_MS=60*1000;   // 自動讀取：每 5 分鐘；自動上傳：存檔後 1 分鐘內（期間的修改合併成一次）
+const APP_VER='2.5.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_MS=60*1000;   // 自動讀取：每 5 分鐘；自動上傳：存檔後 1 分鐘內（期間的修改合併成一次）
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -578,7 +600,7 @@ const DEF_TECH_PLAT={
   t03:{v03:'ok',v04:'dev',v05:'ok'}, t04:{v03:'dev',v04:'plan',v05:'ok'}, t05:{v03:'ok',v04:'ok',v05:'ok'},
   t06:{v05:'dev'}, t07:{v02:'ok',v04:'ok',v05:'ok'}, t08:{v05:'dev'}, t09:{v03:'ok',v04:'ok',v05:'ok'},
   t10:{v01:'ok',v02:'ok',v03:'ok',v04:'ok',v05:'ok'}, t11:{v01:'ok',v02:'ok',v03:'ok',v04:'ok',v05:'ok'}, t12:{v03:'ok',v04:'ok',v05:'ok'}};
-// 檢測項目需要的演算法（全部具備才算能檢）：缺陷類連「檢測」、數值類連「量測」
+// 檢測項目需要的演算法（全部具備才算能檢）：預設值；之後由使用者在主檔「✎ 選擇」視窗勾選（可選任何技術能力）
 const DEF_ITEM_TECH={i01:['t10'],i02:['t10'],i03:['t11'],i04:['t11'],i05:['t11'],i06:['t04'],i07:['t04'],i08:['t05'],i09:['t05'],i10:['t05'],i11:['t05'],i12:['t05']};
 // v2.1：PDCA 精簡為 8 個關卡；key 標記里程碑（進廠 / SAT / 上線）。id 沿用舊版，讓已勾選的完成日可以保留
 const DEF_STEPS=[['s01','P','需求確認',''],['s03','P','設備採購',''],['s05','D','機台進廠','install'],['s08','D','Recipe 調校完成',''],
@@ -1543,13 +1565,13 @@ function renderMaster(){
         <td><div class="reqs">${its.map(i=>`<span class="tag it-t">${esc(i.name)}</span>`).join('')}${fs.map(f=>`<span class="tag fm-t">型態：${esc(f.name)}</span>`).join('')}${!its.length&&!fs.length?'<span class="muted">—</span>':''}</div></td>
         <td class="pc muted" style="font-size:11px">${L.filter(l=>lineTech(l,t.id)==='on').length} 條</td><td class="ac">${mv('techs',t.id)}</td></tr>`; }).join('')}</tbody></table></div></div>
 
-    <div class="card mcard full" id="m-items"><h3>🔍 檢測項目 → 需要的演算法<small>勾選需要的演算法（缺陷類列「檢測」、類別含「量測」列「量測」）；右側依「技術能力 × 版本」自動推算各版本能否檢測，點格子跳到對應的技術能力</small><button class="btn sm" onclick="mAdd('items',{name:'新檢測項目',cat:'',techs:[]})">＋ 新增</button></h3>
+    <div class="card mcard full" id="m-items"><h3>🔍 檢測項目 → 需要的演算法<small>點「✎ 選擇」從上方技術能力清單勾選需要的演算法；右側依「技術能力 × 版本」自動推算各版本能否檢測，點格子跳到對應的技術能力</small><button class="btn sm" onclick="mAdd('items',{name:'新檢測項目',cat:'',techs:[]})">＋ 新增</button></h3>
       <div class="mt-scroll"><table class="mt ti"><colgroup><col style="width:190px"><col style="width:110px"><col>${plats.map(()=>'<col style="width:92px">').join('')}<col style="width:92px"></colgroup>
       <thead><tr class="gh"><th colspan="3"></th><th colspan="${plats.length}" class="pc">各版本能否檢測（自動）</th><th></th></tr>
       <tr><th>名稱</th><th>類別</th><th>需要的演算法</th>${plats.map(p=>`<th class="pc">${esc(p.name)}</th>`).join('')}<th></th></tr></thead>
-      <tbody>${items.map(i=>{ const sub=isMeasItem(i)?['meas']:['det'], opts=techs.filter(t=>sub.includes(tcat(t))||(i.techs||[]).includes(t.id)), its=itemTechs(i);
+      <tbody>${items.map(i=>{ const its=itemTechs(i);
         return `<tr><td>${inp('items',i.id,'name',i.name)}</td><td>${inp('items',i.id,'cat',i.cat,'點線 / Mura…')}</td>
-        <td><div class="reqs"><span class="tag">${isMeasItem(i)?'量測':'檢測'}</span>${opts.map(t=>`<button class="chip ${(i.techs||[]).includes(t.id)?'on':''}" onclick="mToggleItemTech('${i.id}','${t.id}')">${esc(t.name)}</button>`).join('')}</div></td>
+        <td><div class="reqs pk-cell" onclick="mPickTechs('${i.id}')" title="點一下選擇需要的演算法">${its.length?its.map(t=>`<span class="tag tc-${tcat(t)}">${esc(t.name)}</span>`).join(''):'<span class="ist ist-unk">? 尚未設定</span>'}<span class="pk-btn">✎ 選擇</span></div></td>
         ${plats.map(p=>{ const s=itemPlatSt(i,p.id), tip=its.length?its.map(t=>`${t.name}：${PST.find(x=>x.k===techPlat(t,p.id)).t}${(t.pver||{})[p.id]?'（'+t.pver[p.id]+' 起）':''}`).join('\n')+'\n\n點一下跳到「技術能力 × 版本」':'還沒勾選需要的演算法';
           return `<td class="pc"><button class="ips ips-${s}" title="${esc(tip)}" onclick="mJumpTech('${i.id}','${p.id}')">${IPS[s][0]}</button></td>`; }).join('')}
         <td class="ac">${mv('items',i.id)}</td></tr>`; }).join('')}</tbody></table></div></div>
@@ -1610,6 +1632,36 @@ async function mDel(c,id){
   if(c==='plats'&&used){ toast(`仍有 ${used} 條產線使用此版本，請先改成其他版本`,'err'); return; }
   if(!(await confirmBox(`確定刪除「${o.name||o.id}」？${used?`\n目前有 ${used} 條產線有用到，刪除後這些資料將不再顯示。`:''}`,'刪除'))) return;
   removeEnt(c,id,`主檔刪除：${o.name||o.id}`);
+}
+/** 檢測項目 → 開視窗從「技術能力 × 版本」清單勾選需要的演算法（依分類分組，右側小方塊是各版本進度，下方即時試算各版本能否檢測） */
+const NUMS='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮', numOf=k=>NUMS[k]||String(k+1);
+function mPickTechs(iid){
+  const it=byId('items',iid); if(!it) return; const sel=new Set(it.techs||[]), plats=liveSorted('plats'), techs=techsSorted();
+  const note={pre:'一般由型態決定，項目通常不用勾',post:'通常不用勾'};
+  openModal(`<div class="md-h"><b>需要的演算法 · ${esc(it.name)}</b><button class="x" onclick="closeModal()">✕</button></div>
+  <div class="md-d">從上方「技術能力 × 版本」清單勾選這個檢測項目需要的技術。勾選的技術在某個版本<b>全部已釋出</b>，這個項目在該版本才算可檢。<br>
+    右側方塊是各版本進度：<i class="pd pd-ok"></i> 已釋出 <i class="pd pd-dev"></i> 開發中 <i class="pd pd-plan"></i> 規劃中 <i class="pd pd-no"></i> 不支援（編號對照下方版本）</div>
+  <div class="pk-list"><div class="pk-hd"><span>技術能力</span><span class="pk-d">${plats.map((p,k)=>`<i class="pn" title="${esc(p.name)}">${numOf(k)}</i>`).join('')}</span></div>
+  ${TCATS.map(g=>{ const ts=techs.filter(t=>tcat(t)===g.k); if(!ts.length) return '';
+    return `<div class="pk-g"><span class="tcat-h tc-${g.k}">${g.k==='meas'||g.k==='det'?'演算法・':''}${g.t}</span>${note[g.k]?`<span class="muted pk-n">${note[g.k]}</span>`:''}</div>`+
+    ts.map(t=>`<label class="pk-r"><input type="checkbox" value="${t.id}" ${sel.has(t.id)?'checked':''} onchange="pkPrev()"><span class="pk-t">${esc(t.name)}</span><span class="pk-d">${plats.map(p=>{ const s=techPlat(t,p.id); return `<i class="pd pd-${s||'no'}" title="${esc(p.name)}：${PST.find(x=>x.k===s).t}${(t.pver||{})[p.id]?'（'+esc(t.pver[p.id])+' 起）':''}"></i>`; }).join('')}</span></label>`).join(''); }).join('')||'<div class="empty">上方還沒有建立技術能力</div>'}</div>
+  <div class="pk-prev" id="pk-prev"></div>
+  <div class="md-b"><span class="muted" id="pk-cnt" style="font-size:11px;align-self:center"></span><span class="r"><button class="btn" onclick="closeModal()">取消</button><button class="btn pri" onclick="pkSave('${iid}')">儲存</button></span></div>`,true);
+  pkPrev();
+}
+const pkSel=()=>$$('#modal .pk-r input:checked').map(x=>x.value);
+function pkPrev(){
+  const ids=pkSel(), el=$('#pk-prev'); if(!el) return;
+  el.innerHTML=`<div class="pk-ph">各版本能否檢測（依目前勾選試算）</div><div class="pk-pg">${liveSorted('plats').map((p,k)=>{ const s=itemPlatSt({techs:ids},p.id); return `<div class="pk-pi"><span>${numOf(k)} ${esc(p.name)}</span><span class="ips ips-${s}">${IPS[s][0]}</span></div>`; }).join('')}</div>`;
+  $('#pk-cnt').textContent=`已勾選 ${ids.length} 項`;
+}
+function pkSave(iid){
+  const it=byId('items',iid); if(!it) return; const ids=pkSel(), old=it.techs||[], liveIds=new Set(techsSorted().map(t=>t.id));
+  const add=ids.filter(x=>!old.includes(x)), del=old.filter(x=>liveIds.has(x)&&!ids.includes(x));
+  closeModal(); if(!add.length&&!del.length) return;
+  const n=clone(it); n.techs=[...old.filter(x=>!del.includes(x)),...add]; const nm=x=>(byId('techs',x)||{}).name||x;
+  commit('items',n,`檢測項目「${it.name}」需要的演算法${add.length?'：加入 '+add.map(nm).join('、'):''}${del.length?(add.length?'；':'：')+'移除 '+del.map(nm).join('、'):''}`);
+  toast('✅ 已更新需要的演算法','ok');
 }
 /** 檢測項目表 → 點版本格子：捲到「技術能力 × 版本」，標亮這個項目需要的演算法與該版本那一欄 */
 function mJumpTech(iid,pid){
@@ -2109,7 +2161,7 @@ const GUIDES={
     {el:()=>$gd('m-prod'),t:'產品設定',d:'<b>產品別 → 加入型態 → 勾選檢測項目</b>，右邊自動算出<b>建議軟體版本</b>（✓ 完全支援、◐ 有功能開發中、✕ 不支援）。<br>加入新型態時會先複製這個產品別已設定的檢測項目，再增減就好；可以新增產品別。'},
     {el:()=>$gd('m-plats'),t:'軟體版本',d:'畫檢軟體的版本類別。點選<b>支援的型態</b>；每條線先選類別、再填版本號。'},
     {el:()=>$gd('m-techs'),t:'技術能力 × 版本開發進度',d:'技術能力依<b>前處理 → 演算法（量測 / 檢測）→ 判定 / 整合</b>分組，可在「分類」欄調整。每項在每個版本的進度，點格子切換（不支援 → 規劃中 → 開發中 → 已釋出），旁邊可填從哪個版本號開始。只有「已釋出」的功能，產線才會開啟。'},
-    {el:()=>$gd('m-items'),t:'檢測項目 → 需要的演算法',d:'每個檢測項目<b>需要哪些演算法</b>（全部具備才算能檢）：缺陷類只列「檢測」、類別含「量測」的只列「量測」。前處理不用在這裡勾，改由型態決定。矩陣上的檢測狀態就是依這個自動推算；還沒設定的項目會顯示「?」。'},
+    {el:()=>$gd('m-items'),t:'檢測項目 → 需要的演算法',d:'每個檢測項目<b>需要哪些演算法</b>（全部具備才算能檢）：點「✎ 選擇」開視窗，從上方技術能力清單勾選。前處理一般不用在這裡勾，改由型態決定。右側自動顯示各版本能否檢測。矩陣上的檢測狀態就是依這個自動推算；還沒設定的項目會顯示「?」。'},
     {el:()=>$gd('m-tree'),t:'樹狀檢視',d:'把上面幾張表串起來看：每個版本有哪些功能、每個功能能檢哪些項目、這個版本總共能檢幾項。'},
     {el:()=>$gd('m-forms'),t:'型態清單',d:'型態名稱（矩形、異形、曲面異形…），可以新增。<b>需要的前處理</b>：例如異形需要「異形 / 曲面面板對位」，產線選了這個型態，系統就會一起檢查版本有沒有這項前處理。'},
     {el:()=>$gd('m-steps'),t:'PDCA 關卡',d:'8 個關卡，每條線勾選完成、填預計日。標「里程碑」的會畫在總覽時程圖上。<b>改關卡會影響所有線</b>，請謹慎。'},

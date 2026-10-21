@@ -556,7 +556,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.5.2', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_MS=60*1000;   // 自動讀取：每 5 分鐘；自動上傳：存檔後 1 分鐘內（期間的修改合併成一次）
+const APP_VER='2.5.3', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_MS=60*1000;   // 自動讀取：每 5 分鐘；自動上傳：存檔後 1 分鐘內（期間的修改合併成一次）
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1538,7 +1538,7 @@ function renderMaster(){
     <div class="card mcard full" id="m-prod"><h3>📦 產品設定${GI('prodset')}<small>產品別 → 加入型態 → 勾選檢測項目 → 自動得到建議軟體版本</small><button class="btn sm" onclick="mAdd('products',{name:'新產品別',fr:{f01:[]}})">＋ 新增產品別</button></h3>
       ${prods.map(p=>{ const fr=p.fr||{}, fids=forms.filter(f=>fr[f.id]).map(f=>f.id);
         return `<div class="pblk"><div class="pblk-h">${inp('products',p.id,'name',p.name,'產品別名稱','150px')}<span class="muted" style="font-size:11px">${L.filter(l=>lineProds(l).includes(p.id)).length} 條線</span>
-          <select class="in" onchange="mAddCombo('${p.id}',this.value)"><option value="">＋ 加入型態…</option>${forms.filter(f=>!fr[f.id]).map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('')}<option value="__new">＋ 新增自訂型態…</option></select>
+          <select class="in" onchange="mAddCombo('${p.id}',this.value)"><option value="" selected disabled hidden>＋ 加入型態…</option>${forms.filter(f=>!fr[f.id]).map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('')}${forms.some(f=>!fr[f.id])?'<option disabled>──────────</option>':''}<option value="__new">＋ 新增自訂型態…</option></select>
           <span style="margin-left:auto">${mv('products',p.id)}</span></div>
           <div class="mt-scroll"><table class="mt"><tr><th style="width:100px">型態</th><th>檢測項目</th><th style="width:250px">建議軟體版本（自動）</th><th style="width:1%"></th></tr>
           ${fids.map(f=>{ const its=fr[f]||[], fits=platFit(its,[f]), ok=fits.filter(x=>x.lvl==='ok'), dv=fits.filter(x=>x.lvl==='dev');

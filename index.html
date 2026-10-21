@@ -579,7 +579,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.7', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='2.7.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1663,8 +1663,10 @@ async function mAddSite(){
   commit('sites',{id,name:id.split('-').slice(1).join('-')||id,region,owner:'',focus:'',next:'',order:nextOrder('sites')},`新增廠區 ${id}`);
 }
 function mMove(c,id,dir){
-  let arr=c==='steps'?stepsSorted().filter(s=>s.stage===byId('steps',id).stage):liveSorted(c);
-  const i=arr.findIndex(x=>x.id===id), j=i+dir; if(j<0||j>=arr.length) return;
+  // 跟畫面的排列方式一致：PDCA 關卡在同一階段內移動；技術能力在同一分類內移動（畫面是先依分類分組）
+  let arr=c==='steps'?stepsSorted().filter(s=>s.stage===byId('steps',id).stage):c==='techs'?techsSorted().filter(t=>tcat(t)===tcat(byId('techs',id))):liveSorted(c);
+  const i=arr.findIndex(x=>x.id===id), j=i+dir;
+  if(j<0||j>=arr.length){ if(c==='techs'||c==='steps') toast(`已經是這個${c==='techs'?'分類':'階段'}的${dir<0?'第一':'最後一'}項${c==='techs'?'；要換分類請改「分類」欄':''}`); return; }
   [arr[i],arr[j]]=[arr[j],arr[i]];
   arr.forEach((x,k)=>{ if(x.order!==k+1){ const n=clone(x); n.order=k+1; commit(c,n,null); } });
 }

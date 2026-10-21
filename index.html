@@ -185,7 +185,7 @@ table.mx{border-collapse:separate;border-spacing:0;font-size:12px;background:#ff
 .mx thead th{position:sticky;background:#f5f8fc;z-index:3;font-weight:700;color:#3d4d66;font-size:11px;}
 .mx thead tr.h1 th{top:0;height:28px;text-align:center;border-bottom:1px solid var(--border);}
 .mx thead tr.h2 th{top:28px;vertical-align:bottom;}
-.mx thead th.g-it{background:#eef4fd;} .mx thead th.g-te{background:#f2effc;} .mx thead th.g-pd{background:#effaf4;}
+.mx thead th.g-it{background:#eef4fd;} .mx thead th.g-te{background:#f2effc;} .mx thead th.g-pd{background:#effaf4;} .mx thead th.g-op{background:#fdf5e8;}
 .mx th.vt{padding:6px 3px;width:30px;min-width:30px;max-width:30px;}
 .mx th.vt div{writing-mode:vertical-rl;max-height:126px;margin:0 auto;line-height:1.15;font-weight:600;white-space:normal;}
 .mx .stk{position:sticky;z-index:2;background:#fff;}
@@ -451,6 +451,9 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v3.0：光學調整 ── */
+.srow .op-d{width:132px;height:26px;font-size:11px;margin-left:auto;margin-right:6px;}
+.seg button.on.v-na{background:#8a96a8;color:#fff;} .seg button.on.v-x{background:#dfe5ee;color:var(--text);}
 /* ── v2.9：表格標題列凍結 ── */
 tr.hd-stk>th{background:#fff;position:relative;z-index:4;box-shadow:0 -3px 0 #fff,0 3px 0 #fff;}
 tr.hd-stk.hd-last>th{box-shadow:0 -3px 0 #fff,0 1px 0 var(--border),0 6px 6px -4px rgba(20,32,56,.2);}
@@ -583,7 +586,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.9.5', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.0', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -595,7 +598,12 @@ const STG_IDX={P:0,D:1,C:2,A:3};
 // 檢測項目在一條線上的狀態：由「軟體版本 → 技術能力 → 檢測項目」自動推算，不再手動填
 const IST={ok:{t:'已具備',sym:'●'},off:{t:'可開啟',sym:'○'},dev:{t:'開發中',sym:'◐'},gap:{t:'缺口',sym:'✕'},unk:{t:'未設定對應技術',sym:'?'},na:{t:'不需',sym:'·'}};
 const PST=[{k:'',t:'不支援'},{k:'plan',t:'規劃中'},{k:'dev',t:'開發中'},{k:'ok',t:'已釋出'}];   // 技術能力在各版本的開發進度
-const PSYM={ok:'●',dev:'◐',plan:'○','':'—'};   // 狀態統一用符號表示：● 已釋出 / 可檢、◐ 開發中、○ 規劃中、— 不支援
+const PSYM={ok:'●',dev:'◐',plan:'○','':'—'};
+/** 光學調整確認項目（每條線逐項確認；lines.optic={key:'YYYY-MM-DD'（完成日）|'na'（不適用）}，沒有值＝未確認） */
+const OPTICS=[{k:'pitch',t:'最佳 Pitch & WD'},{k:'abt',t:'αβθ 調整'},{k:'focus',t:'對焦分數'},{k:'side',t:'側光效果'}];
+const opSt=(l,k)=>{ const v=((l&&l.optic)||{})[k]; return !v?'':v==='na'?'na':'ok'; };
+/** 光學調整進度：不適用的不算；回傳 {done, total} */
+const opProg=l=>{ const ks=OPTICS.filter(o=>opSt(l,o.k)!=='na'); return {done:ks.filter(o=>opSt(l,o.k)==='ok').length,total:ks.length}; };   // 狀態統一用符號表示：● 已釋出 / 可檢、◐ 開發中、○ 規劃中、— 不支援
 const LTS=[{k:'on',t:'已開啟'},{k:'off',t:'未開啟'}];                                       // 產線上的技術能力（版本已釋出的預設開啟）
 const SHAPES=[{k:'rect',t:'矩形'},{k:'free',t:'異形'}];
 const PSHAPES=[{k:'rect',t:'矩形'},{k:'free',t:'異形'},{k:'both',t:'矩形 + 異形'}];
@@ -1055,24 +1063,28 @@ function renderMatrix(){
     <span class="s">${box('background:var(--req)')}需求項目${GI('req')}</span>
     <span class="s" style="font-weight:700;color:var(--text)">｜技術能力${GI('tech')}</span>
     <span class="s"><b class="s-ok">●</b>已開啟</span><span class="s"><b class="s-off">○</b>未開啟</span><span class="s">${box('background:repeating-linear-gradient(135deg,#f4f6f9 0 3px,#e3e8ef 3px 6px)')}此版本未釋出</span>
-    ${f.edit?'<span class="s" style="color:var(--accent-deep);font-weight:700">快速編輯中：點技術能力格子切換 開 / 關</span>':''}
+    <span class="s" style="font-weight:700;color:var(--text)">｜光學調整${GI('optic')}</span>
+    <span class="s"><b class="s-ok">●</b>已完成</span><span class="s"><b class="s-off">○</b>未確認</span><span class="s"><b class="s-na">·</b>不適用</span>
+    ${f.edit?'<span class="s" style="color:var(--accent-deep);font-weight:700">快速編輯中：點技術能力格子切換 開 / 關；點光學調整格子切換 未確認 → 完成 → 不適用</span>':''}
     <span class="s" style="margin-left:auto">${ls.length} 條產線</span>
   </div>
   <div class="card mwrap">${ls.length?matrixTable(ls,items,techs):'<div class="empty" style="padding:30px;text-align:center">沒有符合條件的產線</div>'}</div>`;
   if(focusQ){ const q=$('#mq'); q.focus(); q.setSelectionRange(q.value.length,q.value.length); }
 }
 function matrixTable(ls,items,techs){
-  const NC=2+items.length+1+techs.length+2+1+1+1;
+  const NC=2+items.length+1+techs.length+OPTICS.length+2+1+1+1;
   let h=`<table class="mx ${UI.mf.edit?'edit':''}"><thead><tr class="h1">
     <th class="stk c-pr" rowspan="2" style="vertical-align:bottom;text-align:left">產品別</th><th class="stk c-ln" rowspan="2" style="vertical-align:bottom;text-align:left">線別<div class="dim" style="font-weight:500">型態 · 相機${GI('hw')}</div></th>
     ${items.length?`<th class="g-it" colspan="${items.length}">檢測項目${GI('itemst')}</th>`:''}
     <th rowspan="2" style="vertical-align:bottom;text-align:left">軟體版本${GI('sw')}</th>
     ${TCATS.map((g,gi)=>{ const n=techs.filter(t=>tcat(t)===g.k).length; return n?`<th class="g-te tc-${g.k}" colspan="${n}">${g.k==='meas'||g.k==='det'?'演算法・':''}${g.t}${gi===0||!techs.some(t=>TCAT_IDX[tcat(t)]<gi)?GI('tech'):''}</th>`:''; }).join('')}
+    <th class="g-op" colspan="${OPTICS.length}">光學調整${GI('optic')}</th>
     <th class="g-pd" colspan="2">PDCA 進度${GI('pdca')}</th>
     <th rowspan="2" style="vertical-align:bottom">上線後 KPI${GI('kpi')}</th><th rowspan="2" style="vertical-align:bottom;text-align:left">下一步${GI('next')}</th><th rowspan="2" style="vertical-align:bottom;text-align:left">更新</th>
   </tr><tr class="h2">
     ${items.map(i=>`<th class="vt g-it" title="${esc(i.name)}（${esc(i.cat||'')}）\n需要：${esc(itemTechs(i).map(t=>t.name).join('、')||'未設定')}"><div>${esc(i.name)}</div></th>`).join('')}
     ${techs.map(t=>`<th class="vt g-te" title="${esc(t.name)}${t.note?'：'+esc(t.note):''}"><div>${esc(t.name)}</div></th>`).join('')}
+    ${OPTICS.map(o=>`<th class="vt g-op" title="${esc(o.t)}"><div>${esc(o.t)}</div></th>`).join('')}
     <th class="g-pd" style="text-align:left">階段</th><th class="g-pd" style="text-align:left">目前關卡</th>
   </tr></thead><tbody>`;
   let curSite=null, lastProd=null; const dupIds=new Set(dupGroups().flat().map(x=>x.id));
@@ -1088,6 +1100,7 @@ function matrixTable(ls,items,techs){
       <td class="swc"><div class="sw" style="color:${swOff?'var(--amber)':'inherit'}" title="${swOff?esc(`「${fit.p.name}」${fit.lvl==='dev'?'仍在開發：'+fit.dev.map(t=>t.name).join('、'):fit.lvl==='shape'?'不支援此型態':'不支援：'+fit.miss.map(t=>t.name).join('、')}`):''}">${esc(sw.ver||'—')}</div><div class="dim">${esc(platName(sw.plat)||'未設定版本類別')}</div></td>
       ${techs.map(t=>{ const ps=techPlat(t,sw.plat), v=lineTech(l,t.id);
         return `<td class="s ${ps==='ok'?(v==='on'?'s-ok':'s-off'):'t-x'}" data-t="t" data-k="${t.id}" title="${esc(t.name)}：${ps==='ok'?(v==='on'?'已開啟':'未開啟'):'此版本'+(PST.find(x=>x.k===ps)||PST[0]).t}">${ps==='ok'?(v==='on'?'●':'○'):''}</td>`; }).join('')}
+      ${OPTICS.map(o=>{ const v=opSt(l,o.k), d=(l.optic||{})[o.k]; return `<td class="s ${v==='ok'?'s-ok':v==='na'?'s-na':'s-off'}" data-t="o" data-k="${o.k}" title="${esc(o.t)}：${v==='ok'?'已完成（'+esc(d)+'）':v==='na'?'不適用':'未確認'}">${v==='ok'?'●':v==='na'?'·':'○'}</td>`; }).join('')}
       <td>${pdMini(l)}<span class="pct">${p.pct}%</span></td>
       <td class="wrap">${p.complete?'<span style="color:var(--green);font-weight:700">✓ 全部完成</span>':esc(p.cur?p.cur.name:'—')}${l.blocked&&l.blockReason?`<div class="dim" style="color:var(--warn)">⚠ ${esc(l.blockReason)}</div>`:''}</td>
       <td>${k?`<div class="kc">${KPI_DEF.map(d=>k[d.k]!==undefined&&k[d.k]!==''?`<span class="${kpiBad(l,d.k,k[d.k])?'bad':''}" title="${d.name}（目標 ${d.better==='low'?'≤':'≥'} ${kpiTarget(l,d.k)}${d.unit}）">${d.name.slice(0,2)} <b>${k[d.k]}</b>${d.unit}</span>`:'').join('')}<span class="dim">${md(k.d)}</span></div>`:'<span class="dim">—</span>'}</td>
@@ -1101,8 +1114,14 @@ function matrixTable(ls,items,techs){
 function onMatrixClick(e){
   const tr=e.target.closest('tr.ln'); if(!tr) return;
   const td=e.target.closest('td.s');
-  if(UI.mf.edit&&td){ if(td.dataset.t==='t') cycleTech(tr.dataset.l,td.dataset.k); else toast('檢測項目是依「軟體版本 → 技術能力」自動推算的，請改技術能力或版本'); return; }
+  if(UI.mf.edit&&td){ if(td.dataset.t==='t') cycleTech(tr.dataset.l,td.dataset.k); else if(td.dataset.t==='o') cycleOptic(tr.dataset.l,td.dataset.k); else toast('檢測項目是依「軟體版本 → 技術能力」自動推算的，請改技術能力或版本'); return; }
   openLine(tr.dataset.l);
+}
+/** 快速編輯：光學調整格子循環切換 未確認 → 完成（今天）→ 不適用 → 未確認 */
+function cycleOptic(lid,k){
+  const l=byId('lines',lid), o=OPTICS.find(x=>x.k===k); if(!l||!o) return; const cur=opSt(l,k), n=clone(l); n.optic=Object.assign({},n.optic||{});
+  if(cur==='') n.optic[k]=todayStr(); else if(cur==='ok') n.optic[k]='na'; else delete n.optic[k];
+  commit('lines',n,`${lineLabel(l)}：光學調整「${o.t}」→ ${({'':'已完成','ok':'不適用','na':'未確認'})[cur]}`);
 }
 function cycleTech(lid,tid){
   const l=byId('lines',lid), t=byId('techs',tid); if(!l||!t) return; const pid=(l.sw||{}).plat, ps=techPlat(t,pid);
@@ -1213,6 +1232,12 @@ function renderDrawer(){
         +(notRel.length?`<div class="muted" style="font-size:11px;margin-top:8px">尚未釋出：${notRel.map(t=>`${PSYM[techPlat(t,sw.plat)]} ${esc(t.name)}`).join('、')}</div>`:''):''}
     </details>
 
+    <details class="ds" data-sec="optic" ${ED.open.optic?'open':''}><summary><h4>光學調整${GI('optic')} <small>逐項確認</small><span class="r sumtxt">${(()=>{ const pg=opProg(w); return pg.total&&pg.done===pg.total?'<b style="color:var(--green)">✓ 全部完成</b>':`${pg.done} / ${pg.total} 項完成`; })()}</span></h4></summary>
+      ${OPTICS.map(o=>{ const v=opSt(w,o.k); return `<div class="srow"><span class="n">${esc(o.t)}</span>
+        ${v==='ok'?`<input type="date" class="in op-d" data-p="optic.${o.k}" value="${esc(w.optic[o.k])}" title="完成日期">`:''}
+        <span class="seg">${[['','未確認'],['ok','✓ 完成'],['na','不適用']].map(([k,t])=>`<button class="v-${k==='ok'?'on':k==='na'?'na':'x'} ${v===k?'on':''}" data-opt="${o.k}" data-v="${k}">${t}</button>`).join('')}</span></div>`; }).join('')}
+    </details>
+
     <details class="ds" data-sec="items" ${ED.open.items?'open':''}><summary><h4>檢測項目（自動推算）${GI('itemst')}<span class="r sumtxt">${req.length?`需求 ${req.length} 項：${['ok','off','dev','gap','unk'].filter(s=>cnt[s]).map(s=>`<b class="s-${s}">${IST[s].sym}</b>${cnt[s]}`).join(' ')}`:'<span class="muted">先選產品別</span>'}</span></h4></summary>
       ${items.map(i=>{ const c=itemCap(w,i.id), v=itemSt(w,i.id); return `<div class="srow"><span class="n">${esc(i.name)} ${req.includes(i.id)?'<span class="tag blu">需求</span>':''}${c.why&&v!=='ok'&&v!=='na'?`<div class="muted" style="font-size:10.5px">${esc(c.why)}</div>`:''}</span>${istTag(v)}</div>`; }).join('')}</details>
 
@@ -1265,6 +1290,7 @@ function onDrawerInput(e){
 function onDrawerClick(e){
   const t=e.target; if(!ED) return;
   if(t.dataset.set!==undefined){ edSet(t.dataset.set,t.dataset.v||''); renderDrawer(); return; }
+  if(t.dataset.opt){ const o=ED.w.optic=Object.assign({},ED.w.optic||{}), k=t.dataset.opt, v=t.dataset.v; if(v==='ok'){ if(opSt(ED.w,k)!=='ok') o[k]=todayStr(); } else if(v==='na') o[k]='na'; else delete o[k]; if(!Object.keys(o).length) delete ED.w.optic; renderDrawer(); return; }
   if(t.dataset.prod){ const a=lineProds(ED.w).slice(), i=a.indexOf(t.dataset.prod); if(i>=0) a.splice(i,1); else a.push(t.dataset.prod); ED.w.products=a; ED.w.product=a[0]||''; renderDrawer(); return; }
   if(t.dataset.form){ const f=ED.w.forms=(ED.w.forms||[]).slice(), i=f.indexOf(t.dataset.form); if(i>=0) f.splice(i,1); else f.push(t.dataset.form); renderDrawer(); return; }
   if(t.dataset.step){ ED.w.done=ED.w.done||{}; if(t.checked) ED.w.done[t.dataset.step]=todayStr(); else delete ED.w.done[t.dataset.step]; renderDrawer(); return; }
@@ -1287,6 +1313,8 @@ function diffMsg(a,b){
   if(!eq(a.forms||[],b.forms||[])) out.push(`型態 → ${formLabel(b.forms)}`);
   if(!eq(lineProds(a),lineProds(b))) out.push(`產品別 → ${prodsLabel(b)}`);
   if((a.hw||'')!==(b.hw||'')) out.push(`相機 → ${hwName(b.hw)||'—'}`);
+  const och=OPTICS.filter(o=>opSt(a,o.k)!==opSt(b,o.k)).map(o=>`${o.t}→${({ok:'完成',na:'不適用','':'未確認'})[opSt(b,o.k)]}`);
+  if(och.length) out.push('光學調整 '+och.join('、'));
   if((a.nextNote||'')!==(b.nextNote||'')&&b.nextNote) out.push(`下一步：${b.nextNote}`);
   if(!eq(a.kpi||{},b.kpi||{})||!eq(a.kpiT||{},b.kpiT||{})) out.push('KPI');
   if(a.site!==b.site||a.product!==b.product||a.line!==b.line||a.vendor!==b.vendor||a.owner!==b.owner) out.push('基本資訊');
@@ -1856,11 +1884,11 @@ function exportJSON(){ download(`aoi-monitor-backup-${todayStr()}.json`,JSON.str
 function exportCSV(all){
   const ls=all?sortLines(liveLines()):filteredLines(), items=liveSorted('items'), techs=techsSorted(), st=stepsSorted();
   const head=['廠區','地區','產品別','線別','型態','相機','負責人','設備廠商','PDCA 階段','完成度%','目前關卡','下一步說明','預計日','卡關','卡關原因','軟體版本類別','版本號',
-    ...techs.map(t=>'技術:'+t.name),...items.map(i=>'檢測:'+i.name),...st.flatMap(s=>[s.name+'(預計)',s.name+'(完成)']),...KPI_DEF.map(d=>`${d.name}(${d.unit})`),'KPI 日期','更新時間','更新者'];
+    ...techs.map(t=>'技術:'+t.name),...items.map(i=>'檢測:'+i.name),...OPTICS.map(o=>'光學:'+o.t),...st.flatMap(s=>[s.name+'(預計)',s.name+'(完成)']),...KPI_DEF.map(d=>`${d.name}(${d.unit})`),'KPI 日期','更新時間','更新者'];
   const rows=ls.map(l=>{ const p=lineProg(l), s=byId('sites',l.site)||{}, k=kpiLatest(l)||{}, nx=nextOf(l)||{};
     return [l.site,s.region,prodsLabel(l),l.line,formLabel(l.forms),hwName(l.hw),lineOwner(l),l.vendor,
       p.complete?'完成':p.stage+' '+STAGES[STG_IDX[p.stage]].name,p.pct,p.cur?p.cur.name:'',l.nextNote,nx.due,l.blocked?'Y':'',l.blockReason,platName((l.sw||{}).plat),(l.sw||{}).ver,
-      ...techs.map(t=>({on:'已開啟',off:'未開啟','':'未釋出'})[lineTech(l,t.id)]),...items.map(i=>IST[itemSt(l,i.id)].t),...st.flatMap(x=>[(l.plan||{})[x.id],(l.done||{})[x.id]]),
+      ...techs.map(t=>({on:'已開啟',off:'未開啟','':'未釋出'})[lineTech(l,t.id)]),...items.map(i=>IST[itemSt(l,i.id)].t),...OPTICS.map(o=>({ok:(l.optic||{})[o.k],na:'不適用','':''})[opSt(l,o.k)]),...st.flatMap(x=>[(l.plan||{})[x.id],(l.done||{})[x.id]]),
       ...KPI_DEF.map(d=>k[d.k]),k.d,l.updatedAt?new Date(l.updatedAt).toLocaleString('zh-TW',{hour12:false}):'',l.updatedBy]; });
   const csv=[head,...rows].map(r=>r.map(v=>{ v=v==null?'':String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(',')).join('\r\n');
   download(`aoi-monitor-${todayStr()}.csv`,'﻿'+csv,'text/csv');
@@ -2204,6 +2232,7 @@ const GL={
   next:['下一步','<b>自動</b>：就是這條線的<b>目前關卡</b>與它的預計日，不用另外填。需要補充時才寫「下一步說明」。總覽的「接下來要做」與「接下來 30 天」都從這裡來。'],
   forms:['型態','產品的型態：矩形、異形、曲面異形、二合一、三合一、防窺屏…（產線可複選）。<br>在「主檔設定 → 產品設定」中，每個產品別可以加入不同型態、各自勾選檢測項目；型態也決定哪些軟體版本能用。'],
   dup:['重複產線','同廠區、同線別（不分大小寫）、產品別有重疊的產線出現多筆，通常是兩個人同時新增了同一條線。按「處理」選要保留的那一筆，其他刪除（GitHub 歷史版本可找回）。'],
+  optic:['光學調整','每條線的光學是否已調整完成，逐項確認：<b>最佳 Pitch & WD</b>、<b>αβθ 調整</b>、<b>對焦分數</b>、<b>側光效果</b>。<br>完成會記錄日期；這條線用不到的項目設為「不適用」，不算進進度。能力矩陣開啟「快速編輯」後可直接點格子切換。'],
   tcat:['技術能力分類','<b>前處理</b>：取像後、演算法前的影像處理（對位、校正、Moiré 抑制），由<b>型態</b>決定需要哪些。<br><b>演算法・量測</b>：算數值（亮度、色度、Mura 指標）。<b>演算法・檢測</b>：找缺陷（點線、Mura、異物）。檢測項目只連演算法。<br><b>判定 / 整合</b>：演算法之後（ADC、判等、資料輸出、MES、Recipe 工具），當成版本能力與產線開關來看。'],
   prodset:['產品設定','<b>產品別 → 型態 → 檢測項目</b>：每個「產品別 × 型態」組合各自勾選要檢的項目，右邊自動算出建議軟體版本。<br>產線選了產品別與型態後，需求檢測項目就是這些組合的聯集。'],
   req:['需求檢測項目','這條線的「產品別 × 型態」組合在主檔「產品設定」勾選的檢測項目（多個組合取聯集）。矩陣用淡藍底標示，沒具備的就算缺口。'],

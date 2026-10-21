@@ -583,7 +583,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.9.2', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='2.9.3', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -811,9 +811,19 @@ function platFit(iids,forms){
     .sort((a,b)=>a.rk-b.rk||a.dev.length-b.dev.length||a.miss.length-b.miss.length||(a.p.order||0)-(b.p.order||0));
 }
 const lineFit=l=>platFit(reqItems(l),l.forms||[]);
-/** 版本簡稱：主檔「軟體版本」有填就用；沒填自動濃縮（去掉「畫檢」、Win10→W10、矩形版→矩、異形版→異、曲面異形版→曲） */
-function platShortAuto(n){ n=String(n||'').trim(); const s=n.replace(/^畫檢\s*/,'').replace(/win\s*(\d+)/ig,'W$1').replace(/[-_]\s*(?=W\d)/,' ').replace(/曲面異形版?/g,'曲').replace(/矩形版?/g,'矩').replace(/異形版?/g,'異').replace(/\s+/g,' ').trim(); return s||n; }
+/** 版本簡稱：主檔「軟體版本」有填就用；沒填自動濃縮（去掉「畫檢」、Win10→W10、矩形版→矩、異形版→異、曲面異形版→曲、(排Q)→Q） */
+function platShortAuto(n){ n=String(n||'').trim(); const s=n.replace(/^畫檢\s*/,'').replace(/\s*[（(]\s*排\s*([^)）]+)[)）]/g,'$1').replace(/win\s*(\d+)/ig,'W$1').replace(/[-_]\s*(?=W\d)/,' ').replace(/曲面異形版?/g,'曲').replace(/矩形版?/g,'矩').replace(/異形版?/g,'異').replace(/\s+/g,' ').trim(); return s||n; }
 const platShort=p=>((p&&p.short)||'').trim()||platShortAuto(p&&p.name);
+/** 產品設定的建議版本：同一主版本＋作業系統（簡稱最後一段之前相同）的合併成一個標籤，例：1.0 W7 (矩+異)、1.0 W10 (矩+異Q) */
+function fitGroupTags(fits){
+  const gs=[];
+  fits.forEach(x=>{ const s=platShort(x.p), i=s.lastIndexOf(' '), base=i>0?s.slice(0,i):s, part=i>0?s.slice(i+1):'';
+    const g=part&&gs.find(g=>g.lvl===x.lvl&&g.base===base&&g.items[0].part);
+    if(g) g.items.push({x,part}); else gs.push({lvl:x.lvl,base,items:[{x,part,s}]}); });
+  return gs.map(g=>{ const label=g.items.length>1?`${g.base} (${g.items.map(t=>t.part).join('+')})`:g.items[0].s;
+    const tip=g.items.map(({x})=>x.p.name+'：'+(x.lvl==='ok'?'需要的技術能力全部已釋出':'開發中 '+x.dev.map(t=>t.name).join('、'))).join('\n');
+    return `<span class="tag ${g.lvl==='ok'?'grn':'amb'}" title="${esc(tip)}">${g.lvl==='ok'?'●':'◐'} ${esc(label)}</span>`; }).join('');
+}
 /** short=true：用版本簡稱、只留符號（產品設定這類空間小的地方），滑鼠停留顯示全名與原因 */
 function fitTag(x,short){
   const n=esc(short?platShort(x.p):x.p.name), full=short?esc(x.p.name)+'：':'';
@@ -1612,7 +1622,7 @@ function renderMaster(){
           <div class="mt-scroll"><table class="mt"><tr><th style="width:100px">型態</th><th>檢測項目</th><th style="width:220px" title="依版本簡稱顯示，滑鼠停在標籤上看全名">建議軟體版本（自動）</th><th style="width:1%"></th></tr>
           ${fids.map(f=>{ const its=fr[f]||[], fits=platFit(its,[f]), ok=fits.filter(x=>x.lvl==='ok'), dv=fits.filter(x=>x.lvl==='dev');
             return `<tr><td><b>${esc(formName(f))}</b></td><td>${chips(items,i=>its.includes(i.id),i=>`mToggleCombo('${p.id}','${f}','${i.id}')`)}</td>
-              <td><div class="reqs">${!its.length?'<span class="muted" style="font-size:11px">先勾選檢測項目</span>':ok.length?ok.map(x=>fitTag(x,true)).join(''):'<span class="tag red">沒有版本能完整支援</span>'+dv.map(x=>fitTag(x,true)).join('')}</div></td>
+              <td><div class="reqs">${!its.length?'<span class="muted" style="font-size:11px">先勾選檢測項目</span>':ok.length?fitGroupTags(ok):'<span class="tag red">沒有版本能完整支援</span>'+fitGroupTags(dv)}</div></td>
               <td><button class="x" title="移除這個型態" onclick="mDelCombo('${p.id}','${f}')">✕</button></td></tr>`; }).join('')||'<tr><td colspan="4" class="empty">尚未加入型態，從上方「＋ 加入型態」選擇</td></tr>'}
           </table></div></div>`; }).join('')||'<div class="empty">尚無產品別</div>'}
     </div>

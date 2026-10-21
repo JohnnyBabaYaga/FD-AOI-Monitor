@@ -579,7 +579,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.7.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='2.8', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1176,7 +1176,7 @@ function renderDrawer(){
       <div class="sub-t">軟體版本${GI('sw')}</div>
       <div class="fg c3">
         <div class="f"><label>版本類別${GI('plat')}</label><select class="in" data-p="sw.plat"><option value="">— 選擇 —</option>${liveSorted('plats').map(x=>`<option value="${x.id}" ${sw.plat===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
-        ${fld('版本號','sw.ver','例：2.0.3_20260918')}${fld('備註','sw.note','')}</div>
+        ${fld('版本號'+(platLatest(sw.plat)?` <span class="muted" style="font-weight:500">（最新 ${esc(platLatest(sw.plat))}）</span>`:''),'sw.ver',platLatest(sw.plat)?'最新：'+platLatest(sw.plat):'例：2.0.3_20260918')}${fld('備註','sw.note','')}</div>
       ${lineProds(w).length?`<div class="sugg"><span class="muted">「${esc(prodsLabel(w))} · ${esc(formLabel(w.forms))}」建議${GI('sugg')}：</span>${okFits.length?okFits.map(x=>fitTag(x)).join(' '):'<span class="tag red">目前沒有版本能完整支援</span> '+fits.filter(x=>x.lvl==='dev').map(x=>fitTag(x)).join(' ')}</div>`:''}
       ${myFit&&myFit.lvl!=='ok'?`<div class="warnline">⚠ 「${esc(myFit.p.name)}」${myFit.lvl==='shape'?'不支援這個型態':myFit.lvl==='dev'?'還有功能在開發中：'+esc(myFit.dev.map(t=>t.name).join('、')):'不支援：'+esc(myFit.miss.map(t=>t.name).join('、'))}</div>`:''}
       <div class="sub-t">技術能力${GI('tech')} <span class="muted" style="font-weight:500;margin-left:6px">${sw.plat?`版本已釋出的功能預設開啟，有關掉的才切換`:'先選版本類別'}</span></div>
@@ -1541,6 +1541,8 @@ function guideCreateLine(){
 // 頁面：主檔設定
 // ═══════════════════════════════════════════
 /** 版本名稱當欄位標題時分兩行：第一行到 Win7 / Win10 為止，後面換行（沒有 Win 就在第一個空白換行） */
+/** 軟體版本的最新版本號（主檔「軟體版本」填寫） */
+const platLatest=pid=>((pid&&byId('plats',pid))||{}).latest||'';
 const platHead=n=>{ n=String(n||''); const m=n.match(/^(.*?win\s*\d+)[\s_-]*(.+)$/i)||n.match(/^(\S+)\s+(.+)$/); return m?`${esc(m[1])}<br>${esc(m[2])}`:esc(n); };
 /** 主檔大區塊收合：左右並排的兩塊共用同一個 key，一起收合 */
 const MC_PAIR={'m-sites':'m-sites','m-hws':'m-sites','m-steps':'m-steps','m-data':'m-steps'};
@@ -1588,12 +1590,12 @@ function renderMaster(){
           </table></div></div>`; }).join('')||'<div class="empty">尚無產品別</div>'}
     </div>
 
-    <div class="card mcard full" id="m-plats"><h3>🧩 軟體版本${GI('plat')}<small>畫檢軟體的版本類別與支援的型態；每條線先選類別，再填版本號</small><button class="btn sm" onclick="mAdd('plats',{name:'新版本',forms:['f01'],note:''})">＋ 新增版本</button></h3>
-      <div class="mt-scroll"><table class="mt"><tr><th style="width:220px">版本類別</th><th>支援型態（點選切換）</th><th style="width:200px">說明</th><th style="width:80px">已釋出功能</th><th style="width:60px">使用中</th><th></th></tr>
-      ${plats.map(p=>`<tr><td>${inp('plats',p.id,'name',p.name)}</td><td>${chips(forms,f=>(p.forms||shapeForms(p.shape)).includes(f.id),f=>`mTogglePlatForm('${p.id}','${f.id}')`)}</td><td>${inp('plats',p.id,'note',p.note,'選填')}</td>
+    <div class="card mcard full" id="m-plats"><h3>🧩 軟體版本${GI('plat')}<small>畫檢軟體的版本類別、最新版本號與支援的型態；每條線先選類別，再填版本號</small><button class="btn sm" onclick="mAdd('plats',{name:'新版本',forms:['f01'],note:''})">＋ 新增版本</button></h3>
+      <div class="mt-scroll"><table class="mt"><tr><th style="width:220px">版本類別</th><th style="width:190px">最新版本號</th><th>支援型態（點選切換）</th><th style="width:200px">說明</th><th style="width:80px">已釋出功能</th><th style="width:60px">使用中</th><th></th></tr>
+      ${plats.map(p=>`<tr><td>${inp('plats',p.id,'name',p.name)}</td><td>${inp('plats',p.id,'latest',p.latest,'例：2.0.3_20260918')}</td><td>${chips(forms,f=>(p.forms||shapeForms(p.shape)).includes(f.id),f=>`mTogglePlatForm('${p.id}','${f.id}')`)}</td><td>${inp('plats',p.id,'note',p.note,'選填')}</td>
         <td class="muted" style="font-size:11px">${techs.filter(t=>techPlat(t,p.id)==='ok').length} / ${techs.length} 項</td><td class="muted" style="font-size:11px">${L.filter(l=>(l.sw||{}).plat===p.id).length} 條</td><td class="ac">${mv('plats',p.id)}</td></tr>`).join('')}</table></div></div>
 
-    <div class="card mcard full" id="m-techs"><h3>🧠 技術能力 × 版本開發進度${GI('pst')}<small>點狀態切換：不支援 → 規劃中 → 開發中 → 已釋出；下方填從哪個版本號開始</small><button class="btn sm" onclick="mAdd('techs',{name:'新技術',note:'',cat:'det',plat:{}})">＋ 新增技術能力</button></h3>
+    <div class="card mcard full" id="m-techs"><h3>🧠 技術能力 × 版本開發進度${GI('pst')}<small>點狀態切換：不支援 → 規劃中 → 開發中 → 已釋出（版本號統一填在上方「軟體版本」）</small><button class="btn sm" onclick="mAdd('techs',{name:'新技術',note:'',cat:'det',plat:{}})">＋ 新增技術能力</button></h3>
       <div class="mt-scroll"><table class="mt tp"><colgroup><col style="width:200px"><col style="width:132px">${plats.map(()=>'<col style="width:104px">').join('')}<col><col style="width:58px"><col style="width:92px"></colgroup>
       <thead><tr class="gh"><th colspan="2"></th><th colspan="${plats.length}" class="pc">各版本開發進度</th><th colspan="3"></th></tr>
       <tr><th>技術能力</th><th>分類${GI('tcat')}</th>${plats.map(p=>`<th class="pc" title="${esc(p.name)}">${platHead(p.name)}</th>`).join('')}<th>可檢測項目 / 用在型態</th><th class="pc">開啟中</th><th></th></tr></thead>
@@ -1601,7 +1603,7 @@ function renderMaster(){
         return `${ti===0||tcat(techs[ti-1])!==g?`<tr class="cat-r"><td colspan="${plats.length+5}"><span class="tcat-h tc-${g}">${g==='meas'||g==='det'?'演算法・':''}${(TCATS.find(x=>x.k===g)||{}).t}</span><span class="cat-n">${techs.filter(x=>tcat(x)===g).length} 項</span></td></tr>`:''}
         <tr class="tr-t" id="tr-${t.id}"><td>${inp('techs',t.id,'name',t.name)}</td>
         <td><select class="in" onchange="mSet('techs','${t.id}','cat',this.value)">${TCATS.map(x=>`<option value="${x.k}" ${g===x.k?'selected':''}>${x.k==='meas'||x.k==='det'?'演算法・':''}${x.t}</option>`).join('')}</select></td>
-        ${plats.map(p=>{ const s=techPlat(t,p.id); return `<td class="pc" data-pid="${p.id}"><div class="pcell"><button class="pst pst-${s||'no'}" onclick="mCyclePlat('${t.id}','${p.id}')">${PST.find(x=>x.k===s).t}</button><input class="in pv" value="${esc((t.pver||{})[p.id]||'')}" placeholder="${s?'起始版本號':'—'}" ${s?'':'disabled'} onchange="mSetPver('${t.id}','${p.id}',this.value)"></div></td>`; }).join('')}
+        ${plats.map(p=>{ const s=techPlat(t,p.id); return `<td class="pc" data-pid="${p.id}"><div class="pcell"><button class="pst pst-${s||'no'}" onclick="mCyclePlat('${t.id}','${p.id}')">${PST.find(x=>x.k===s).t}</button></div></td>`; }).join('')}
         <td><div class="reqs">${its.map(i=>`<span class="tag it-t">${esc(i.name)}</span>`).join('')}${fs.map(f=>`<span class="tag fm-t">型態：${esc(f.name)}</span>`).join('')}${!its.length&&!fs.length?'<span class="muted">—</span>':''}</div></td>
         <td class="pc muted" style="font-size:11px">${L.filter(l=>lineTech(l,t.id)==='on').length} 條</td><td class="ac">${mv('techs',t.id)}</td></tr>`; }).join('')}</tbody></table></div></div>
 
@@ -1612,15 +1614,15 @@ function renderMaster(){
       <tbody>${items.map(i=>{ const its=itemTechs(i);
         return `<tr><td>${inp('items',i.id,'name',i.name)}</td><td>${inp('items',i.id,'cat',i.cat,'點線 / Mura…')}</td>
         <td><div class="reqs pk-cell" onclick="mPickTechs('${i.id}')" title="點一下選擇需要的演算法">${its.length?its.map(t=>`<span class="tag tc-${tcat(t)}">${esc(t.name)}</span>`).join(''):'<span class="ist ist-unk">? 尚未設定</span>'}<span class="pk-btn">✎ 選擇</span></div></td>
-        ${plats.map(p=>{ const s=itemPlatSt(i,p.id), tip=its.length?its.map(t=>`${t.name}：${PST.find(x=>x.k===techPlat(t,p.id)).t}${(t.pver||{})[p.id]?'（'+t.pver[p.id]+' 起）':''}`).join('\n')+'\n\n點一下跳到「技術能力 × 版本」':'還沒勾選需要的演算法';
+        ${plats.map(p=>{ const s=itemPlatSt(i,p.id), tip=its.length?its.map(t=>`${t.name}：${PST.find(x=>x.k===techPlat(t,p.id)).t}`).join('\n')+'\n\n點一下跳到「技術能力 × 版本」':'還沒勾選需要的演算法';
           return `<td class="pc"><button class="ips ips-${s}" title="${esc(tip)}" onclick="mJumpTech('${i.id}','${p.id}')">${IPS[s][0]}</button></td>`; }).join('')}
         <td class="ac">${mv('items',i.id)}</td></tr>`; }).join('')}</tbody></table></div></div>
 
     <div class="card mcard full" id="m-tree"><h3>🌳 樹狀檢視：軟體版本 → 技術能力 → 檢測項目${GI('tree')}<small>上面幾張表的整理結果（唯讀）</small></h3>
       <div class="tree">${plats.map(p=>{ const can=items.filter(i=>itemTechs(i).length&&itemTechs(i).every(t=>techPlat(t,p.id)==='ok')), byS=null;
-        const node=(t,s)=>{ const its=[...items.filter(i=>(i.techs||[]).includes(t.id)).map(i=>i.name),...forms.filter(f=>(f.pre||[]).includes(t.id)).map(f=>'型態：'+f.name)]; return `<div class="tree-t st-${s}">${{ok:'●',dev:'◐',plan:'○'}[s]} ${esc(t.name)} <small>${PST.find(x=>x.k===s).t}${(t.pver||{})[p.id]?' · '+esc(t.pver[p.id]):''}</small></div>${its.length?`<div class="tree-i">${esc(its.join('、'))}</div>`:''}`; };
+        const node=(t,s)=>{ const its=[...items.filter(i=>(i.techs||[]).includes(t.id)).map(i=>i.name),...forms.filter(f=>(f.pre||[]).includes(t.id)).map(f=>'型態：'+f.name)]; return `<div class="tree-t st-${s}">${{ok:'●',dev:'◐',plan:'○'}[s]} ${esc(t.name)} <small>${PST.find(x=>x.k===s).t}</small></div>${its.length?`<div class="tree-i">${esc(its.join('、'))}</div>`:''}`; };
         const no=techs.filter(t=>!techPlat(t,p.id));
-        return `<div class="tree-col"><div class="tree-h">${esc(p.name)}</div><div class="tree-f">${esc(formLabel(p.forms||shapeForms(p.shape)))}</div>
+        return `<div class="tree-col"><div class="tree-h">${esc(p.name)}${p.latest?` <span class="tag">最新 ${esc(p.latest)}</span>`:''}</div><div class="tree-f">${esc(formLabel(p.forms||shapeForms(p.shape)))}</div>
           <div class="tree-sum">可檢測 <b>${can.length}</b> / ${items.length} 項 · ${L.filter(l=>(l.sw||{}).plat===p.id).length} 條線使用中</div>
           ${TCATS.map(g=>{ const ts=techs.filter(t=>tcat(t)===g.k&&techPlat(t,p.id)); return ts.length?`<div class="tree-c tc-${g.k}">${g.k==='meas'||g.k==='det'?'演算法・':''}${g.t}</div>`+ts.map(t=>node(t,techPlat(t,p.id))).join(''):''; }).join('')}
           ${no.length?`<div class="tree-x">不支援：${esc(no.map(t=>t.name).join('、'))}</div>`:''}</div>`; }).join('')}</div></div>
@@ -1652,7 +1654,7 @@ function renderMaster(){
   if(!el.dataset.mcl){ el.dataset.mcl=1; el.addEventListener('click',e=>{ const h=e.target.closest('.mcard>h3'); if(!h||e.target.closest('button,input,select,a,.gi')) return; mcToggle(h.parentElement.dataset.mc); }); }
 }
 function mSet(c,id,f,v){ const o=byId(c,id); if(!o) return; const n=clone(o); n[f]=v.trim(); if(eq(n,o)) return;
-  commit(c,n,`主檔「${{sites:'廠區',products:'產品',items:'檢測項目',techs:'技術能力',plats:'軟體版本',forms:'型態',hws:'相機',steps:'PDCA 關卡'}[c]}」${o.name||o.id} 的 ${{name:'名稱',region:'地區',owner:'負責人',shape:'形狀',cat:'類別',note:'說明'}[f]||f} → ${f==='shape'?((PSHAPES.find(x=>x.k===v)||{}).t||v):c==='techs'&&f==='cat'?((TCATS.find(x=>x.k===v)||{}).t||v):v.trim()}`); }
+  commit(c,n,`主檔「${{sites:'廠區',products:'產品',items:'檢測項目',techs:'技術能力',plats:'軟體版本',forms:'型態',hws:'相機',steps:'PDCA 關卡'}[c]}」${o.name||o.id} 的 ${{name:'名稱',latest:'最新版本號',region:'地區',owner:'負責人',shape:'形狀',cat:'類別',note:'說明'}[f]||f} → ${f==='shape'?((PSHAPES.find(x=>x.k===v)||{}).t||v):c==='techs'&&f==='cat'?((TCATS.find(x=>x.k===v)||{}).t||v):v.trim()}`); }
 function mAdd(c,o){ const n=Object.assign({id:uid(c[0]),order:c==='steps'?Math.max(0,...live('steps').filter(s=>s.stage===o.stage).map(s=>s.order||0))+1:nextOrder(c)},o);
   commit(c,n,`主檔新增：${o.name}`); setTimeout(()=>{ const ins=$$(`#pg-master input`).filter(x=>x.value===o.name); if(ins.length){ const i=ins[ins.length-1]; i.focus(); i.select(); } },30); }
 async function mAddSite(){
@@ -1690,7 +1692,7 @@ function mPickTechs(iid){
   <div class="pk-list"><div class="pk-hd"><span>技術能力</span><span class="pk-d">${plats.map((p,k)=>`<i class="pn" title="${esc(p.name)}">${numOf(k)}</i>`).join('')}</span></div>
   ${TCATS.map(g=>{ const ts=techs.filter(t=>tcat(t)===g.k); if(!ts.length) return '';
     return `<div class="pk-g"><span class="tcat-h tc-${g.k}">${g.k==='meas'||g.k==='det'?'演算法・':''}${g.t}</span>${note[g.k]?`<span class="muted pk-n">${note[g.k]}</span>`:''}</div>`+
-    ts.map(t=>`<label class="pk-r"><input type="checkbox" value="${t.id}" ${sel.has(t.id)?'checked':''} onchange="pkPrev()"><span class="pk-t">${esc(t.name)}</span><span class="pk-d">${plats.map(p=>{ const s=techPlat(t,p.id); return `<i class="pd pd-${s||'no'}" title="${esc(p.name)}：${PST.find(x=>x.k===s).t}${(t.pver||{})[p.id]?'（'+esc(t.pver[p.id])+' 起）':''}"></i>`; }).join('')}</span></label>`).join(''); }).join('')||'<div class="empty">上方還沒有建立技術能力</div>'}</div>
+    ts.map(t=>`<label class="pk-r"><input type="checkbox" value="${t.id}" ${sel.has(t.id)?'checked':''} onchange="pkPrev()"><span class="pk-t">${esc(t.name)}</span><span class="pk-d">${plats.map(p=>{ const s=techPlat(t,p.id); return `<i class="pd pd-${s||'no'}" title="${esc(p.name)}：${PST.find(x=>x.k===s).t}"></i>`; }).join('')}</span></label>`).join(''); }).join('')||'<div class="empty">上方還沒有建立技術能力</div>'}</div>
   <div class="pk-prev" id="pk-prev"></div>
   <div class="md-b"><span class="muted" id="pk-cnt" style="font-size:11px;align-self:center"></span><span class="r"><button class="btn" onclick="closeModal()">取消</button><button class="btn pri" onclick="pkSave('${iid}')">儲存</button></span></div>`,true);
   pkPrev();
@@ -2147,7 +2149,7 @@ const GL={
   itemst:['檢測項目狀態（自動推算）','不用手動填：依這條線的<b>軟體版本</b> → 該版本已釋出的<b>技術能力</b> → 這台<b>有沒有開啟</b>，自動判斷。<br><b style="color:#36b37e">●</b> 已具備　<b style="color:#2f6fd0">○</b> 可開啟（版本支援，這台還沒開）<br><b style="color:#d99400">◐</b> 開發中（版本還沒釋出）　<b style="color:#e0563f">✕</b> 缺口（版本不支援）<br><b style="color:#8a6fd1">?</b> 主檔還沒設定這個項目需要哪些技術　· 不需'],
   plat:['軟體版本類別','畫檢軟體的版本分類（例如 畫檢1.0-Win10 矩形版、畫檢2.0），在「主檔設定 → 軟體版本」維護。<br>每條線先選類別、再填實際版本號；類別決定這台設備能開啟哪些技術能力。'],
   sugg:['建議軟體版本','依<b>產品別 × 型態</b>的檢測項目 → 需要哪些技術能力 → 哪些版本已全部釋出、且支援這些型態，自動算出。<br><b style="color:#0F6E56">✓</b> 完全支援　<b style="color:#854F0B">◐</b> 有功能還在開發中　<b style="color:#A32D2D">✕</b> 有功能不支援'],
-  pst:['開發進度','每項技術能力在各版本的狀態：<b>已釋出</b>（產線可以開啟）、<b>開發中</b>、<b>規劃中</b>、<b>不支援</b>。點格子切換；旁邊可填從哪個版本號開始支援。'],
+  pst:['開發進度','每項技術能力在各版本的狀態：<b>已釋出</b>（產線可以開啟）、<b>開發中</b>、<b>規劃中</b>、<b>不支援</b>。點格子切換。版本號統一填在「軟體版本」的最新版本號。'],
   tree:['樹狀關係','<b>軟體版本 → 技術能力 → 檢測項目</b>：版本決定有哪些功能，功能決定能檢哪些項目。產品建議版本與矩陣上的檢測狀態都是依這個推算。'],
   tech:['技術能力','畫檢軟體的功能（都是自己開發的），分成<b>前處理 / 演算法（量測、檢測）/ 判定・整合</b>。<b>開發進度</b>在主檔設定依版本維護；版本已釋出的功能<b>預設開啟</b>，產線只需要把沒開的切成「未開啟」。<br>灰色斜線格＝這條線的版本還沒釋出這項功能。'],
   blocked:['卡關','這條線<b>被某件事卡住、無法往下走</b>（例如零件交期、樣本不足）。勾選並寫原因，總覽和矩陣會用紅色標出來，讓大家知道需要支援。'],

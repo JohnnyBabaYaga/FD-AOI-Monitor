@@ -49,6 +49,7 @@ header .logo{width:30px;height:30px;border-radius:50%;object-fit:cover;backgroun
 .nav button:hover{background:rgba(255,255,255,.14);}
 .nav button.on{background:#fff;color:var(--accent-deep);}
 .nav button i{font-style:normal;}
+.nav button:disabled{opacity:.38;cursor:not-allowed;filter:grayscale(1);} .nav button:disabled:hover{background:none;}
 .hdr-r{margin-left:auto;display:flex;gap:8px;align-items:center;}
 .hbtn{display:flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;cursor:pointer;
   background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.38);color:#fff;font-size:12px;font-weight:600;white-space:nowrap;}
@@ -546,8 +547,8 @@ details.ds[open]>summary h4{margin-bottom:8px;}
   <nav class="nav" id="nav">
     <button data-pg="overview" class="on"><i>📊 </i>總覽</button>
     <button data-pg="matrix"><i>▦ </i><span class="nl">能力矩陣</span><span class="ns">矩陣</span></button>
-    <button data-pg="quick"><i>✅ </i><span class="nl">快速更新</span><span class="ns">更新</span></button>
-    <button data-pg="guide"><i>🧭 </i><span class="nl">導入指引</span><span class="ns">指引</span></button>
+    <button data-pg="quick" disabled title="準備中，暫不開放"><i>✅ </i><span class="nl">快速更新</span><span class="ns">更新</span></button>
+    <button data-pg="guide" disabled title="準備中，暫不開放"><i>🧭 </i><span class="nl">導入指引</span><span class="ns">指引</span></button>
     <button data-pg="master"><i>⚙ </i><span class="nl">主檔設定</span><span class="ns">主檔</span></button>
   </nav>
   <div class="hdr-r">
@@ -578,7 +579,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='2.6.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_MS=60*1000;   // 自動讀取：每 5 分鐘；自動上傳：存檔後 1 分鐘內（期間的修改合併成一次）
+const APP_VER='2.6.2', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_MS=60*1000;   // 自動讀取：每 5 分鐘；自動上傳：存檔後 1 分鐘內（期間的修改合併成一次）
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -2182,7 +2183,7 @@ const GUIDES={
     {el:()=>$gd('roadmap'),t:'量產上線時程',d:'每一列是一個廠區，每個圈是一條線的量產上線日：<b style="color:#36b37e">● 已上線</b>、<b style="color:#2f6fd0">○ 計畫中</b>、<b style="color:#e0563f">○ 已過計畫日還沒上線</b>。<br>時間軸是<b>真實比例</b>，紅色虛線是今天。點圈可以打開那條線。'},
     {el:()=>$gd('ov-up'),t:'接下來 30 天 & 逾期',d:'從每條線的「下一步行動」和還沒完成的里程碑整理出來，<b>逾期的排最前面</b>。開週會可以直接看這張。'},
     {el:()=>$gd('ov-feed'),t:'最新動態',d:'誰在什麼時候改了什麼，全部門共用。想知道其他廠區最近在忙什麼，看這裡。'},
-    {el:()=>$gd('nav'),t:'其他分頁',d:'<b>▦ 能力矩陣</b>：完整狀態，<b>各廠區在這裡更新資料</b>。<br><b>🧭 導入指引</b>：新產品 / 新產線導入前先評估。<br><b>⚙ 主檔設定</b>：產品、檢測項目、技術能力、PDCA 步驟的共用定義。<br>每頁都有自己的導覽，切過去再按右下角的 <b>i</b> →「導覽這一頁」。'},
+    {el:()=>$gd('nav'),t:'其他分頁',d:'<b>▦ 能力矩陣</b>：完整狀態，<b>各廠區在這裡更新資料</b>。<br><b>⚙ 主檔設定</b>：產品、檢測項目、技術能力、PDCA 步驟的共用定義。<br>每頁都有自己的導覽，切過去再按右下角的 <b>i</b> →「導覽這一頁」。'},
     {el:()=>[$gd('userBtn'),$gd('syncBtn')],t:'你的名字與雲端同步',d:'<b>👤</b> 是你的名字，會記錄在每一筆變更上。<br>同步燈號：<b style="color:#1d7a52">綠</b>＝已同步、<b style="color:#8a5d00">黃</b>＝同步中 / 待上傳、<b style="color:#b8391f">紅</b>＝失敗（修改已存在本機，會自動重試）。<br>第一次使用請按這裡貼上<b>自己的 GitHub 權杖</b>（找 Johnny 拿設定連結）。'},
     GD_END],
   matrix:[
@@ -2190,8 +2191,8 @@ const GUIDES={
     {el:gq('.mbar'),t:'篩選與工具',d:'點廠區代碼只看那幾個廠；也可以篩產品、階段、搜尋關鍵字。<br><b>只看有缺口</b>：只列出產品需要但還沒具備的線。<br><b>⬇ CSV</b> 匯出目前畫面給 Excel；<b>＋ 新增產線</b> 建立一條新線。'},
     {el:()=>$gd('mx-edit'),t:'✎ 快速編輯',d:'打開後<b>直接點技術能力格子</b>切換（未使用 → 有，未開啟 → 已開啟），每點一下都會記錄並同步。<br>灰色斜線格是這條線的版本還沒釋出的功能，不能開啟。檢測項目是自動推算的，不用點。'},
     {el:gq('.mleg'),t:'符號怎麼看',d:'<b>檢測項目（自動推算）</b>：<b style="color:#36b37e">●</b> 已具備　<b style="color:#2f6fd0">○</b> 可開啟　<b style="color:#d99400">◐</b> 開發中　<b style="color:#e0563f">✕</b> 缺口　<b style="color:#8a6fd1">?</b> 未設定對應技術　· 不需<br><b>技術能力</b>：<b style="color:#36b37e">●</b> 已開啟　<b style="color:#2f6fd0">○</b> 有，未開啟　灰色斜線＝此版本未釋出<br><b>淡藍底</b>＝產品需求項目。PDCA 四個小方塊：實心＝做完的階段，外框＝目前階段。<br>'+GD_HINT},
-    {el:gq('tr.ln'),t:'每一列是一條線',d:'線別下方是<b>型態 · 相機</b>。點這一列打開編輯面板。<br>每週例行更新用上方的「✅ 快速更新」分頁最快。<br>軟體版本<b style="color:#d99400">黃字</b>＝不在產品的建議版本內；更新時間<b style="color:#d99400">黃字</b>＝超過 14 天沒更新。'},
-    {el:()=>$gd('mx-add'),t:'新增產線',d:'填廠區、產品、線別就能建立，其他欄位之後慢慢補。<br>新產品要先到「⚙ 主檔設定」建檔；要先評估能力和時程，用「🧭 導入指引」再按「依此建立產線」。'},
+    {el:gq('tr.ln'),t:'每一列是一條線',d:'線別下方是<b>型態 · 相機</b>。點這一列打開編輯面板。<br>軟體版本<b style="color:#d99400">黃字</b>＝不在產品的建議版本內；更新時間<b style="color:#d99400">黃字</b>＝超過 14 天沒更新。'},
+    {el:()=>$gd('mx-add'),t:'新增產線',d:'填廠區、產品、線別就能建立，其他欄位之後慢慢補。<br>新產品要先到「⚙ 主檔設定」建檔。'},
     GD_END],
   guide:[
     {el:null,t:'導入指引：這頁在做什麼？',d:'新產品或新產線要導入畫檢 AOI 前，先在這裡評估：<b>部門有沒有這個能力、可以參考哪條線、時程夠不夠</b>。<br>不需要先懂所有細節——<b>依序回答三個問題</b>，評估結論即時更新。'},
@@ -2333,7 +2334,10 @@ function initTour(){
 // ═══════════════════════════════════════════
 // 導覽 / 初始化
 // ═══════════════════════════════════════════
+/** 暫時停用的分頁（反灰、不能點；要開放時從這裡移除，並拿掉 nav 按鈕上的 disabled） */
+const OFF_PAGES=['quick','guide'];
 function showPage(pg){
+  if(OFF_PAGES.includes(pg)) pg='overview';
   UI.page=pg; saveUI(); $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.pg===pg));
   $$('.page').forEach(p=>p.classList.toggle('on',p.id==='pg-'+pg)); $('#main').classList.toggle('wide',pg==='matrix');
   renderAll(); window.scrollTo(0,0); guideHintSoon();

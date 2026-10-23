@@ -305,7 +305,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tst.err{background:rgba(184,57,31,.96);} .tst.ok{background:rgba(29,122,82,.95);}
 
 /* ── Responsive ── */
-@media (max-width:1280px){ .tiles{grid-template-columns:repeat(4,minmax(0,1fr));} .tile.wide,.tiles .tile:last-child{grid-column:span 2;} }   /* 4 欄時 2+1+1 / 1+1+2，兩排剛好填滿 */
+@media (max-width:1180px){ .tiles{grid-template-columns:repeat(4,minmax(0,1fr));} .tile.wide,.tiles .tile:last-child{grid-column:span 2;} }   /* 4 欄時 2+1+1 / 1+1+2，兩排剛好填滿；1280 以上維持一排（整體進度凍結在上方，不能太高） */
 @media (max-width:1100px){ .sites{grid-template-columns:repeat(2,minmax(0,1fr));} .two,.mgrid{grid-template-columns:minmax(0,1fr);} }
 @media (max-width:760px){
   header{padding:0 10px;gap:8px;} .ttl{display:none;} .nav{margin-left:0;} .nav button{padding:5px 7px;font-size:11px;} .nav button i{display:none;}
@@ -451,6 +451,32 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v3.1：總覽收合 / 凍結、光學調整必填 ── */
+.ov-top{position:sticky;top:52px;z-index:20;margin:0 -8px;padding:0 8px 10px;background:rgba(238,242,247,.93);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid transparent;}
+.region-h{cursor:pointer;user-select:none;}
+.region-h small{font-size:11px;font-weight:500;color:var(--sub);}
+.region-h::after{order:2;} .region-h .rg-mode{order:3;font-weight:600;}
+.rg-tg{display:inline-block;width:12px;color:var(--sub);font-size:11px;transition:transform .15s;}
+.region.rg-off .rg-tg,.ov-two.tw-off .rg-tg{transform:rotate(-90deg);}
+.region.rg-off .sites{display:none;} .region.rg-off .region-h .rg-mode{display:none;}
+.site .hpct{display:none;margin-left:auto;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;}
+.hdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);vertical-align:2px;}
+.sites.m-key .site .x-full{display:none;}
+.sites.m-min .site{padding:10px 14px;} .sites.m-min .site>*:not(.site-h){display:none;}
+.sites.m-min .site .hpct{display:inline;} .sites.m-min .site-h .r{margin-left:8px;}
+.ov-two{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+.ov-two>div{display:flex;flex-direction:column;min-width:0;}
+.ov-two .tw-h{cursor:pointer;user-select:none;}
+.ov-two .tw-b{flex:1;overflow:auto;}
+.ov-two.tw-off .tw-b{display:none;}
+#ov-up thead th{position:sticky;top:0;background:#fff;z-index:2;}
+.op-r{border-bottom:1px dashed #edf1f6;padding-bottom:4px;} .op-r .srow{border-bottom:0;}
+.op-f{display:flex;gap:8px;padding:0 0 4px 0;}
+.op-f label{display:flex;flex-direction:column;gap:2px;font-size:10.5px;font-weight:700;color:var(--sub);}
+.op-f label .in{height:28px;font-size:12px;font-weight:400;color:var(--text);}
+.op-f .op-v{flex:1;}
+.op-f .in.bad{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 5%,#fff);}
+@media (max-width:760px){ .ov-top{position:static;margin:0;padding:0;background:none;backdrop-filter:none;} .ov-two{grid-template-columns:minmax(0,1fr);} }
 /* ── v3.0：光學調整 ── */
 .srow .op-d{width:132px;height:26px;font-size:11px;margin-left:auto;margin-right:6px;}
 .seg button.on.v-na{background:#8a96a8;color:#fff;} .seg button.on.v-x{background:#dfe5ee;color:var(--text);}
@@ -586,7 +612,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.0', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.1.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -600,8 +626,11 @@ const IST={ok:{t:'已具備',sym:'●'},off:{t:'可開啟',sym:'○'},dev:{t:'�
 const PST=[{k:'',t:'不支援'},{k:'plan',t:'規劃中'},{k:'dev',t:'開發中'},{k:'ok',t:'已釋出'}];   // 技術能力在各版本的開發進度
 const PSYM={ok:'●',dev:'◐',plan:'○','':'—'};
 /** 光學調整確認項目（每條線逐項確認；lines.optic={key:'YYYY-MM-DD'（完成日）|'na'（不適用）}，沒有值＝未確認） */
-const OPTICS=[{k:'pitch',t:'最佳 Pitch & WD'},{k:'abt',t:'αβθ 調整'},{k:'focus',t:'對焦分數'},{k:'side',t:'側光效果'}];
-const opSt=(l,k)=>{ const v=((l&&l.optic)||{})[k]; return !v?'':v==='na'?'na':'ok'; };
+const OPTICS=[{k:'pitch',t:'最佳 Pitch & WD',ph:'例：Pitch 3.2 / WD 350 mm'},{k:'abt',t:'αβθ 調整',ph:'例：α 0.02° / β 0.01° / θ 0.03°'},
+  {k:'focus',t:'對焦分數',ph:'例：中心 88 / 四角 ≥ 82'},{k:'side',t:'側光效果',ph:'例：側光 45°，刮傷 / 異物清楚可見'}];
+/** 光學調整狀態（v3.1）：optic[k]={d:完成日, v:參考值}，兩個都有才算完成 ok；選了完成但沒填齊＝pend（含 v3.0 只有日期的舊資料）；'na'＝不適用；沒有值＝未確認 */
+const opSt=(l,k)=>{ const v=((l&&l.optic)||{})[k]; if(!v) return ''; if(v==='na') return 'na'; if(typeof v==='object') return v.d&&String(v.v||'').trim()?'ok':'pend'; return 'pend'; };
+const opVal=(l,k)=>{ const v=((l&&l.optic)||{})[k]; return typeof v==='object'&&v?v:typeof v==='string'&&v!=='na'?{d:v,v:''}:{}; };
 /** 光學調整進度：不適用的不算；回傳 {done, total} */
 const opProg=l=>{ const ks=OPTICS.filter(o=>opSt(l,o.k)!=='na'); return {done:ks.filter(o=>opSt(l,o.k)==='ok').length,total:ks.length}; };   // 狀態統一用符號表示：● 已釋出 / 可檢、◐ 開發中、○ 規劃中、— 不支援
 const LTS=[{k:'on',t:'已開啟'},{k:'off',t:'未開啟'}];                                       // 產線上的技術能力（版本已釋出的預設開啟）
@@ -776,7 +805,7 @@ const itemTechs=it=>((it&&it.techs)||[]).map(id=>byId('techs',id)).filter(t=>t&&
 /** 產線負責人：產線有另外指定就用指定的，留空 = 沿用主檔的廠區負責人（主檔改了會跟著變） */
 const lineOwner=l=>(l&&l.owner)||((l&&byId('sites',l.site))||{}).owner||'';
 /** 已知的人名（廠區負責人 + 產線負責人 + 自己），給負責人欄位下拉選擇 */
-const people=()=>[...new Set([...live('sites').map(s=>s.owner),...liveLines().map(l=>l.owner),USER.name].map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+const people=()=>[...new Set([...live('sites').map(s=>s.owner),...liveLines().map(l=>l.owner),...liveLines().map(l=>l.fabOwner),USER.name].map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
 /** 檢測項目在某個版本的能力（由技術能力 × 版本推算）：需要的演算法全部已釋出 → ok；有不支援 → no；有規劃中 → plan；其餘 → dev */
 function itemPlatSt(i,pid){ const ts=itemTechs(i); if(!ts.length) return 'unk'; const ss=ts.map(t=>techPlat(t,pid)); return ss.every(s=>s==='ok')?'ok':ss.includes('')?'no':ss.includes('plan')?'plan':'dev'; }
 const IPS={ok:['●','可檢'],dev:['◐','開發中'],plan:['○','規劃中'],no:['—','不支援'],unk:['?','未設定']};
@@ -932,6 +961,7 @@ function renderOverview(){
   const nameBanner=!USER.name?`<div class="banner"><span>👤 請先設定你的名字，變更紀錄才知道是誰更新的。</span><button class="btn sm" onclick="openUser()">設定</button></div>`:'';
   const dg=dupGroups(), dupBanner=dg.length?`<div class="banner bad"><span>⚠ 發現 <b>${dg.length} 組重複的產線</b>${GI('dup')}（${esc(dg.map(g=>g[0].site+' '+g[0].line).join('、'))}），可能是兩個人同時新增了同一條線。</span><button class="btn sm" onclick="openDup()">處理</button></div>`:'';
   el.innerHTML=`${nameBanner}${dupBanner}${demoBanner}
+  <div class="ov-top">
   <div class="sec-t">整體進度<small>${sites.length} 個廠區 · ${live('products').length} 個產品 · 截至 ${new Date().toLocaleString('zh-TW',{hour12:false})}</small></div>
   <div class="tiles">
     <div class="card tile wide"><div class="k">PDCA 階段分佈${GI('pdca')}</div><div style="margin-top:8px">${pdcaBar(cnt)}</div>${stageLegend()}</div>
@@ -940,17 +970,37 @@ function renderOverview(){
     <div class="card tile clk ${gapCells?'alert':''}" onclick="gotoMatrix({gapOnly:true})"><div class="k">檢測能力缺口${GI('gap')}</div><div class="v">${gapCells}<small>項</small></div><div class="s">分佈於 ${gapLines} 條線</div></div>
     <div class="card tile ${overdue||blocked?'alert':''}"><div class="k">逾期 / 卡關${GI('overdue')}</div><div class="v">${overdue}<small>/ ${blocked}</small></div><div class="s">逾期行動 / 卡關產線</div></div>
     <div class="card tile ${stale?'alert':''}"><div class="k">資料待更新${GI('stale')}</div><div class="v">${stale}<small>條</small></div><div class="s">超過 ${STALE_DAYS} 天未更新</div></div>
-  </div>
-  ${regions.map(r=>`<div class="region"><div class="region-h">${esc(r.name)}</div><div class="sites">${r.sites.map(siteCard).join('')}</div></div>`).join('')}
+  </div></div>
+  ${regions.map(r=>{ const st=ovRg(r.name), n=L.filter(l=>r.sites.some(s=>s.id===l.site)).length;
+    return `<div class="region ${st.off?'rg-off':''}" data-rg="${esc(r.name)}"><div class="region-h" title="點一下收合 / 展開這個地區"><span class="rg-tg">▾</span>${esc(r.name)}<small>${r.sites.length} 個廠區 · ${n} 條線</small>
+      <button class="btn sm rg-mode" title="切換這個地區的廠區卡顯示：完整 → 重點 → 收合">${OV_MODE[st.mode]}</button></div>
+      <div class="sites m-${st.mode}">${r.sites.map(siteCard).join('')}</div></div>`; }).join('')}
   <div class="sec-t">量產上線時程${GI('ms')}<small>● 已上線　○ 計畫　<span style="color:var(--warn)">○ 已過計畫日未上線</span>　點選標記可開啟產線</small></div>
   <div class="card" id="roadmap"></div>
-  <div class="two">
-    <div><div class="sec-t">接下來 30 天 & 逾期<small>來自各產線「下一步行動」與未完成里程碑</small></div>
-      <div class="card" id="ov-up" style="overflow:auto">${upcomingTable(upcoming(L,30))}</div></div>
-    <div><div class="sec-t">最新動態<small>誰在什麼時候更新了什麼</small></div>
-      <div class="card feed" id="ov-feed">${feedHtml()}</div></div>
+  <div class="two ov-two ${(UI.ov||{}).two?'tw-off':''}">
+    <div><div class="sec-t tw-h" title="點一下收合 / 展開（兩塊一起）"><span class="rg-tg">▾</span>接下來 30 天 & 逾期<small>來自各產線「下一步行動」與未完成里程碑</small></div>
+      <div class="card tw-b" id="ov-up">${upcomingTable(upcoming(L,30))}</div></div>
+    <div><div class="sec-t tw-h" title="點一下收合 / 展開（兩塊一起）"><span class="rg-tg">▾</span>最新動態<small>誰在什麼時候更新了什麼（顯示最近 7 筆，往下捲看更早的）</small></div>
+      <div class="card feed tw-b" id="ov-feed">${feedHtml()}</div></div>
   </div>`;
-  drawRoadmap();
+  drawRoadmap(); ovFit();
+  if(!el.dataset.ovl){ el.dataset.ovl=1; el.addEventListener('click',e=>{
+    const m=e.target.closest('.rg-mode'); if(m){ const k=m.closest('.region').dataset.rg, st=ovRg(k); st.mode=OV_NEXT[st.mode]; ovSave(k,st); m.textContent=OV_MODE[st.mode]; m.closest('.region').querySelector('.sites').className='sites m-'+st.mode; return; }
+    const h=e.target.closest('.region-h'); if(h&&!e.target.closest('button,a,.gi')){ const rg=h.closest('.region'), k=rg.dataset.rg, st=ovRg(k); st.off=!st.off; ovSave(k,st); rg.classList.toggle('rg-off',st.off); return; }
+    const t=e.target.closest('.tw-h'); if(t&&!e.target.closest('button,a,.gi')){ UI.ov=UI.ov||{}; UI.ov.two=!UI.ov.two; saveUI(); $('#pg-overview .ov-two').classList.toggle('tw-off',UI.ov.two); if(!UI.ov.two) ovFit(); }
+  }); }
+}
+/** 總覽地區區塊的收合與廠區卡顯示模式（只存本機）：mode＝full 完整 / key 重點 / min 收合 */
+const OV_MODE={full:'▤ 卡片：完整',key:'▥ 卡片：重點',min:'▭ 卡片：收合'}, OV_NEXT={full:'key',key:'min',min:'full'};
+function ovRg(k){ const r=((UI.ov||{}).rg||{})[k]||{}; return {off:!!r.off,mode:OV_MODE[r.mode]?r.mode:'full'}; }
+function ovSave(k,st){ UI.ov=UI.ov||{}; UI.ov.rg=UI.ov.rg||{}; UI.ov.rg[k]=st; saveUI(); }
+/** 最新動態只顯示 7 筆高度（其餘捲動），「接下來 30 天」卡片同高、左右對齊 */
+function ovFit(){
+  const fd=$('#ov-feed'), up=$('#ov-up'); if(!fd||!up||!fd.offsetWidth) return;
+  fd.style.maxHeight=up.style.maxHeight='';
+  const fs=$$('.fe',fd); if(!fs.length) return;
+  fd.scrollTop=0; const n=Math.min(7,fs.length), h=fs[n-1].getBoundingClientRect().bottom-fd.getBoundingClientRect().top+(fs.length>7?2:6);
+  fd.style.maxHeight=up.style.maxHeight=Math.max(h,160)+'px';
 }
 function siteCard(s){
   const st=siteStats(s.id), MAXL=6;
@@ -958,14 +1008,14 @@ function siteCard(s){
   const lines=st.ls.slice(0,MAXL).map(l=>{ const p=lineProg(l);
     return `<div class="lrow" onclick="openLine('${l.id}')">${pdMini(l,true)}<span class="st"><span class="nm" style="color:var(--text)">${esc(lineLabel(l))}</span>　${l.blocked?'<span class="tag red">卡關</span> ':''}${p.complete?'✓ 全部完成':esc(p.cur?p.cur.name:'')}</span><span class="muted" style="font-size:11px">${p.pct}%</span></div>`; }).join('');
   return `<div class="card site">
-    <div class="site-h"><span class="code">${esc(s.id)}</span><span class="own">${s.owner?'負責：'+esc(s.owner):''}</span>
+    <div class="site-h"><span class="code">${esc(s.id)}</span><span class="own">${s.owner?'負責：'+esc(s.owner):''}</span><span class="hpct">${st.ls.length?st.pct+'%':'—'}${st.gaps||st.blocked||st.overdue?' <span class="hdot" title="有缺口 / 卡關 / 逾期"></span>':''}</span>
       <span class="r"><button class="btn sm" onclick="editSite('${s.id}')" title="編輯本廠區重點">✎ 重點</button><button class="btn sm" onclick="gotoMatrix({sites:['${s.id}']})" title="在矩陣中查看">▦</button></span></div>
     <div class="prog"><div class="pct">${st.ls.length?st.pct:'—'}<small>${st.ls.length?'%':''}</small></div>
       <div class="bars"><div class="pbar"><i style="width:${st.pct}%"></i></div>${pdcaBar(st.cnt,true)}
       <div class="muted" style="font-size:11px">${st.ls.length?STAGES.filter(x=>st.cnt[x.k]).map(x=>`${x.name} ${st.cnt[x.k]}`).join('・'):'尚無產線'}</div></div></div>
-    ${s.focus?`<div><div class="blk-t">本期重點${GI('focus')}</div><div class="focus">${esc(s.focus).replace(/\n/g,'<br>')}<div class="meta">${esc(s.updatedBy||'')} · ${relTime(s.updatedAt)}</div></div></div>`:''}
-    <div><div class="blk-t">現階段走到哪${GI('pdca')}</div>${lines||`<div class="empty">尚無產線，<a href="#" onclick="newLine('${s.id}');return false">新增一條</a></div>`}${st.ls.length>MAXL?`<div class="muted" style="font-size:11px;padding:2px 0">… 另 ${st.ls.length-MAXL} 條，<a href="#" onclick="gotoMatrix({sites:['${s.id}']});return false">在矩陣查看</a></div>`:''}</div>
-    <div><div class="blk-t">接下來要做${GI('next')}</div>${nexts.map(n=>`<div class="nx"><span class="d" style="color:${n.d<0?'var(--warn)':'inherit'}">${md(n.date)}</span><span class="t">${esc(n.what)} <span>· ${esc(lineLabel(n.l))}${n.who?' · '+esc(n.who):''}</span></span></div>`).join('')||'<div class="empty">各線目前關卡尚未填預計日</div>'}</div>
+    ${s.focus?`<div class="x-full"><div class="blk-t">本期重點${GI('focus')}</div><div class="focus">${esc(s.focus).replace(/\n/g,'<br>')}<div class="meta">${esc(s.updatedBy||'')} · ${relTime(s.updatedAt)}</div></div></div>`:''}
+    <div class="x-full"><div class="blk-t">現階段走到哪${GI('pdca')}</div>${lines||`<div class="empty">尚無產線，<a href="#" onclick="newLine('${s.id}');return false">新增一條</a></div>`}${st.ls.length>MAXL?`<div class="muted" style="font-size:11px;padding:2px 0">… 另 ${st.ls.length-MAXL} 條，<a href="#" onclick="gotoMatrix({sites:['${s.id}']});return false">在矩陣查看</a></div>`:''}</div>
+    <div class="x-full"><div class="blk-t">接下來要做${GI('next')}</div>${nexts.map(n=>`<div class="nx"><span class="d" style="color:${n.d<0?'var(--warn)':'inherit'}">${md(n.date)}</span><span class="t">${esc(n.what)} <span>· ${esc(lineLabel(n.l))}${n.who?' · '+esc(n.who):''}</span></span></div>`).join('')||'<div class="empty">各線目前關卡尚未填預計日</div>'}</div>
     <div class="site-f">${st.gaps?`<span class="tag red">缺口 ${st.gaps}</span>`:''}${st.blocked?`<span class="tag red">卡關 ${st.blocked}</span>`:''}${st.overdue?`<span class="tag amb">逾期 ${st.overdue}</span>`:''}${st.stale?`<span class="tag amb">${st.stale} 條待更新</span>`:''}
       <span class="r">${st.last?'更新 '+relTime(st.last)+(st.lastBy?' · '+esc(st.lastBy):''):''}</span></div>
   </div>`;
@@ -973,11 +1023,11 @@ function siteCard(s){
 function upcomingTable(list){
   if(!list.length) return '<div class="empty" style="padding:14px">近 30 天沒有待辦，也沒有逾期項目 👍</div>';
   return `<table class="tbl"><thead><tr><th>日期</th><th>狀態</th><th>廠區</th><th>產品 / 線別</th><th>項目</th><th>負責人</th></tr></thead><tbody>`+
-    list.slice(0,25).map(n=>`<tr class="clk" onclick="openLine('${n.l.id}')"><td style="font-variant-numeric:tabular-nums">${esc(n.date)}</td><td>${dueTag(n.date)}</td><td><b>${esc(n.l.site)}</b></td><td>${esc(lineLabel(n.l))}</td><td>${esc(n.what)}</td><td>${esc(n.who)}</td></tr>`).join('')+
-    `</tbody></table>${list.length>25?`<div class="empty" style="padding:6px 10px">… 另 ${list.length-25} 項</div>`:''}`;
+    list.slice(0,200).map(n=>`<tr class="clk" onclick="openLine('${n.l.id}')"><td style="font-variant-numeric:tabular-nums">${esc(n.date)}</td><td>${dueTag(n.date)}</td><td><b>${esc(n.l.site)}</b></td><td>${esc(lineLabel(n.l))}</td><td>${esc(n.what)}</td><td>${esc(n.who)}</td></tr>`).join('')+
+    `</tbody></table>`;
 }
 function feedHtml(){
-  const lg=DB.log.slice(-14).reverse();
+  const lg=DB.log.slice(-80).reverse();
   if(!lg.length) return '<div class="empty" style="padding:10px 0">尚無變更紀錄</div>';
   return lg.map(e=>`<div class="fe"><div class="t">${relTime(e.t)}</div><div>${e.site?`<b>${esc(e.site)}</b> `:''}${esc(e.msg)}<div class="w">${esc(e.by)}</div></div></div>`).join('');
 }
@@ -1029,7 +1079,7 @@ function filteredLines(){
     if(f.plat&&(l.sw||{}).plat!==f.plat) return false;
     if(f.stage){ if(f.stage==='blocked'){ if(!l.blocked) return false; } else if(lineProg(l).stage!==f.stage) return false; }
     if(f.gapOnly&&!lineGaps(l)) return false;
-    if(q){ const hay=[l.site,prodsLabel(l),l.line,lineSub(l),l.vendor,lineOwner(l),platName((l.sw||{}).plat),(l.sw||{}).ver,l.nextNote].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
+    if(q){ const hay=[l.site,prodsLabel(l),l.line,lineSub(l),l.vendor,lineOwner(l),l.fabOwner,platName((l.sw||{}).plat),(l.sw||{}).ver,l.nextNote].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
     return true;
   }));
 }
@@ -1047,7 +1097,7 @@ function renderMatrix(){
     <span class="sep"></span>
     ${opt('product','全部產品別',prods)}${opt('form','全部型態',liveSorted('forms'))}
     <select class="in" onchange="setMF({stage:this.value})"><option value="">全部階段</option>${STAGES.map(s=>`<option value="${s.k}" ${f.stage===s.k?'selected':''}>${s.k} ${s.name}</option>`).join('')}<option value="blocked" ${f.stage==='blocked'?'selected':''}>⚠ 卡關中</option></select>
-    ${opt('plat','全部軟體版本',liveSorted('plats'))}${opt('hw','全部相機',liveSorted('hws'))}
+    ${opt('plat','全部軟體版本',liveSorted('plats').map(p=>({id:p.id,name:platShort(p)})))}${opt('hw','全部相機',liveSorted('hws'))}
     <input class="in" id="mq" placeholder="🔍 搜尋線別 / 相機 / 版本 / 負責人…" value="${esc(f.q)}" style="width:200px" oninput="UI.mf.q=this.value;saveUI();renderMatrix()">
     <label class="ck"><input type="checkbox" ${f.gapOnly?'checked':''} onchange="setMF({gapOnly:this.checked})">只看有缺口</label>
     <label class="ck"><input type="checkbox" ${f.allItems?'checked':''} onchange="setMF({allItems:this.checked})">顯示全部檢測項目</label>
@@ -1064,8 +1114,8 @@ function renderMatrix(){
     <span class="s" style="font-weight:700;color:var(--text)">｜技術能力${GI('tech')}</span>
     <span class="s"><b class="s-ok">●</b>已開啟</span><span class="s"><b class="s-off">○</b>未開啟</span><span class="s">${box('background:repeating-linear-gradient(135deg,#f4f6f9 0 3px,#e3e8ef 3px 6px)')}此版本未釋出</span>
     <span class="s" style="font-weight:700;color:var(--text)">｜光學調整${GI('optic')}</span>
-    <span class="s"><b class="s-ok">●</b>已完成</span><span class="s"><b class="s-off">○</b>未確認</span><span class="s"><b class="s-na">·</b>不適用</span>
-    ${f.edit?'<span class="s" style="color:var(--accent-deep);font-weight:700">快速編輯中：點技術能力格子切換 開 / 關；點光學調整格子切換 未確認 → 完成 → 不適用</span>':''}
+    <span class="s"><b class="s-ok">●</b>已完成</span><span class="s"><b class="s-dev">◐</b>待補日期 / 參考值</span><span class="s"><b class="s-off">○</b>未確認</span><span class="s"><b class="s-na">·</b>不適用</span>
+    ${f.edit?'<span class="s" style="color:var(--accent-deep);font-weight:700">快速編輯中：點技術能力格子切換 開 / 關；點光學調整格子打開面板填寫（完成要填日期與參考值）</span>':''}
     <span class="s" style="margin-left:auto">${ls.length} 條產線</span>
   </div>
   <div class="card mwrap">${ls.length?matrixTable(ls,items,techs):'<div class="empty" style="padding:30px;text-align:center">沒有符合條件的產線</div>'}</div>`;
@@ -1083,7 +1133,7 @@ function matrixTable(ls,items,techs){
     <th rowspan="2" style="vertical-align:bottom">上線後 KPI${GI('kpi')}</th><th rowspan="2" style="vertical-align:bottom;text-align:left">下一步${GI('next')}</th><th rowspan="2" style="vertical-align:bottom;text-align:left">更新</th>
   </tr><tr class="h2">
     ${items.map(i=>`<th class="vt g-it" title="${esc(i.name)}（${esc(i.cat||'')}）\n需要：${esc(itemTechs(i).map(t=>t.name).join('、')||'未設定')}"><div>${esc(i.name)}</div></th>`).join('')}
-    ${techs.map(t=>`<th class="vt g-te" title="${esc(t.name)}${t.note?'：'+esc(t.note):''}"><div>${esc(t.name)}</div></th>`).join('')}
+    ${techs.map(t=>`<th class="vt g-te tc-${tcat(t)}" title="${esc(t.name)}${t.note?'：'+esc(t.note):''}"><div>${esc(t.name)}</div></th>`).join('')}
     ${OPTICS.map(o=>`<th class="vt g-op" title="${esc(o.t)}"><div>${esc(o.t)}</div></th>`).join('')}
     <th class="g-pd" style="text-align:left">階段</th><th class="g-pd" style="text-align:left">目前關卡</th>
   </tr></thead><tbody>`;
@@ -1097,10 +1147,10 @@ function matrixTable(ls,items,techs){
       <td class="stk c-pr">${prodsLabel(l)!==lastProd?`<b>${esc(prodsLabel(l))}</b>`:''}</td>
       <td class="stk c-ln"><div class="ln-n">${esc(l.line||'?')} ${l.blocked?'<span class="tag red" title="'+esc(l.blockReason||'')+'">卡關</span>':''}${dupIds.has(l.id)?'<span class="tag red" title="同廠區、同線別、產品別重疊的產線有多筆，到總覽處理">重複</span>':''}${l.demo?'<span class="tag amb">示範例</span>':''}</div><div class="ln-s" title="${esc(l.vendor||'')}">${esc(lineSub(l))||'&nbsp;'}</div></td>
       ${items.map(i=>{ const v=itemSt(l,i.id), c=itemCap(l,i.id); return `<td class="s s-${v} ${isReq(l,i.id)?'req':''}" data-t="i" data-k="${i.id}" title="${esc(i.name)}：${IST[v].t}${isReq(l,i.id)?'（需求項目）':''}${c.why&&v!=='na'?'\n'+esc(c.why):''}">${IST[v].sym}</td>`; }).join('')}
-      <td class="swc"><div class="sw" style="color:${swOff?'var(--amber)':'inherit'}" title="${swOff?esc(`「${fit.p.name}」${fit.lvl==='dev'?'仍在開發：'+fit.dev.map(t=>t.name).join('、'):fit.lvl==='shape'?'不支援此型態':'不支援：'+fit.miss.map(t=>t.name).join('、')}`):''}">${esc(sw.ver||'—')}</div><div class="dim">${esc(platName(sw.plat)||'未設定版本類別')}</div></td>
+      <td class="swc"><div class="sw" style="color:${swOff?'var(--amber)':'inherit'}" title="${swOff?esc(`「${fit.p.name}」${fit.lvl==='dev'?'仍在開發：'+fit.dev.map(t=>t.name).join('、'):fit.lvl==='shape'?'不支援此型態':'不支援：'+fit.miss.map(t=>t.name).join('、')}`):''}">${esc(sw.plat?platShort(byId('plats',sw.plat)):'未設定')}</div><div class="dim" title="${esc(platName(sw.plat)||'')}">${esc(sw.ver||'—')}</div></td>
       ${techs.map(t=>{ const ps=techPlat(t,sw.plat), v=lineTech(l,t.id);
         return `<td class="s ${ps==='ok'?(v==='on'?'s-ok':'s-off'):'t-x'}" data-t="t" data-k="${t.id}" title="${esc(t.name)}：${ps==='ok'?(v==='on'?'已開啟':'未開啟'):'此版本'+(PST.find(x=>x.k===ps)||PST[0]).t}">${ps==='ok'?(v==='on'?'●':'○'):''}</td>`; }).join('')}
-      ${OPTICS.map(o=>{ const v=opSt(l,o.k), d=(l.optic||{})[o.k]; return `<td class="s ${v==='ok'?'s-ok':v==='na'?'s-na':'s-off'}" data-t="o" data-k="${o.k}" title="${esc(o.t)}：${v==='ok'?'已完成（'+esc(d)+'）':v==='na'?'不適用':'未確認'}">${v==='ok'?'●':v==='na'?'·':'○'}</td>`; }).join('')}
+      ${OPTICS.map(o=>{ const v=opSt(l,o.k), x=opVal(l,o.k); return `<td class="s ${v==='ok'?'s-ok':v==='pend'?'s-dev':v==='na'?'s-na':'s-off'}" data-t="o" data-k="${o.k}" title="${esc(o.t)}：${v==='ok'?'已完成 '+esc(x.d)+'\n參考值：'+esc(x.v):v==='pend'?'選了完成，但還沒填齊完成日 / 參考值':v==='na'?'不適用':'未確認'}">${v==='ok'?'●':v==='pend'?'◐':v==='na'?'·':'○'}</td>`; }).join('')}
       <td>${pdMini(l)}<span class="pct">${p.pct}%</span></td>
       <td class="wrap">${p.complete?'<span style="color:var(--green);font-weight:700">✓ 全部完成</span>':esc(p.cur?p.cur.name:'—')}${l.blocked&&l.blockReason?`<div class="dim" style="color:var(--warn)">⚠ ${esc(l.blockReason)}</div>`:''}</td>
       <td>${k?`<div class="kc">${KPI_DEF.map(d=>k[d.k]!==undefined&&k[d.k]!==''?`<span class="${kpiBad(l,d.k,k[d.k])?'bad':''}" title="${d.name}（目標 ${d.better==='low'?'≤':'≥'} ${kpiTarget(l,d.k)}${d.unit}）">${d.name.slice(0,2)} <b>${k[d.k]}</b>${d.unit}</span>`:'').join('')}<span class="dim">${md(k.d)}</span></div>`:'<span class="dim">—</span>'}</td>
@@ -1117,11 +1167,11 @@ function onMatrixClick(e){
   if(UI.mf.edit&&td){ if(td.dataset.t==='t') cycleTech(tr.dataset.l,td.dataset.k); else if(td.dataset.t==='o') cycleOptic(tr.dataset.l,td.dataset.k); else toast('檢測項目是依「軟體版本 → 技術能力」自動推算的，請改技術能力或版本'); return; }
   openLine(tr.dataset.l);
 }
-/** 快速編輯：光學調整格子循環切換 未確認 → 完成（今天）→ 不適用 → 未確認 */
+/** 快速編輯點光學調整格子：完成必須填日期與參考值，所以直接打開面板的「光學調整」區塊 */
 function cycleOptic(lid,k){
-  const l=byId('lines',lid), o=OPTICS.find(x=>x.k===k); if(!l||!o) return; const cur=opSt(l,k), n=clone(l); n.optic=Object.assign({},n.optic||{});
-  if(cur==='') n.optic[k]=todayStr(); else if(cur==='ok') n.optic[k]='na'; else delete n.optic[k];
-  commit('lines',n,`${lineLabel(l)}：光學調整「${o.t}」→ ${({'':'已完成','ok':'不適用','na':'未確認'})[cur]}`);
+  const o=OPTICS.find(x=>x.k===k); openLine(lid); if(!ED) return; ED.open.optic=true; renderDrawer();
+  setTimeout(()=>{ const r=$(`#drawer .op-r[data-k="${k}"]`); if(r) r.scrollIntoView({block:'center'}); },60);
+  toast(`「${o?o.t:''}」完成要填完成日與參考值，請在面板填寫`);
 }
 function cycleTech(lid,tid){
   const l=byId('lines',lid), t=byId('techs',tid); if(!l||!t) return; const pid=(l.sw||{}).plat, ps=techPlat(t,pid);
@@ -1169,7 +1219,8 @@ function ackLine(){
 function renderDrawer(){
   if(!ED) return; const w=ED.w, dw=$('#drawer'), body=$('.dw-b',dw), sc=body?body.scrollTop:0;
   const p=lineProg(w), steps=stepsSorted(), cur=byId('lines',w.id), sw=w.sw||{};
-  ED.open=ED.open||{setup:ED.isNew,items:false,kpi:false};
+  ED.open=ED.open||{pdca:true,setup:ED.isNew,items:false,kpi:false};
+  [ED.w,ED.orig].forEach(x=>{ if(x&&x.optic) for(const k of Object.keys(x.optic)){ const v=x.optic[k]; if(typeof v==='string'&&v!=='na') x.optic[k]={d:v,v:''}; } });
   const req=reqItems(w), items=liveSorted('items').sort((a,b)=>(req.includes(b.id)?1:0)-(req.includes(a.id)?1:0));
   const changedRemote=!ED.isNew&&cur&&cur.updatedAt!==ED.orig.updatedAt;
   const fld=(lb,p,ph,type,extra)=>`<div class="f"><label>${lb}</label><input class="in" ${type?`type="${type}"`:''} ${extra||''} data-p="${p}" value="${esc(edGet(p)??'')}" placeholder="${esc(ph||'')}"></div>`;
@@ -1186,7 +1237,7 @@ function renderDrawer(){
     <button class="x" onclick="closeDrawer()" aria-label="關閉">✕</button></div>
   <div class="dw-b">
     ${changedRemote?`<div class="notice">🔄 你開啟後，這條線已被 ${esc(cur.updatedBy||'其他人')} 更新。儲存時只會寫入<b>你改動的欄位</b>，其他人的修改會保留。</div>`:''}
-    <div class="ds"><h4>例行更新${GI('quick')} <small>勾選完成的關卡、填預計日</small><span class="r">${pdMini(w)} <span class="pct" style="font-size:12px;color:var(--sub);font-weight:700">${p.pct}%</span></span></h4>
+    <details class="ds" data-sec="pdca" ${ED.open.pdca!==false?'open':''}><summary><h4>例行更新（PDCA）${GI('quick')} <small>勾選完成的關卡、填預計日</small><span class="r">${pdMini(w)} <span class="pct" style="font-size:12px;color:var(--sub);font-weight:700">${p.pct}%</span></span></h4></summary>
       ${STAGES.map(st=>{ const ss=steps.filter(x=>x.stage===st.k); if(!ss.length) return '';
         return `<div class="stg-h"><b style="background:var(--s${st.k})">${st.k}</b>${st.name} <span class="muted" style="font-weight:500">${st.desc}</span></div>`+
         ss.map(s=>{ const dn=(w.done||{})[s.id], pl=(w.plan||{})[s.id], isCur=p.cur&&p.cur.id===s.id;
@@ -1196,14 +1247,14 @@ function renderDrawer(){
       <div style="display:flex;gap:8px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
         <label class="ck" style="display:flex;gap:5px;align-items:center;font-size:12px;font-weight:700;color:${w.blocked?'var(--warn)':'inherit'}"><input type="checkbox" data-pb="blocked" ${w.blocked?'checked':''}>⚠ 卡關中${GI('blocked')}</label>
         ${w.blocked?`<input class="in" style="flex:1" data-p="blockReason" value="${esc(w.blockReason||'')}" placeholder="卡關原因（例：光源模組交期延遲）">`:''}
-      </div></div>
+      </div></details>
 
     <details class="ds" data-sec="setup" ${ED.open.setup?'open':''}><summary><h4>建線資料 <small>建線時填一次</small><span class="r muted sumtxt">${esc(setupSum)||'尚未填寫'}</span></h4></summary>
       <div class="fg c4" style="margin-top:6px">
         <div class="f"><label>廠區 *</label><select class="in" data-p="site">${liveSorted('sites').map(s=>`<option value="${s.id}" ${w.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</select></div>
         ${fld('線別 *','line','例：L1 / CT2')}
         <div class="f"><label>負責人</label><input class="in" data-p="owner" list="dl-owner" value="${esc(w.owner||'')}" placeholder="${so?'沿用：'+esc(so):'姓名'}"></div>
-        ${fld('設備廠商（選填）','vendor','')}
+        <div class="f"><label>線體負責人${GI('fabowner')}</label><input class="in" data-p="fabOwner" list="dl-owner" value="${esc(w.fabOwner||'')}" placeholder="FAB Owner 姓名"></div>
       </div>
       <datalist id="dl-owner">${people().map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
       <div class="lnk-h">${so?(!w.owner?`🔗 負責人沿用 <b>${esc(w.site)}</b> 廠區負責人 <b>${esc(so)}</b><span class="muted">（主檔設定 → 廠區；主檔改了這裡會跟著變）</span>`
@@ -1216,6 +1267,7 @@ function renderDrawer(){
       <div class="reqs">${liveSorted('forms').map(f=>`<button class="chip ${(w.forms||[]).includes(f.id)?'on':''}" data-form="${f.id}">${esc(f.name)}</button>`).join('')}</div>
       ${unset.length?`<div class="warnline">⚠ 主檔還沒設定「${esc(unset.join('、'))}」的檢測項目，請到「主檔設定 → 產品設定」加入這個型態</div>`:''}
       <div class="fg c3" style="margin-top:10px">
+        ${fld('設備廠商（選填）','vendor','')}
         <div class="f"><label>相機（硬體）${GI('hw')}</label><select class="in" data-p="hw"><option value="">— 選擇 —</option>${liveSorted('hws').map(h=>`<option value="${h.id}" ${w.hw===h.id?'selected':''}>${esc(h.name)}</option>`).join('')}</select></div>
       </div>
       <div class="sub-t">軟體版本${GI('sw')}</div>
@@ -1233,9 +1285,11 @@ function renderDrawer(){
     </details>
 
     <details class="ds" data-sec="optic" ${ED.open.optic?'open':''}><summary><h4>光學調整${GI('optic')} <small>逐項確認</small><span class="r sumtxt">${(()=>{ const pg=opProg(w); return pg.total&&pg.done===pg.total?'<b style="color:var(--green)">✓ 全部完成</b>':`${pg.done} / ${pg.total} 項完成`; })()}</span></h4></summary>
-      ${OPTICS.map(o=>{ const v=opSt(w,o.k); return `<div class="srow"><span class="n">${esc(o.t)}</span>
-        ${v==='ok'?`<input type="date" class="in op-d" data-p="optic.${o.k}" value="${esc(w.optic[o.k])}" title="完成日期">`:''}
-        <span class="seg">${[['','未確認'],['ok','✓ 完成'],['na','不適用']].map(([k,t])=>`<button class="v-${k==='ok'?'on':k==='na'?'na':'x'} ${v===k?'on':''}" data-opt="${o.k}" data-v="${k}">${t}</button>`).join('')}</span></div>`; }).join('')}
+      <div class="muted" style="font-size:11px;margin:2px 0 4px">選「✓ 完成」後要填<b>完成日</b>與<b>參考值</b>才算完成，沒填齊無法存檔。</div>
+      ${OPTICS.map(o=>{ const v=opSt(w,o.k), x=opVal(w,o.k), sel=v==='ok'||v==='pend'?'ok':v; return `<div class="op-r" data-k="${o.k}"><div class="srow"><span class="n">${esc(o.t)}${v==='ok'?' <span class="tag grn">完成</span>':v==='pend'?' <span class="tag amb">待補</span>':''}</span>
+        <span class="seg">${[['','未確認'],['ok','✓ 完成'],['na','不適用']].map(([k,t])=>`<button class="v-${k==='ok'?'on':k==='na'?'na':'x'} ${sel===k?'on':''}" data-opt="${o.k}" data-v="${k}">${t}</button>`).join('')}</span></div>
+        ${sel==='ok'?`<div class="op-f"><label>完成日 *<input type="date" class="in ${x.d?'':'bad'}" data-p="optic.${o.k}.d" value="${esc(x.d||'')}"></label>
+          <label class="op-v">參考值 *<input class="in ${String(x.v||'').trim()?'':'bad'}" data-p="optic.${o.k}.v" value="${esc(x.v||'')}" placeholder="${esc(o.ph)}"></label></div>`:''}</div>`; }).join('')}
     </details>
 
     <details class="ds" data-sec="items" ${ED.open.items?'open':''}><summary><h4>檢測項目（自動推算）${GI('itemst')}<span class="r sumtxt">${req.length?`需求 ${req.length} 項：${['ok','off','dev','gap','unk'].filter(s=>cnt[s]).map(s=>`<b class="s-${s}">${IST[s].sym}</b>${cnt[s]}`).join(' ')}`:'<span class="muted">先選產品別</span>'}</span></h4></summary>
@@ -1281,6 +1335,7 @@ function addKpi(){
 }
 function onDrawerInput(e){
   const t=e.target; if(!ED) return;
+  if(t.dataset.p&&t.dataset.p.startsWith('optic.')){ t.classList.toggle('bad',!String(t.value).trim()); if(e.type==='change'){ edSet(t.dataset.p,t.value.trim()); const o=ED.w.optic||{}, k=t.dataset.p.split('.')[1]; if(!o[k]||typeof o[k]!=='object') o[k]={}; renderDrawer(); return; } }
   if(t.dataset.p){ let v=t.value; if(t.dataset.num) v=v===''?'':+v;
     // 換廠區：負責人如果就是舊廠區的廠區負責人 → 改回沿用（跟著新廠區的廠區負責人）
     if(t.dataset.p==='site'&&v!==ED.w.site&&ED.w.owner&&ED.w.owner===((byId('sites',ED.w.site)||{}).owner||'')) delete ED.w.owner;
@@ -1290,7 +1345,10 @@ function onDrawerInput(e){
 function onDrawerClick(e){
   const t=e.target; if(!ED) return;
   if(t.dataset.set!==undefined){ edSet(t.dataset.set,t.dataset.v||''); renderDrawer(); return; }
-  if(t.dataset.opt){ const o=ED.w.optic=Object.assign({},ED.w.optic||{}), k=t.dataset.opt, v=t.dataset.v; if(v==='ok'){ if(opSt(ED.w,k)!=='ok') o[k]=todayStr(); } else if(v==='na') o[k]='na'; else delete o[k]; if(!Object.keys(o).length) delete ED.w.optic; renderDrawer(); return; }
+  if(t.dataset.opt){ const o=ED.w.optic=Object.assign({},ED.w.optic||{}), k=t.dataset.opt, v=t.dataset.v;
+    if(v==='ok'){ const s=opSt(ED.w,k); if(s!=='ok'&&s!=='pend') o[k]={d:todayStr(),v:''}; } else if(v==='na') o[k]='na'; else delete o[k];
+    if(!Object.keys(o).length) delete ED.w.optic; renderDrawer();
+    if(v==='ok') setTimeout(()=>{ const i=$(`#drawer input[data-p="optic.${k}.v"]`); if(i&&!i.value) i.focus(); },30); return; }
   if(t.dataset.prod){ const a=lineProds(ED.w).slice(), i=a.indexOf(t.dataset.prod); if(i>=0) a.splice(i,1); else a.push(t.dataset.prod); ED.w.products=a; ED.w.product=a[0]||''; renderDrawer(); return; }
   if(t.dataset.form){ const f=ED.w.forms=(ED.w.forms||[]).slice(), i=f.indexOf(t.dataset.form); if(i>=0) f.splice(i,1); else f.push(t.dataset.form); renderDrawer(); return; }
   if(t.dataset.step){ ED.w.done=ED.w.done||{}; if(t.checked) ED.w.done[t.dataset.step]=todayStr(); else delete ED.w.done[t.dataset.step]; renderDrawer(); return; }
@@ -1313,11 +1371,11 @@ function diffMsg(a,b){
   if(!eq(a.forms||[],b.forms||[])) out.push(`型態 → ${formLabel(b.forms)}`);
   if(!eq(lineProds(a),lineProds(b))) out.push(`產品別 → ${prodsLabel(b)}`);
   if((a.hw||'')!==(b.hw||'')) out.push(`相機 → ${hwName(b.hw)||'—'}`);
-  const och=OPTICS.filter(o=>opSt(a,o.k)!==opSt(b,o.k)).map(o=>`${o.t}→${({ok:'完成',na:'不適用','':'未確認'})[opSt(b,o.k)]}`);
+  const och=OPTICS.filter(o=>opSt(a,o.k)!==opSt(b,o.k)||(opSt(b,o.k)==='ok'&&!eq(opVal(a,o.k),opVal(b,o.k)))).map(o=>{ const s=opSt(b,o.k), x=opVal(b,o.k); return `${o.t}→${s==='ok'?`完成（${x.d}，${x.v}）`:({pend:'待補',na:'不適用','':'未確認'})[s]}`; });
   if(och.length) out.push('光學調整 '+och.join('、'));
   if((a.nextNote||'')!==(b.nextNote||'')&&b.nextNote) out.push(`下一步：${b.nextNote}`);
   if(!eq(a.kpi||{},b.kpi||{})||!eq(a.kpiT||{},b.kpiT||{})) out.push('KPI');
-  if(a.site!==b.site||a.product!==b.product||a.line!==b.line||a.vendor!==b.vendor||a.owner!==b.owner) out.push('基本資訊');
+  if(a.site!==b.site||a.product!==b.product||a.line!==b.line||a.vendor!==b.vendor||a.owner!==b.owner||(a.fabOwner||'')!==(b.fabOwner||'')) out.push('基本資訊');
   if((a.note||'')!==(b.note||'')) out.push('備註');
   return out.join('；')||'更新';
 }
@@ -1325,13 +1383,20 @@ function saveLine(){
   const w=ED.w;
   if(!w.site||!w.product||!String(w.line||'').trim()){ toast('請填寫 廠區、產品別、線別','err'); return; }
   if(ED.isNew&&liveLines().some(l=>l.site===w.site&&l.product===w.product&&String(l.line).trim()===String(w.line).trim())){ toast('同廠區、同產品已有相同線別','err'); return; }
+  // 這次新選「完成」或改過的項目，沒填齊完成日 + 參考值不能存；v3.0 留下、這次沒動的舊資料不擋（只提醒），避免卡住其他欄位的日常更新
+  const opTouched=o=>!(opSt(ED.orig,o.k)==='pend'&&eq(opVal(ED.orig,o.k),opVal(w,o.k)));
+  const opBad=OPTICS.filter(o=>opSt(w,o.k)==='pend'&&opTouched(o)), opOld=OPTICS.filter(o=>opSt(w,o.k)==='pend'&&!opTouched(o));
+  if(opBad.length){ ED.open.optic=true; renderDrawer(); setTimeout(()=>{ const r=$(`#drawer .op-r[data-k="${opBad[0].k}"]`); if(r) r.scrollIntoView({block:'center'}); },60);
+    toast(`光學調整「${opBad.map(o=>o.t).join('、')}」選了完成，請填寫完成日與參考值（或改回未確認）`,'err',6000); return; }
   if(eq(ED.orig,w)){ closeDrawer(true); return; }
   const cur=byId('lines',w.id);
   // 只把「我改動的欄位」套用到最新版本上，保留其他人在這段期間的修改
   const next=cur&&!ED.isNew?merge3(ED.orig,w,cur,'',[]):clone(w);
   const msg=ED.isNew?`新增產線 ${lineLabel(next)}`:`${lineLabel(next)}：${diffMsg(ED.orig,w)}`;
   ED=null; $('#drawer').classList.remove('on'); $('#dw-ov').classList.remove('on');
-  commit('lines',next,msg); toast('✅ 已儲存'+(ghReady()?'，幾秒後自動上傳':'（本機）'),'ok');
+  commit('lines',next,msg);
+  if(opOld.length) toast(`✅ 已儲存。提醒：光學調整「${opOld.map(o=>o.t).join('、')}」還沒填參考值，目前顯示為「待補」`,'ok',6000);
+  else toast('✅ 已儲存'+(ghReady()?'，幾秒後自動上傳':'（本機）'),'ok');
 }
 async function deleteLine(){
   const w=ED.orig; if(!(await confirmBox(`確定刪除產線「${w.site} · ${lineLabel(w)}」？\n（會同步刪除，可從 GitHub 歷史版本找回）`,'刪除'))) return;
@@ -1599,7 +1664,7 @@ function guideCreateLine(){
  *  用 translateY 移動表頭（不用 position:sticky），所以在可左右捲動的表格容器裡也有效。能力矩陣有自己的凍結，不在此列 */
 function stickyHeads(){
   const top=$('header').getBoundingClientRect().bottom;
-  $$('.page.on table.mt, .page.on table.tbl').forEach(tb=>{
+  $$('.page.on table.mt, .page.on table.tbl').filter(tb=>!tb.closest('.tw-b')).forEach(tb=>{
     const rows=tb.tHead?[...tb.tHead.rows]:(tb.rows[0]&&tb.rows[0].querySelector('th')?[tb.rows[0]]:[]); if(!rows.length) return;
     const r=tb.getBoundingClientRect(), hh=rows.reduce((s,x)=>s+x.offsetHeight,0);
     const dy=Math.round(Math.max(0,Math.min(top-r.top,r.height-hh-4)));
@@ -1883,12 +1948,12 @@ function download(name,text,type){ const a=document.createElement('a'); a.href=U
 function exportJSON(){ download(`aoi-monitor-backup-${todayStr()}.json`,JSON.stringify(buildDoc(true),null,1),'application/json'); }
 function exportCSV(all){
   const ls=all?sortLines(liveLines()):filteredLines(), items=liveSorted('items'), techs=techsSorted(), st=stepsSorted();
-  const head=['廠區','地區','產品別','線別','型態','相機','負責人','設備廠商','PDCA 階段','完成度%','目前關卡','下一步說明','預計日','卡關','卡關原因','軟體版本類別','版本號',
+  const head=['廠區','地區','產品別','線別','型態','相機','負責人','線體負責人(FAB Owner)','設備廠商','PDCA 階段','完成度%','目前關卡','下一步說明','預計日','卡關','卡關原因','軟體版本類別','版本號',
     ...techs.map(t=>'技術:'+t.name),...items.map(i=>'檢測:'+i.name),...OPTICS.map(o=>'光學:'+o.t),...st.flatMap(s=>[s.name+'(預計)',s.name+'(完成)']),...KPI_DEF.map(d=>`${d.name}(${d.unit})`),'KPI 日期','更新時間','更新者'];
   const rows=ls.map(l=>{ const p=lineProg(l), s=byId('sites',l.site)||{}, k=kpiLatest(l)||{}, nx=nextOf(l)||{};
-    return [l.site,s.region,prodsLabel(l),l.line,formLabel(l.forms),hwName(l.hw),lineOwner(l),l.vendor,
+    return [l.site,s.region,prodsLabel(l),l.line,formLabel(l.forms),hwName(l.hw),lineOwner(l),l.fabOwner,l.vendor,
       p.complete?'完成':p.stage+' '+STAGES[STG_IDX[p.stage]].name,p.pct,p.cur?p.cur.name:'',l.nextNote,nx.due,l.blocked?'Y':'',l.blockReason,platName((l.sw||{}).plat),(l.sw||{}).ver,
-      ...techs.map(t=>({on:'已開啟',off:'未開啟','':'未釋出'})[lineTech(l,t.id)]),...items.map(i=>IST[itemSt(l,i.id)].t),...OPTICS.map(o=>({ok:(l.optic||{})[o.k],na:'不適用','':''})[opSt(l,o.k)]),...st.flatMap(x=>[(l.plan||{})[x.id],(l.done||{})[x.id]]),
+      ...techs.map(t=>({on:'已開啟',off:'未開啟','':'未釋出'})[lineTech(l,t.id)]),...items.map(i=>IST[itemSt(l,i.id)].t),...OPTICS.map(o=>{ const s=opSt(l,o.k), x=opVal(l,o.k); return s==='ok'?`${x.d} / ${x.v}`:({pend:'待補',na:'不適用','':''})[s]; }),...st.flatMap(x=>[(l.plan||{})[x.id],(l.done||{})[x.id]]),
       ...KPI_DEF.map(d=>k[d.k]),k.d,l.updatedAt?new Date(l.updatedAt).toLocaleString('zh-TW',{hour12:false}):'',l.updatedBy]; });
   const csv=[head,...rows].map(r=>r.map(v=>{ v=v==null?'':String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(',')).join('\r\n');
   download(`aoi-monitor-${todayStr()}.csv`,'﻿'+csv,'text/csv');
@@ -2232,7 +2297,8 @@ const GL={
   next:['下一步','<b>自動</b>：就是這條線的<b>目前關卡</b>與它的預計日，不用另外填。需要補充時才寫「下一步說明」。總覽的「接下來要做」與「接下來 30 天」都從這裡來。'],
   forms:['型態','產品的型態：矩形、異形、曲面異形、二合一、三合一、防窺屏…（產線可複選）。<br>在「主檔設定 → 產品設定」中，每個產品別可以加入不同型態、各自勾選檢測項目；型態也決定哪些軟體版本能用。'],
   dup:['重複產線','同廠區、同線別（不分大小寫）、產品別有重疊的產線出現多筆，通常是兩個人同時新增了同一條線。按「處理」選要保留的那一筆，其他刪除（GitHub 歷史版本可找回）。'],
-  optic:['光學調整','每條線的光學是否已調整完成，逐項確認：<b>最佳 Pitch & WD</b>、<b>αβθ 調整</b>、<b>對焦分數</b>、<b>側光效果</b>。<br>完成會記錄日期；這條線用不到的項目設為「不適用」，不算進進度。能力矩陣開啟「快速編輯」後可直接點格子切換。'],
+  optic:['光學調整','每條線的光學是否已調整完成，逐項確認：<b>最佳 Pitch & WD</b>、<b>αβθ 調整</b>、<b>對焦分數</b>、<b>側光效果</b>。<br>選「完成」後要填<b>完成日</b>與<b>參考值</b>（例如 Pitch / WD 數值、對焦分數）才算完成，沒填齊無法存檔；這條線用不到的項目設為「不適用」，不算進度。'],
+  fabowner:['線體負責人（FAB Owner）','產線（線體）端的負責人，例如廠內設備 / 製程窗口。與「負責人」（AOI 導入負責人，預設沿用廠區負責人）分開記錄。'],
   tcat:['技術能力分類','<b>前處理</b>：取像後、演算法前的影像處理（對位、校正、Moiré 抑制），由<b>型態</b>決定需要哪些。<br><b>演算法・量測</b>：算數值（亮度、色度、Mura 指標）。<b>演算法・檢測</b>：找缺陷（點線、Mura、異物）。檢測項目只連演算法。<br><b>判定 / 整合</b>：演算法之後（ADC、判等、資料輸出、MES、Recipe 工具），當成版本能力與產線開關來看。'],
   prodset:['產品設定','<b>產品別 → 型態 → 檢測項目</b>：每個「產品別 × 型態」組合各自勾選要檢的項目，右邊自動算出建議軟體版本。<br>產線選了產品別與型態後，需求檢測項目就是這些組合的聯集。'],
   req:['需求檢測項目','這條線的「產品別 × 型態」組合在主檔「產品設定」勾選的檢測項目（多個組合取聯集）。矩陣用淡藍底標示，沒具備的就算缺口。'],
@@ -2261,9 +2327,10 @@ const GUIDES={
   overview:[
     {el:null,t:'總覽：這頁在看什麼？',d:'一眼看懂<b>各廠區畫檢 AOI 導入到哪、接下來要做什麼</b>。<br>資料由各廠區同仁在「能力矩陣」更新，這頁<b>自動彙整</b>，不用另外填。'},
     {el:gq('.tiles'),t:'整體數字',d:'<b>PDCA 階段分佈</b>：全部產線各在哪個階段（P 規劃 → D 導入 → C 驗證 → A 量產）。<br><b style="color:#e0563f">紅字</b>代表要注意：檢測能力缺口（點一下直接看是哪些線）、逾期、卡關、超過 14 天沒更新。<br>'+GD_HINT},
+    {el:gq('.region-h'),t:'地區區塊',d:'點地區名稱可以<b>收合 / 展開</b>整個地區。<br>右邊的「<b>卡片：完整</b>」按鈕切換這個地區的廠區卡顯示：<b>完整 → 重點</b>（只留完成度與警示）<b>→ 收合</b>（只剩一行）。<br>收合狀態只記在你這台電腦。'},
     {el:gq('.site'),t:'廠區卡片',d:'每個廠區一張：<b>完成度</b>和各階段幾條線。<br><b>本期重點</b>：負責人寫的現況（右上 <b>✎ 重點</b> 編輯）。<br><b>現階段走到哪</b>：每條線目前的 PDCA 步驟，點一下打開那條線。<br><b>接下來要做</b>：依到期日排序，紅字是逾期。'},
     {el:()=>$gd('roadmap'),t:'量產上線時程',d:'每一列是一個廠區，每個圈是一條線的量產上線日：<b style="color:#36b37e">● 已上線</b>、<b style="color:#2f6fd0">○ 計畫中</b>、<b style="color:#e0563f">○ 已過計畫日還沒上線</b>。<br>時間軸是<b>真實比例</b>，紅色虛線是今天。點圈可以打開那條線。'},
-    {el:()=>$gd('ov-up'),t:'接下來 30 天 & 逾期',d:'從每條線的「下一步行動」和還沒完成的里程碑整理出來，<b>逾期的排最前面</b>。開週會可以直接看這張。'},
+    {el:()=>$gd('ov-up'),t:'接下來 30 天 & 逾期',d:'從每條線的「下一步行動」和還沒完成的里程碑整理出來，<b>逾期的排最前面</b>。開週會可以直接看這張。<br>點標題可以和右邊的「最新動態」<b>一起收合</b>；最新動態只顯示最近 7 筆，往下捲看更早的。'},
     {el:()=>$gd('ov-feed'),t:'最新動態',d:'誰在什麼時候改了什麼，全部門共用。想知道其他廠區最近在忙什麼，看這裡。'},
     {el:()=>$gd('nav'),t:'其他分頁',d:'<b>▦ 能力矩陣</b>：完整狀態，<b>各廠區在這裡更新資料</b>。<br><b>⚙ 主檔設定</b>：產品、檢測項目、技術能力、PDCA 步驟的共用定義。<br>每頁都有自己的導覽，切過去再按右下角的 <b>i</b> →「導覽這一頁」。'},
     {el:()=>[$gd('userBtn'),$gd('syncBtn')],t:'你的名字與雲端同步',d:'<b>👤</b> 是你的名字，會記錄在每一筆變更上。<br>同步燈號：<b style="color:#1d7a52">綠</b>＝已同步、<b style="color:#8a5d00">黃</b>＝同步中 / 待上傳、<b style="color:#b8391f">紅</b>＝失敗（修改已存在本機，會自動重試）。<br>第一次使用請按這裡貼上<b>自己的 GitHub 權杖</b>（找 Johnny 拿設定連結）。'},
@@ -2443,7 +2510,7 @@ function init(){
   $('#fileIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(f) importJSON(f); };
   document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return; if($('#modal').classList.contains('on')) closeModal(MD_RES?false:undefined); else if(ED) closeDrawer(); });
   window.addEventListener('scroll',stickySoon,{passive:true}); window.addEventListener('resize',stickySoon);
-  let rt; window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ if(UI.page==='overview') drawRoadmap(); if(UI.page==='guide') drawGantt(guideCalc()); },120); });
+  let rt; window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ if(UI.page==='overview'){ drawRoadmap(); ovFit(); } if(UI.page==='guide') drawGantt(guideCalc()); },120); });
   window.addEventListener('beforeunload',e=>{ if(ghReady()&&dirtyCount()){ e.preventDefault(); e.returnValue=''; } });
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&ghReady()&&Date.now()-LAST_PULL>SYNC_MS) (dirtyCount()?pushNow():pullNow()); });
   // 切到別的分頁、最小化或關閉頁面時，還沒上傳的修改先送出

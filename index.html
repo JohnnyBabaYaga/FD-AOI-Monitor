@@ -231,7 +231,7 @@ table.mx.edit td.s:hover{outline:2px solid var(--accent);outline-offset:-2px;}
 
 /* ── Drawer ── */
 #dw-ov{position:fixed;inset:0;background:rgba(20,32,56,.32);z-index:80;display:none;backdrop-filter:blur(1.5px);}
-#drawer{position:fixed;top:0;right:0;bottom:0;width:min(600px,100vw);z-index:81;background:#f7f9fc;box-shadow:-8px 0 40px rgba(20,40,80,.25);
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(660px,100vw);z-index:81;background:#f7f9fc;box-shadow:-8px 0 40px rgba(20,40,80,.25);
   display:none;flex-direction:column;}
 #drawer.on,#dw-ov.on{display:flex;}
 .dw-h{padding:14px 18px 12px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;}
@@ -451,6 +451,20 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v3.2.1：產線面板 PDCA 橫向 ── */
+.pd-h{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:6px;}
+.pd-col{border:1px solid var(--border);border-radius:9px;padding:6px 7px 4px;background:#fff;min-width:0;}
+.pd-col .stg-h{margin:0 0 4px;}
+.pd-col .step2{flex-direction:column;align-items:stretch;gap:3px;padding:5px 4px;border-radius:7px;}
+.pd-col .step2.cur{background:color-mix(in srgb,var(--accent) 7%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent);}
+.pd-col .step2 .sl{min-width:0;align-items:flex-start;line-height:1.35;}
+.pd-col .step2 .sl input{flex-shrink:0;margin-top:1px;}
+.pd-col .stags{display:flex;flex-wrap:wrap;gap:4px;align-items:center;}
+.pd-col .step2 .sd{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 5px;align-items:center;}
+.pd-col .step2 .sd .in{width:100%;min-width:0;height:25px;padding:0 3px;font-size:10.5px;}
+.pd-col .step2 .sd .in::-webkit-calendar-picker-indicator{margin:0;padding:0;width:11px;height:11px;}
+.pd-col .step2 .sd>span{font-size:10px;}
+@media (max-width:640px){ .pd-h{grid-template-columns:repeat(2,minmax(0,1fr));} }
 /* ── v3.2：特別關注 ── */
 .wst{border:0;background:none;cursor:pointer;font-size:14px;line-height:1;padding:0 4px 0 0;color:#c3ccd8;vertical-align:-1px;}
 .wst:hover{color:#e0a800;transform:scale(1.15);} .wst.on{color:#e0a800;}
@@ -620,7 +634,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.2', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.2.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1241,7 +1255,7 @@ function ackLine(){
 function renderDrawer(){
   if(!ED) return; const w=ED.w, dw=$('#drawer'), body=$('.dw-b',dw), sc=body?body.scrollTop:0;
   const p=lineProg(w), steps=stepsSorted(), cur=byId('lines',w.id), sw=w.sw||{};
-  ED.open=ED.open||{pdca:true,setup:ED.isNew,items:false,kpi:false};
+  ED.open=ED.open||{pdca:false,setup:ED.isNew,items:false,kpi:false};
   [ED.w,ED.orig].forEach(x=>{ if(x&&x.optic) for(const k of Object.keys(x.optic)){ const v=x.optic[k]; if(typeof v==='string'&&v!=='na') x.optic[k]={d:v,v:''}; } });
   const req=reqItems(w), items=liveSorted('items').sort((a,b)=>(req.includes(b.id)?1:0)-(req.includes(a.id)?1:0));
   const changedRemote=!ED.isNew&&cur&&cur.updatedAt!==ED.orig.updatedAt;
@@ -1259,12 +1273,13 @@ function renderDrawer(){
     <button class="x" onclick="closeDrawer()" aria-label="關閉">✕</button></div>
   <div class="dw-b">
     ${changedRemote?`<div class="notice">🔄 你開啟後，這條線已被 ${esc(cur.updatedBy||'其他人')} 更新。儲存時只會寫入<b>你改動的欄位</b>，其他人的修改會保留。</div>`:''}
-    <details class="ds" data-sec="pdca" ${ED.open.pdca!==false?'open':''}><summary><h4>例行更新（PDCA）${GI('quick')} <small>勾選完成的關卡、填預計日</small><span class="r">${pdMini(w)} <span class="pct" style="font-size:12px;color:var(--sub);font-weight:700">${p.pct}%</span></span></h4></summary>
-      ${STAGES.map(st=>{ const ss=steps.filter(x=>x.stage===st.k); if(!ss.length) return '';
-        return `<div class="stg-h"><b style="background:var(--s${st.k})">${st.k}</b>${st.name} <span class="muted" style="font-weight:500">${st.desc}</span></div>`+
+    <details class="ds" data-sec="pdca" ${ED.open.pdca?'open':''}><summary><h4>例行更新（PDCA）${GI('quick')} <small>勾選完成的關卡、填預計日</small><span class="r">${pdMini(w)} <span class="pct" style="font-size:12px;color:var(--sub);font-weight:700">${p.pct}%</span></span></h4></summary>
+      <div class="pd-h">${STAGES.map(st=>{ const ss=steps.filter(x=>x.stage===st.k); if(!ss.length) return '';
+        return `<div class="pd-col"><div class="stg-h" title="${esc(st.desc)}"><b style="background:var(--s${st.k})">${st.k}</b>${st.name}</div>`+
         ss.map(s=>{ const dn=(w.done||{})[s.id], pl=(w.plan||{})[s.id], isCur=p.cur&&p.cur.id===s.id;
-          return `<div class="step2 ${isCur?'cur':''} ${dn?'dn':''}"><label class="sl"><input type="checkbox" data-step="${s.id}" ${dn?'checked':''}><span class="lbl">${esc(s.name)}</span>${s.key?` <span class="tag">里程碑</span>`:''}${isCur?' <span class="curtag">← 目前</span>':''}</label>
-            <span class="sd"><span>預計</span><input type="date" class="in" data-p="plan.${s.id}" value="${esc(pl||'')}">${dn?`<span>完成</span><input type="date" class="in" data-p="done.${s.id}" value="${esc(dn)}">`:''}${!dn&&pl?dueTag(pl):''}</span></div>`; }).join(''); }).join('')}
+          return `<div class="step2 ${isCur?'cur':''} ${dn?'dn':''}"><label class="sl"><input type="checkbox" data-step="${s.id}" ${dn?'checked':''}><span class="lbl">${esc(s.name)}</span></label>
+            ${s.key||isCur?`<div class="stags">${s.key?'<span class="tag">里程碑</span>':''}${isCur?'<span class="curtag">◀ 目前</span>':''}</div>`:''}
+            <span class="sd"><span>預計</span><input type="date" class="in" data-p="plan.${s.id}" value="${esc(pl||'')}">${dn?`<span>完成</span><input type="date" class="in" data-p="done.${s.id}" value="${esc(dn)}">`:''}</span>${!dn&&pl?`<div class="stags">${dueTag(pl)}</div>`:''}</div>`; }).join('')+'</div>'; }).join('')}</div>
       <div class="f" style="margin-top:8px"><label>下一步說明（選填，留空就是目前關卡「${esc(p.cur?p.cur.name:'—')}」）</label><input class="in" data-p="nextNote" value="${esc(w.nextNote||'')}" placeholder="例：等品保排 SAT 會議"></div>
       <div style="display:flex;gap:8px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
         <label class="ck" style="display:flex;gap:5px;align-items:center;font-size:12px;font-weight:700;color:${w.blocked?'var(--warn)':'inherit'}"><input type="checkbox" data-pb="blocked" ${w.blocked?'checked':''}>⚠ 卡關中${GI('blocked')}</label>

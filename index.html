@@ -669,7 +669,6 @@ details.ds[open]>summary h4{margin-bottom:8px;}
   <nav class="nav" id="nav">
     <button data-pg="overview" class="on"><i>📊 </i>總覽</button>
     <button data-pg="matrix"><i>▦ </i><span class="nl">能力矩陣</span><span class="ns">矩陣</span></button>
-    <button data-pg="quick" disabled title="準備中，暫不開放"><i>✅ </i><span class="nl">快速更新</span><span class="ns">更新</span></button>
     <button data-pg="guide" disabled title="準備中，暫不開放"><i>🧭 </i><span class="nl">導入指引</span><span class="ns">指引</span></button>
     <button data-pg="master"><i>⚙ </i><span class="nl">主檔設定</span><span class="ns">主檔</span></button>
   </nav>
@@ -682,7 +681,6 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 <main id="main">
   <section class="page on" id="pg-overview"></section>
   <section class="page" id="pg-matrix"></section>
-  <section class="page" id="pg-quick"></section>
   <section class="page" id="pg-guide"></section>
   <section class="page" id="pg-master"></section>
 </main>
@@ -701,7 +699,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.5', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.6', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1541,65 +1539,6 @@ async function deleteLine(){
   const w=ED.orig; if(!(await confirmBox(`確定刪除產線「${w.site} · ${lineLabel(w)}」？\n（會同步刪除，可從 GitHub 歷史版本找回）`,'刪除'))) return;
   ED=null; $('#drawer').classList.remove('on'); $('#dw-ov').classList.remove('on');
   removeEnt('lines',w.id,`刪除產線 ${lineLabel(w)}`); toast('已刪除');
-}
-
-// ═══════════════════════════════════════════
-// 頁面：快速更新（每週 1 分鐘：完成關卡、預計日、卡關、無變動、批次升版）
-// ═══════════════════════════════════════════
-let QSEL={};
-function renderQuick(){
-  const el=$('#pg-quick'); const q=UI.qf=Object.assign({sites:USER.site?[USER.site]:[],mine:false},UI.qf||{});
-  const ls=sortLines(liveLines().filter(l=>(!q.sites.length||q.sites.includes(l.site))&&(!q.mine||lineOwner(l)===USER.name)));
-  Object.keys(QSEL).forEach(id=>{ if(!ls.some(l=>l.id===id)) delete QSEL[id]; });
-  const nSel=Object.keys(QSEL).length, stale=ls.filter(isStale).length, dupIds=new Set(dupGroups().flat().map(x=>x.id));
-  el.innerHTML=`
-  <div class="sec-t">✅ 快速更新${GI('quick')}<small>每週花 1 分鐘：完成的關卡按「✓ 完成」、更新預計日、有卡關就標記；沒有變化就按「無變動」。完整資料請點線別打開編輯面板。</small></div>
-  <div class="card mbar">
-    <div class="grp"><span class="muted" style="font-size:11px;font-weight:700">廠區</span>${liveSorted('sites').map(s=>`<button class="chip ${q.sites.includes(s.id)?'on':''}" data-qsite="${s.id}">${esc(s.id)}</button>`).join('')}${q.sites.length?`<button class="chip" data-qsite="">全部</button>`:''}</div>
-    <label class="ck"><input type="checkbox" id="q-mine" ${q.mine?'checked':''}>只看我負責的${USER.name?`（${esc(USER.name)}）`:''}</label>
-    <span class="muted" style="font-size:11px">${ls.length} 條線${stale?`・<b style="color:var(--amber)">${stale} 條超過 ${STALE_DAYS} 天未更新</b>`:''}</span>
-    <span class="qbatch" id="q-batch"><span class="muted" style="font-size:11px">批次升版${GI('batch')}：已選 <b>${nSel}</b> 條</span>
-      <select class="in" id="qb-plat"><option value="">版本類別</option>${liveSorted('plats').map(p=>`<option value="${p.id}" title="${esc(p.name)}">${esc(platShort(p))}</option>`).join('')}</select>
-      <input class="in" id="qb-ver" placeholder="版本號" style="width:150px"><button class="btn pri" data-qbatch="1" ${nSel?'':'disabled'}>套用</button></span>
-  </div>
-  <div class="card" style="overflow:auto;margin-top:10px">${ls.length?`<table class="tbl qtbl"><thead><tr><th style="width:1%"><input type="checkbox" id="q-all" ${nSel&&nSel===ls.length?'checked':''} title="全選"></th><th>廠區</th><th>產品別 / 線別</th><th>目前關卡</th><th>預計日</th><th></th><th>狀態</th><th>軟體版本</th><th>最後更新</th><th></th></tr></thead><tbody>
-    ${ls.map(l=>{ const p=lineProg(l), nx=nextOf(l), st=isStale(l), sw=l.sw||{};
-      return `<tr class="${st?'stale':''}"><td><input type="checkbox" data-qsel="${l.id}" ${QSEL[l.id]?'checked':''}></td><td><b>${esc(l.site)}</b></td>
-      <td><a href="#" data-qopen="${l.id}">${esc(lineLabel(l))}</a>${dupIds.has(l.id)?' <a href="#" class="tag red" onclick="openDup();return false" title="有重複的產線，點這裡處理">重複</a>':''}${l.demo?' <span class="tag amb">示範例</span>':''}<div class="dim">${esc(lineSub(l))}</div></td>
-      <td>${pdMini(l,true)} <span style="font-weight:600">${p.complete?'✓ 全部完成':esc(p.cur.name)}</span>${l.nextNote?`<div class="dim">${esc(l.nextNote)}</div>`:''}</td>
-      <td>${nx?`<input type="date" class="in" data-qplan="${l.id}" value="${esc(nx.due)}" style="width:132px"> ${nx.due?dueTag(nx.due):''}`:''}</td>
-      <td>${nx?`<button class="btn sm pri" data-qdone="${l.id}" title="把「${esc(nx.step.name)}」標記為今天完成">✓ 完成</button>`:''}</td>
-      <td><button class="btn sm ${l.blocked?'danger':''}" data-qblock="${l.id}" title="${l.blocked?'點一下解除卡關':'點一下標記卡關'}">${l.blocked?'⚠ 卡關中':'正常'}</button>${l.blocked&&l.blockReason?`<div class="dim" style="color:var(--warn);max-width:160px;white-space:normal">${esc(l.blockReason)}</div>`:''}</td>
-      <td><span class="sw">${esc(sw.ver||'—')}</span><div class="dim">${esc(platName(sw.plat)||'未設定')}</div></td>
-      <td style="color:${st?'var(--amber)':'inherit'}">${relTime(l.updatedAt)}<div class="dim">${esc(l.updatedBy||'')}</div></td>
-      <td><button class="btn sm" data-qack="${l.id}" title="狀態沒有變化，只確認資料仍正確">無變動</button></td></tr>`; }).join('')}
-  </tbody></table>`:'<div class="empty" style="padding:30px;text-align:center">沒有符合條件的產線</div>'}</div>`;
-}
-async function onQuickClick(e){
-  const t=e.target, b=t.closest('button,a,input'); if(!b) return; const d=b.dataset;
-  if(d.qsite!==undefined){ const q=UI.qf; if(!d.qsite) q.sites=[]; else { const i=q.sites.indexOf(d.qsite); if(i>=0) q.sites.splice(i,1); else q.sites.push(d.qsite); } saveUI(); renderQuick(); return; }
-  if(b.id==='q-mine'){ UI.qf.mine=b.checked; saveUI(); renderQuick(); return; }
-  if(b.id==='q-all'){ const ids=$$('#pg-quick [data-qsel]').map(x=>x.dataset.qsel); QSEL={}; if(b.checked) ids.forEach(id=>QSEL[id]=1); renderQuick(); return; }
-  if(d.qsel){ if(b.checked) QSEL[d.qsel]=1; else delete QSEL[d.qsel]; renderQuick(); return; }
-  if(d.qopen){ e.preventDefault(); openLine(d.qopen); return; }
-  const l=d.qdone||d.qblock||d.qack?byId('lines',d.qdone||d.qblock||d.qack):null;
-  if(d.qdone&&l){ const p=lineProg(l); if(!p.cur) return; const n=clone(l); n.done=n.done||{}; n.done[p.cur.id]=todayStr(); if(n.nextNote) delete n.nextNote;
-    commit('lines',n,`${lineLabel(l)}：完成「${p.cur.name}」`); toast(`✅ 已完成「${p.cur.name}」${lineProg(n).cur?`，下一關：${lineProg(n).cur.name}（請填預計日）`:''}`,'ok'); return; }
-  if(d.qblock&&l){ const n=clone(l);
-    if(l.blocked){ delete n.blocked; delete n.blockReason; commit('lines',n,`${lineLabel(l)}：解除卡關`); return; }
-    const r=await promptBox('標記卡關',`「${lineLabel(l)}」卡在哪裡？（例：光源模組交期延遲）`,''); if(r===null||r===undefined) return;
-    n.blocked=true; if(r.trim()) n.blockReason=r.trim(); commit('lines',n,`${lineLabel(l)}：卡關：${r.trim()}`); return; }
-  if(d.qack&&l){ commit('lines',clone(l),`${lineLabel(l)}：確認狀態無變動`); toast('✅ 已確認無變動','ok'); return; }
-  if(d.qbatch){ const pid=$('#qb-plat').value, ver=$('#qb-ver').value.trim(), ids=Object.keys(QSEL);
-    if(!pid||!ver){ toast('請選擇版本類別並填寫版本號','err'); return; }
-    if(!(await confirmBox(`把 ${ids.length} 條線的軟體版本更新為「${platName(pid)} ${ver}」？`,'套用'))) return;
-    ids.forEach(id=>{ const x=byId('lines',id); if(!x) return; const n=clone(x); n.sw=Object.assign({},n.sw||{},{plat:pid,ver}); commit('lines',n,`${lineLabel(x)}：批次升版 → ${platName(pid)} ${ver}`); });
-    QSEL={}; toast(`✅ 已更新 ${ids.length} 條線`,'ok'); renderQuick(); }
-}
-function onQuickChange(e){
-  const t=e.target; if(!t.dataset.qplan) return; const l=byId('lines',t.dataset.qplan); if(!l) return; const p=lineProg(l); if(!p.cur) return;
-  const n=clone(l); n.plan=n.plan||{}; if(t.value) n.plan[p.cur.id]=t.value; else delete n.plan[p.cur.id];
-  commit('lines',n,`${lineLabel(l)}：「${p.cur.name}」預計 ${t.value?md(t.value):'（清除）'}`);
 }
 
 // ═══════════════════════════════════════════
@@ -2443,7 +2382,7 @@ const GL={
   tcat:['技術能力分類','<b>前處理</b>：取像後、演算法前的影像處理（對位、校正、Moiré 抑制），由<b>型態</b>決定需要哪些。<br><b>演算法・量測</b>：算數值（亮度、色度、Mura 指標）。<b>演算法・檢測</b>：找缺陷（點線、Mura、異物）。檢測項目只連演算法。<br><b>判定 / 整合</b>：演算法之後（ADC、判等、資料輸出、MES、Recipe 工具），當成版本能力與產線開關來看。'],
   prodset:['產品設定','<b>產品別 → 型態 → 檢測項目</b>：每個「產品別 × 型態」組合各自勾選要檢的項目，右邊自動算出建議軟體版本。<br>產線選了產品別與型態後，需求檢測項目就是這些組合的聯集。'],
   req:['需求檢測項目','這條線的「產品別 × 型態」組合在主檔「產品設定」勾選的檢測項目（多個組合取聯集）。矩陣用淡藍底標示，沒具備的就算缺口。'],
-  quick:['快速更新','每週例行只要做三件事：<b>完成的關卡打勾</b>、<b>更新預計日</b>、<b>有沒有卡關</b>。沒有變化就按「無變動」，會重設「待更新」提醒。'],
+  quick:['例行更新（PDCA）','每週例行只要做三件事：<b>完成的關卡打勾</b>、<b>更新預計日</b>、<b>有沒有卡關</b>。<br>狀態沒有變化時，按面板最下面的「<b>✓ 無變動</b>」，會重設「待更新」提醒。'],
   batch:['批次升版','勾選多條線，一次套用同一個版本類別與版本號，不用一條一條改。'],
   ms:['里程碑','PDCA 中標「里程碑」的關卡：<b>機台進廠、SAT 驗收、量產上線</b>。勾選完成就是實際日，不用另外填；總覽的「量產上線時程」用的是量產上線這一關。'],
   hw:['硬體（相機）','這條線畫檢設備用的<b>相機型號</b>（例如 151MP、AIL151-55）。清單在「主檔設定 → 硬體」維護；矩陣可以用「全部硬體」篩選，快速找出用同一款相機的線。'],
@@ -2516,15 +2455,8 @@ const GUIDES={
     {el:dsBy('檢測項目'),t:'檢測項目（自動推算）',d:'<b>不用填</b>：依版本與已開啟的技術能力，自動判斷這條線（產品別 + 型態）的每個需求項目能不能檢，並寫出原因。'},
     {el:dsBy('KPI'),t:'上線後 KPI',d:'量產後記錄過檢率、漏檢率、稼動率（之後會再討論怎麼簡化）。'},
     {el:gq('#drawer .dw-f'),t:'儲存',d:'按「<b>💾 儲存</b>」寫入並同步，變更紀錄會記下你改了什麼。'}],
-  quick:[
-    {el:null,t:'快速更新：每週 1 分鐘',d:'每條線一列，只要做三件事：<b>✓ 完成</b>目前關卡、<b>改預計日</b>、標<b>卡關</b>；沒有變化就按<b>無變動</b>。<br>預設只列出你負責的廠區（👤 使用者設定）。'},
-    {el:gq('#pg-quick .mbar'),t:'篩選與批次升版',d:'點廠區代碼切換顯示範圍，或只看你負責的線。<br><b>批次升版</b>：勾選左邊的線，選版本類別、填版本號，一次套用。'},
-    {el:gq('#pg-quick [data-qdone]'),t:'✓ 完成',d:'把目前關卡標記為今天完成，自動進到下一關；接著填下一關的預計日就好。'},
-    {el:gq('#pg-quick [data-qplan]'),t:'預計日',d:'目前關卡的預計完成日，改完自動儲存。總覽的「接下來要做」與逾期提醒都看這個日期。'},
-    {el:gq('#pg-quick [data-qack]'),t:'無變動',d:'這週狀態沒有變化時按這個，會記錄「確認狀態無變動」並重設超過 14 天未更新的提醒。'},
-    GD_END]
 };
-const GD_NAME={overview:'總覽',matrix:'能力矩陣',quick:'快速更新',guide:'導入指引',master:'主檔設定',line:'產線編輯'};
+const GD_NAME={overview:'總覽',matrix:'能力矩陣',guide:'導入指引',master:'主檔設定',line:'產線編輯'};
 function gdPage(){ return ED&&$('#drawer').classList.contains('on')?'line':UI.page; }
 function gdVis(e){ if(!e) return false; const r=e.getBoundingClientRect(); return r.width>0&&r.height>0; }
 function gdEls(st){ if(!st.el) return []; let x=st.el(); x=Array.isArray(x)?x:[x]; return x.filter(gdVis); }
@@ -2625,7 +2557,7 @@ function initTour(){
 // 導覽 / 初始化
 // ═══════════════════════════════════════════
 /** 暫時停用的分頁（反灰、不能點；要開放時從這裡移除，並拿掉 nav 按鈕上的 disabled） */
-const OFF_PAGES=['quick','guide'];
+const OFF_PAGES=['quick','guide'];   // quick（快速更新）v3.6 已移除，保留在這裡讓舊的 UI.page 自動導回總覽
 function showPage(pg){
   if(OFF_PAGES.includes(pg)) pg='overview';
   UI.page=pg; saveUI(); $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.pg===pg));
@@ -2634,7 +2566,7 @@ function showPage(pg){
 }
 function renderAll(){
   $('#userLb').textContent=USER.name||'未設定';
-  if(UI.page==='overview') renderOverview(); else if(UI.page==='matrix') renderMatrix(); else if(UI.page==='quick') renderQuick(); else if(UI.page==='guide') renderGuide(); else renderMaster();
+  if(UI.page==='overview') renderOverview(); else if(UI.page==='matrix') renderMatrix(); else if(UI.page==='guide') renderGuide(); else renderMaster();
   stickySoon();
   if(SYNC.state!=='sync') setSync(ghReady()?(SYNC.state==='off'?'ok':SYNC.state==='ok'&&dirtyCount()?'dirty':SYNC.state==='dirty'&&!dirtyCount()?'ok':SYNC.state):'off',SYNC.msg);
 }
@@ -2644,7 +2576,6 @@ function init(){
   $('#nav').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) showPage(b.dataset.pg); });
   $('#userBtn').onclick=openUser; $('#syncBtn').onclick=()=>openCloud(); initTour();
   $('#pg-matrix').addEventListener('click',onMatrixClick);
-  $('#pg-quick').addEventListener('click',onQuickClick); $('#pg-quick').addEventListener('change',onQuickChange);
   const pg=$('#pg-guide'); pg.addEventListener('input',onGuideInput); pg.addEventListener('change',onGuideInput); pg.addEventListener('click',onGuideClick);
   const dw=$('#drawer'); dw.addEventListener('input',onDrawerInput); dw.addEventListener('change',onDrawerInput); dw.addEventListener('click',onDrawerClick);
   $('#dw-ov').onclick=()=>closeDrawer(); $('#md-ov').onclick=()=>closeModal(MD_RES?false:undefined);

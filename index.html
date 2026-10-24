@@ -375,7 +375,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .vref{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px;padding:8px 10px;background:var(--surf2);border-radius:9px;}
 .gsplit{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;padding:14px 16px;border-bottom:1px solid var(--border);}
 .gsub{font-size:12px;font-weight:800;margin-bottom:8px;}
-.dgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
+.dgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}   /* v3.8：4 格（含光學架構）→ 2×2 */
 .metric{background:#fff;border:1px solid var(--border);border-radius:9px;padding:7px 9px 6px;}
 .metric .l{font-size:10px;color:var(--sub);font-weight:700;}
 .metric .v{font-size:18px;font-weight:800;line-height:1.25;font-variant-numeric:tabular-nums;}
@@ -451,6 +451,11 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v3.8：導入指引第 ③ 步（AOI Calculator） ── */
+.gstep .tag{margin-left:8px;font-size:10.5px;}
+.gopt .gol{margin:2px 0 8px 18px;padding:0;font-size:11.5px;line-height:1.6;color:var(--text);}
+.gopt .gol li{margin:1px 0;}
+.gopt .gopt-a{display:inline-flex;margin:0 0 8px;text-decoration:none;}
 /* ── v3.7：矩陣圖例與篩選同一排 ── */
 .mleg-in{display:flex;align-items:center;gap:3px 10px;font-size:11px;color:var(--sub);white-space:nowrap;padding:0 4px 0 8px;border-left:1px solid var(--border);margin-left:4px;}
 .mleg-in .s{display:inline-flex;align-items:center;gap:3px;} .mleg-in .s b{font-size:12px;}
@@ -705,7 +710,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.7', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.8', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1592,9 +1597,9 @@ function guideCalc(){
   return {g,prod,items,forms,unset,need,unlinked,fits,best,okFits,verdict,pool,platLines,itemRows,cand,sched:{dur,src,golive,Cs,Ds,Ps,total,short,earliest}};
 }
 function renderGuide(){
-  const g=gState(), el=$('#pg-guide'), prod=byId('products',g.product), forms=g.forms||defForms(prod), items=(g.items??(prod?reqOf([prod.id],forms):[])??[]), fr=(prod&&prod.fr)||{};
+  const g=gState(), el=$('#pg-guide'), prod=byId('products',g.product), forms=g.forms||defForms(prod), items=(g.items??(prod?reqOf([prod.id],forms):[])??[]), fr=(prod&&prod.fr)||{}, op=g.opt||{};
   el.innerHTML=`
-  <div class="sec-t">🧭 導入指引<small>新產品 / 新產線要導入畫檢 AOI 時，先在這裡評估：該用哪個軟體版本、部門有沒有這個能力、可以參考哪條線、時程夠不夠。</small><span class="r"><a class="btn sm" href="${AOI_CALC_URL}" target="_blank" rel="noopener" title="光學架構（相機、鏡頭、工作距離、台數）用 AOI Calculator 評估">↗ AOI Calculator 光學評估</a></span></div>
+  <div class="sec-t">🧭 導入指引<small>新產品 / 新產線要導入畫檢 AOI 時，先在這裡評估：該用哪個軟體版本、部門有沒有這個能力、可以參考哪條線、時程夠不夠。</small></div>
   <div class="gd">
     <div class="gd-in">
       <div class="gstep"><b>1</b>產品別 → 型態 → 檢測項目</div>
@@ -1610,6 +1615,21 @@ function renderGuide(){
         <div class="grow"><label>導入廠區</label><select class="in" data-g="site" style="width:120px;text-align:left"><option value="">—</option>${liveSorted('sites').map(s=>`<option value="${s.id}" ${g.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</select></div>
         <div class="grow"><label>目標量產日</label><input class="in" data-g="target" type="date" style="width:140px;text-align:left" value="${esc(g.target||'')}"><span class="u"></span></div>
         <div class="grow"><label>參考範圍${GI('onlyA')}</label><span class="seg"><button class="${g.onlyA?'':'on v-na'}" data-gonly="0">全部產線</button><button class="${g.onlyA?'on v-ok':''}" data-gonly="1">只看已量產</button></span></div>
+      </div>
+      <div class="gstep"><b>3</b>光學架構${GI('optcalc')}${op.cam?'<span class="tag grn">已填入</span>':'<span class="tag amb">尚未評估</span>'}</div>
+      <div class="card gcard gopt">
+        <ol class="gol">
+          <li>按下面的按鈕開 <b>AOI Calculator</b>（另開新分頁），選「<b>畫檢評估</b>」。</li>
+          <li>輸入這個產品的面板尺寸、解析度與 ① 的檢測需求，比較相機與鏡頭組合。</li>
+          <li>把評估結果<b>填回下面</b>：相機、台數、取樣 Pitch、WD。報告和「依此建立產線」會一起帶入。</li>
+        </ol>
+        <a class="btn pri sm gopt-a" href="${AOI_CALC_URL}" target="_blank" rel="noopener">↗ 開啟 AOI Calculator</a>
+        <div class="grow"><label>相機</label><select class="in" data-go="cam" style="width:150px;text-align:left"><option value="">— 選擇 —</option>${liveSorted('hws').map(h=>`<option value="${h.id}" ${op.cam===h.id?'selected':''}>${esc(h.name)}</option>`).join('')}</select></div>
+        <div class="grow"><label>相機台數</label><input class="in" data-go="n" type="number" min="1" step="1" style="width:80px" value="${esc(op.n||'')}" placeholder="例：2"><span class="u">台</span></div>
+        <div class="grow"><label>取樣 Pitch</label><input class="in" data-go="pitch" type="number" min="0" step="0.1" style="width:80px" value="${esc(op.pitch||'')}" placeholder="例：3.2"><span class="u">px</span></div>
+        <div class="grow"><label>WD</label><input class="in" data-go="wd" type="number" min="0" step="1" style="width:80px" value="${esc(op.wd||'')}" placeholder="例：350"><span class="u">mm</span></div>
+        <div class="grow"><label>備註</label><input class="in" data-go="note" style="width:170px;text-align:left" value="${esc(op.note||'')}" placeholder="例：遠心 0.3x、同軸光"></div>
+        ${op.cam||op.n||op.pitch||op.wd||op.note?'<div style="text-align:right"><button class="lkb" data-goclear="1">清除光學評估</button></div>':''}
       </div>
     </div>
     <div class="gd-out" id="gd-out"></div>
@@ -1642,10 +1662,14 @@ function renderGuideOut(){
   const derived=[
     metric('需求檢測項目',R.items.length,'項',R.prod?`${esc(R.prod.name)} × ${esc(formLabel(R.forms))}`:'手動選擇'),
     metric('需要技術能力',R.need.length,'項',esc(R.need.map(t=>t.name).join('、')).slice(0,60)),
-    metric('可用軟體版本',R.okFits.length,'個',R.okFits.length?esc(R.okFits.map(x=>platShort(x.p)).join('、')):'沒有版本能完整支援',!R.okFits.length&&R.verdict!=='empty')];
+    metric('可用軟體版本',R.okFits.length,'個',R.okFits.length?esc(R.okFits.map(x=>platShort(x.p)).join('、')):'沒有版本能完整支援',!R.okFits.length&&R.verdict!=='empty'),
+    (()=>{ const o=g.opt||{}; return metric('光學架構'+GI('optcalc'),o.cam?esc(hwName(o.cam)):'未評估',o.cam&&o.n?`× ${esc(o.n)} 台`:'',o.cam?esc([o.pitch?'Pitch '+o.pitch:'',o.wd?'WD '+o.wd+' mm':'',o.note||''].filter(Boolean).join('・')||'AOI Calculator 評估'):'到左側 ③ 用 AOI Calculator 評估',!o.cam&&R.verdict!=='empty'); })()];
   const risks=[];
   if(R.unset.length) risks.push(`「${R.unset.join('、')}」在主檔還沒設定檢測項目；目前用畫面上手動選的項目評估，建議到「主檔設定 → 產品設定」補上`);
   if(R.unlinked.length) risks.push(`「${R.unlinked.map(i=>i.name).join('、')}」在主檔尚未設定需要的技術能力，請到主檔設定 → 檢測項目補上`);
+  const OP=g.opt||{};
+  if(R.verdict!=='empty'&&!OP.cam) risks.push('光學架構尚未評估：請到左側 ③ 用 AOI Calculator 評估相機、台數與取樣 Pitch，填回後一起列入報告');
+  if(OP.pitch&&+OP.pitch>0&&+OP.pitch<3) risks.push(`取樣 Pitch ${OP.pitch} < 3：小缺陷與 Mura 的訊號可能不足、也較容易有摩爾紋，建議回 AOI Calculator 調整相機或鏡頭`);
   if(B&&B.lvl==='dev') B.dev.forEach(t=>{ const v=((t.pver||{})[B.p.id]||''); risks.push(`「${t.name}」在「${platShort(B.p)}」仍在開發中${v?`（${v}）`:''}，尚未能在產線開啟`); });
   if(B&&B.lvl==='no') risks.push(`沒有任何版本支援「${B.miss.map(t=>t.name).join('、')}」，需列入開發計畫`);
   if(R.verdict!=='empty'&&B&&B.lvl!=='shape'&&!R.platLines(B.p.id).length) risks.push(`部門${g.onlyA?'已量產產線':''}目前沒有線使用「${platShort(B.p)}」，沒有現成 Recipe 可參考`);
@@ -1715,6 +1739,8 @@ function onGuideInput(e){
   if(t.dataset.g){ const k=t.dataset.g; g[k]=t.value;
     if(k==='product'){ g.items=null; g.forms=defForms(byId('products',t.value)); saveUI(); renderGuide(); return; }
     saveUI(); if(t.tagName==='SELECT') renderGuide(); else renderGuideOut(); return; }
+  if(t.dataset.go){ const o=g.opt=Object.assign({},g.opt||{}), k=t.dataset.go, v=String(t.value).trim(); if(v) o[k]=v; else delete o[k]; saveUI();
+    if(t.tagName==='SELECT'||e.type==='change') renderGuide(); else renderGuideOut(); return; }
   if(t.dataset.gwk){ g.wk=g.wk||{}; if(t.value) g.wk[t.dataset.gwk]=t.value; else delete g.wk[t.dataset.gwk]; saveUI(); renderGuideOut(); }
 }
 function onGuideClick(e){
@@ -1722,17 +1748,20 @@ function onGuideClick(e){
   if(t.dataset.gitem){ const cur=(g.items??(prod?reqOf([prod.id],g.forms||defForms(prod)):[])??[]).slice(), i=cur.indexOf(t.dataset.gitem); if(i>=0) cur.splice(i,1); else cur.push(t.dataset.gitem); g.items=cur; saveUI(); renderGuide(); }
   else if(t.dataset.gform){ const cur=(g.forms||defForms(prod)).slice(), i=cur.indexOf(t.dataset.gform); if(i>=0) cur.splice(i,1); else cur.push(t.dataset.gform); g.forms=cur; g.items=null; saveUI(); renderGuide(); }
   else if(t.dataset.gonly!==undefined){ g.onlyA=t.dataset.gonly==='1'; saveUI(); renderGuide(); }
+  else if(t.dataset.goclear){ delete g.opt; saveUI(); renderGuide(); }
 }
 function guideCreateLine(){
   const R=guideCalc(), g=R.g, S=R.sched, top=R.cand[0], B=R.best; if(!R.prod||!g.site) return;
   const st=stepsSorted(), plan={}, kstep=k=>st.find(s=>s.key===k);
   if(st[0]) plan[st[0].id]=addDays(S.Ps<todayStr()?todayStr():S.Ps,14);
   if(kstep('install')) plan[kstep('install').id]=S.Ds; if(kstep('sat')) plan[kstep('sat').id]=addDays(S.golive,-7); if(kstep('golive')) plan[kstep('golive').id]=S.golive;
-  const l={id:uid('L'),site:g.site,product:g.product,products:[g.product],line:'',forms:R.forms.slice(),hw:'',vendor:'',owner:(byId('sites',g.site)||{}).owner?'':(USER.name||''),techs:{},done:{},plan,
+  const OP=g.opt||{};
+  const l={id:uid('L'),site:g.site,product:g.product,products:[g.product],line:'',forms:R.forms.slice(),hw:OP.cam||'',vendor:'',owner:(byId('sites',g.site)||{}).owner?'':(USER.name||''),techs:{},done:{},plan,
     sw:B&&B.lvl!=='shape'?{plat:B.p.id}:{},kpi:{},kpiT:{},
     note:`由導入指引建立（${todayStr()}）\n評估結論：${{ok:'可直接導入',cond:'有條件可行',no:'需新開發'}[R.verdict]||''}`+(B?`\n建議版本：${platShort(B.p)}`:'')+
-      (top?`\n參考產線：${top.l.site} ${lineLabel(top.l)}`:'')+(B&&B.dev.length?`\n開發中：${B.dev.map(t=>t.name).join('、')}`:'')+(B&&B.miss.length?`\n不支援：${B.miss.map(t=>t.name).join('、')}`:'')};
-  ED={orig:clone(l),w:l,isNew:true,open:{setup:true}}; openDrawer(); toast('已帶入評估結果，請補上線別、相機後儲存');
+      (top?`\n參考產線：${top.l.site} ${lineLabel(top.l)}`:'')+(B&&B.dev.length?`\n開發中：${B.dev.map(t=>t.name).join('、')}`:'')+(B&&B.miss.length?`\n不支援：${B.miss.map(t=>t.name).join('、')}`:'')+
+      (OP.cam?`\n光學評估（AOI Calculator）：${hwName(OP.cam)}${OP.n?' × '+OP.n+' 台':''}${OP.pitch?'、Pitch '+OP.pitch:''}${OP.wd?'、WD '+OP.wd+' mm':''}${OP.note?'、'+OP.note:''}`:'')};
+  ED={orig:clone(l),w:l,isNew:true,open:{setup:true}}; openDrawer(); toast(OP.cam?'已帶入評估結果與相機，請補上線別後儲存':'已帶入評估結果，請補上線別、相機後儲存');
 }
 
 // ═══════════════════════════════════════════
@@ -2380,6 +2409,7 @@ const GL={
   fabowner:['線體負責人（FAB Owner）','產線（線體）端的負責人，例如廠內設備 / 製程窗口。與「負責人」（AOI 導入負責人，預設沿用廠區負責人）分開記錄。'],
   watch:['特別關注','在線別旁點 <b>☆</b> 變 <b>★</b>，把你想盯的產線標起來：整列會淡黃標示，篩選列勾「<b>★ 只看關注</b>」就只列這幾條。<br>這是<b>你個人的清單</b>，只記在這台電腦，不會影響其他人，也不算「更新」。'],
   legend:['圖例','三個欄群用同一套符號（篩選列上的是簡稱）：<br><b>●</b> 可以用 / 完成（檢測項目已具備、技術已開啟、光學已完成）<br><b>◐</b> 進行中 / 待補（開發中、光學待補日期或參考值）<br><b>○</b> 未開 / 未確認（版本有但這條線沒開、光學未確認）<br><b>✕</b> 缺口（需要但做不到）　<b>·</b> 不需要 / 不適用　<b>?</b> 主檔還沒設定對應技術<br>格子上停一下會顯示詳細原因。技術能力預設收合成「開啟數 / 已釋出數」，點表頭展開。'],
+  optcalc:['光學架構（AOI Calculator）','相機、鏡頭、工作距離、台數這類<b>光學計算</b>統一在 AOI Calculator 做（「畫檢評估」模式），這裡不重複計算，避免兩邊數字不一致。<br>評估完把<b>相機、台數、取樣 Pitch、WD</b> 填回 ③，報告會列出來；按「依此建立產線」時相機會自動帶入，其餘寫進備註。<br>取樣 Pitch 建議 ≥ 3。'],
   tcat:['技術能力分類','<b>前處理</b>：取像後、演算法前的影像處理（對位、校正、Moiré 抑制），由<b>型態</b>決定需要哪些。<br><b>演算法・量測</b>：算數值（亮度、色度、Mura 指標）。<b>演算法・檢測</b>：找缺陷（點線、Mura、異物）。檢測項目只連演算法。<br><b>判定 / 整合</b>：演算法之後（ADC、判等、資料輸出、MES、Recipe 工具），當成版本能力與產線開關來看。'],
   prodset:['產品設定','<b>產品別 → 型態 → 檢測項目</b>：每個「產品別 × 型態」組合各自勾選要檢的項目，右邊自動算出建議軟體版本。<br>產線選了產品別與型態後，需求檢測項目就是這些組合的聯集。'],
   req:['需求檢測項目','這條線的「產品別 × 型態」組合在主檔「產品設定」勾選的檢測項目（多個組合取聯集）。矩陣用淡藍底標示，沒具備的就算缺口。'],
@@ -2428,6 +2458,7 @@ const GUIDES={
     {el:null,t:'導入指引：這頁在做什麼？',d:'新產品或新產線要導入畫檢 AOI 前，先在這裡評估：<b>部門有沒有這個能力、可以參考哪條線、時程夠不夠</b>。<br>不需要先懂所有細節——<b>依序回答三個問題</b>，評估結論即時更新。'},
     {el:gq('.gd-in .gcard',0),t:'① 產品別 → 型態 → 檢測項目',d:'選產品別、點選型態，會自動帶入主檔「產品設定」的檢測項目，可以再增減。虛線框的型態代表主檔還沒設定這個組合。<br>系統依「檢測項目 → 需要的技術能力 → 各版本開發進度」推算建議版本。'},
     {el:gq('.gd-in .gcard',1),t:'② 產線條件',d:'<b>目標量產日</b>決定時程夠不夠。「只看已量產」只拿 A 階段的線比對，結論比較保守。<br>'+GD_HINT},
+    {el:gq('.gd-in .gcard',2),t:'③ 光學架構（AOI Calculator）',d:'按「<b>↗ 開啟 AOI Calculator</b>」，用「畫檢評估」比較相機與鏡頭。<br>評估完把<b>相機、台數、取樣 Pitch、WD</b> 填回這裡：報告的「光學架構」會顯示，「依此建立產線」也會帶入相機。<br>還沒填之前，報告的風險區會提醒你；Pitch 小於 3 也會警告。'},
     {el:gq('.verdict'),t:'結論：先看這裡',d:'燈號一眼看懂：<b style="color:#0F6E56">可直接導入</b>、<b style="color:#854F0B">有條件可行</b>、<b style="color:#A32D2D">需新開發</b>。<br>下面是<b>建議軟體版本</b>與<b>首選參考產線</b>（部門裡最能拿來複製的一條線，按「查看」打開它）。'},
     {el:()=>$gd('gd-plat'),t:'軟體版本比較',d:'每個版本對這次需求的支援程度，以及缺少 / 還在開發的技術能力，部門有幾條線在用。'},
     {el:gq('.gsplit'),t:'需求摘要、風險與注意',d:'左邊是這次需求的檢測項目、需要的技術能力、可用版本數。<br><b>⚠️ 風險一定要看</b>——只列跟這次結論有關的，例如 Pitch 太小、部門沒有的能力、時程不足、參考產線卡關。'},

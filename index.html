@@ -451,6 +451,29 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v3.5：總覽精簡 ── */
+.ov-strip{display:flex;align-items:center;gap:18px;padding:10px 16px;flex-wrap:wrap;}
+.os-t{font-size:14px;font-weight:800;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.os-bar{flex:1 1 260px;min-width:220px;max-width:460px;}
+.os-bar .sbar{height:20px;}
+.os-leg{display:flex;gap:10px;font-size:10.5px;color:var(--sub);margin-top:4px;}
+.os-leg b{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px;vertical-align:0;}
+.os-n{display:flex;align-items:baseline;gap:6px;white-space:nowrap;padding-left:18px;border-left:1px solid var(--border);}
+.os-n b{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;} .os-n b small{font-size:12px;color:var(--sub);margin-left:1px;}
+.os-n>span{font-size:11.5px;color:var(--sub);display:inline-flex;align-items:center;gap:4px;}
+.os-a{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-left:18px;border-left:1px solid var(--border);}
+.os-at{font-size:11px;color:var(--sub);font-weight:700;margin-right:2px;}
+.oa{border:1px solid transparent;border-radius:999px;font-size:12px;font-weight:700;padding:3px 10px;white-space:nowrap;cursor:pointer;background:#fff;}
+span.oa{cursor:default;}
+.oa.red{color:#b3361f;background:color-mix(in srgb,var(--warn) 9%,#fff);border-color:color-mix(in srgb,var(--warn) 35%,transparent);}
+.oa.amb{color:#8a5d00;background:color-mix(in srgb,var(--amber) 12%,#fff);border-color:color-mix(in srgb,var(--amber) 40%,transparent);}
+.oa.ok{color:var(--green);background:transparent;cursor:default;font-weight:600;}
+button.oa:hover{filter:brightness(.96);}
+.site .bars{flex:1;min-width:0;} .site .bars .sbar.thin{height:10px;}
+.lrow{grid-template-columns:auto minmax(0,1fr) auto;}
+.lrow .nd{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap;}
+.lrow .nd.od{color:var(--warn);}
+@media (max-width:760px){ .os-n,.os-a{border-left:0;padding-left:0;} .os-a{margin-left:0;} }
 /* ── v3.4：矩陣精簡（篩選收進下拉、圖例合併、技術能力收合） ── */
 .dd .dd-b.act{border-color:var(--accent);color:var(--accent-deep);background:color-mix(in srgb,var(--accent) 6%,#fff);}
 .fd-m{min-width:280px;}
@@ -582,8 +605,9 @@ tr.hd-stk.gh>th.pc{box-shadow:0 -3px 0 #fff,inset 0 -2px 0 color-mix(in srgb,var
 .pk-r input{margin:0;flex-shrink:0;}
 .pk-t{flex:1;min-width:0;}
 .pk-d{display:flex;gap:3px;margin-left:auto;flex-shrink:0;}
-.pd{display:inline-block;width:14px;text-align:center;font-style:normal;font-size:12px;font-weight:700;line-height:14px;}
-.pd-ok{color:#0F6E56;} .pd-dev{color:#b5770f;} .pd-plan{color:#3d4d66;} .pd-no{color:#c0c8d4;}
+/* 選擇演算法視窗的版本進度符號（原本叫 .pd，和 PDCA 小方塊 .pd 撞名，v3.5 改名） */
+.pkd{display:inline-block;width:14px;text-align:center;font-style:normal;font-size:12px;font-weight:700;line-height:14px;}
+.pkd-ok{color:#0F6E56;} .pkd-dev{color:#b5770f;} .pkd-plan{color:#3d4d66;} .pkd-no{color:#c0c8d4;}
 .pn{display:inline-block;width:14px;text-align:center;font-style:normal;font-size:11px;}
 .pk-prev{margin-top:12px;}
 .pk-ph{font-size:11px;font-weight:700;color:var(--sub);margin-bottom:5px;}
@@ -677,7 +701,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.4', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.5', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1030,15 +1054,16 @@ function renderOverview(){
   const demoBanner=hasDemo()?`<div class="banner"><span>🧪 目前有 <b>5 條示範例</b>${GI('demo')}（虛構產線，標示「示範例」，用來看平台效果）。${DB.lines.some(l=>l.demo&&l.demoGen&&!l.deleted)?'示範例已發布到雲端，全部門都看得到；正式開始填寫前請清除。':'正式使用前請清除；本機示範例不會上傳雲端。'}</span><button class="btn sm" onclick="clearDemo()">清除示範例</button></div>`:'';
   const nameBanner=!USER.name?`<div class="banner"><span>👤 請先設定你的名字，變更紀錄才知道是誰更新的。</span><button class="btn sm" onclick="openUser()">設定</button></div>`:'';
   const dg=dupGroups(), dupBanner=dg.length?`<div class="banner bad"><span>⚠ 發現 <b>${dg.length} 組重複的產線</b>${GI('dup')}（${esc(dg.map(g=>g[0].site+' '+g[0].line).join('、'))}），可能是兩個人同時新增了同一條線。</span><button class="btn sm" onclick="openDup()">處理</button></div>`:'';
-  el.innerHTML=`<div class="ov-top">
-  <div class="sec-t">整體進度<small>${sites.length} 個廠區 · ${live('products').length} 個產品 · 截至 ${new Date().toLocaleString('zh-TW',{hour12:false})}</small></div>
-  <div class="tiles">
-    <div class="card tile wide"><div class="k">PDCA 階段分佈${GI('pdca')}</div><div style="margin-top:8px">${pdcaBar(cnt)}</div>${stageLegend()}</div>
-    <div class="card tile"><div class="k">導入產線</div><div class="v">${L.length}<small>條</small></div><div class="s">${sites.length} 廠區</div></div>
-    <div class="card tile"><div class="k">平均完成度${GI('progress')}</div><div class="v">${avg}<small>%</small></div><div class="pbar" style="margin-top:6px"><i style="width:${avg}%"></i></div></div>
-    <div class="card tile clk ${gapCells?'alert':''}" onclick="gotoMatrix({gapOnly:true})"><div class="k">檢測能力缺口${GI('gap')}</div><div class="v">${gapCells}<small>項</small></div><div class="s">分佈於 ${gapLines} 條線</div></div>
-    <div class="card tile ${overdue||blocked?'alert':''}"><div class="k">逾期 / 卡關${GI('overdue')}</div><div class="v">${overdue}<small>/ ${blocked}</small></div><div class="s">逾期行動 / 卡關產線</div></div>
-    <div class="card tile ${stale?'alert':''}"><div class="k">資料待更新${GI('stale')}</div><div class="v">${stale}<small>條</small></div><div class="s">超過 ${STALE_DAYS} 天未更新</div></div>
+  el.innerHTML=`<div class="ov-top"><div class="card ov-strip">
+    <div class="os-t">整體進度${GI('pdca')}</div>
+    <div class="os-bar">${pdcaBar(cnt)}<div class="os-leg">${STAGES.map(s=>`<span><b style="background:var(--s${s.k})"></b>${s.k} ${s.name}</span>`).join('')}</div></div>
+    <div class="os-n"><b>${L.length}</b><span>條線 · ${sites.length} 廠區</span></div>
+    <div class="os-n"><b>${avg}<small>%</small></b><span>平均完成度${GI('progress')}</span></div>
+    <div class="os-a"><span class="os-at">需要注意</span>${[
+      gapCells?`<button class="oa red" onclick="gotoMatrix({gapOnly:true})" title="檢測能力缺口 ${gapCells} 項，分佈於 ${gapLines} 條線（點一下在能力矩陣查看）">✕ 缺口 ${gapCells}</button>`:'',
+      blocked?`<button class="oa red" onclick="gotoMatrix({stage:'blocked'})" title="卡關中的產線（點一下在能力矩陣查看）">⚠ 卡關 ${blocked}</button>`:'',
+      overdue?`<button class="oa amb" onclick="ovGoUp()" title="目前關卡已過預計日（點一下看「接下來 30 天 & 逾期」）">逾期 ${overdue}</button>`:'',
+      stale?`<span class="oa amb" title="超過 ${STALE_DAYS} 天沒有更新的產線">待更新 ${stale}</span>`:''].join('')||'<span class="oa ok">✓ 沒有</span>'}</div>
   </div></div>
   ${nameBanner}${dupBanner}${demoBanner}
   ${regions.map(r=>{ const st=ovRg(r.name), n=L.filter(l=>r.sites.some(s=>s.id===l.site)).length;
@@ -1060,6 +1085,8 @@ function renderOverview(){
     const t=e.target.closest('.tw-h'); if(t&&!e.target.closest('button,a,.gi')){ UI.ov=UI.ov||{}; UI.ov.two=!UI.ov.two; saveUI(); $('#pg-overview .ov-two').classList.toggle('tw-off',UI.ov.two); if(!UI.ov.two) ovFit(); }
   }); }
 }
+/** 總覽「逾期」→ 展開並捲到「接下來 30 天 & 逾期」 */
+function ovGoUp(){ UI.ov=UI.ov||{}; if(UI.ov.two){ UI.ov.two=false; saveUI(); const t=$('#pg-overview .ov-two'); if(t) t.classList.remove('tw-off'); ovFit(); } const u=$('#ov-up'); if(u) u.scrollIntoView({behavior:'smooth',block:'center'}); }
 /** 總覽地區區塊的收合與廠區卡顯示模式（只存本機）：mode＝full 完整 / key 重點 / min 收合 */
 const OV_MODE={full:'▤ 卡片：完整',key:'▥ 卡片：重點',min:'▭ 卡片：收合'}, OV_NEXT={full:'key',key:'min',min:'full'};
 function ovRg(k){ const r=((UI.ov||{}).rg||{})[k]||{}; return {off:!!r.off,mode:OV_MODE[r.mode]?r.mode:'full'}; }
@@ -1074,18 +1101,15 @@ function ovFit(){
 }
 function siteCard(s){
   const st=siteStats(s.id), MAXL=6;
-  const nexts=upcoming(st.ls,3650).slice(0,3);
-  const lines=st.ls.slice(0,MAXL).map(l=>{ const p=lineProg(l);
-    return `<div class="lrow" onclick="openLine('${l.id}')">${pdMini(l,true)}<span class="st"><span class="nm" style="color:var(--text)">${esc(lineLabel(l))}</span>　${l.blocked?'<span class="tag red">卡關</span> ':''}${p.complete?'✓ 全部完成':esc(p.cur?p.cur.name:'')}</span><span class="muted" style="font-size:11px">${p.pct}%</span></div>`; }).join('');
+  const lines=st.ls.slice(0,MAXL).map(l=>{ const p=lineProg(l), nx=nextOf(l), od=nx&&nx.due&&daysFromToday(nx.due)<0;
+    return `<div class="lrow" onclick="openLine('${l.id}')" title="${esc(lineLabel(l))}：${p.complete?'全部完成':esc(nx?nx.text:'')}${nx&&nx.due?'（預計 '+nx.due+(od?'，已逾期':'')+'）':''}${nx&&lineOwner(l)?' · '+esc(lineOwner(l)):''}">${pdMini(l,true)}<span class="st"><span class="nm" style="color:var(--text)">${esc(lineLabel(l))}</span>　${l.blocked?'<span class="tag red">卡關</span> ':''}${p.complete?'✓ 全部完成':esc(nx?nx.text:'')}</span><span class="nd ${od?'od':''}">${nx&&nx.due?md(nx.due):p.complete?'':'<span class="muted">未填日期</span>'}</span></div>`; }).join('');
   return `<div class="card site">
     <div class="site-h"><span class="code">${esc(s.id)}</span><span class="own">${s.owner?'負責：'+esc(s.owner):''}</span><span class="hpct">${st.ls.length?st.pct+'%':'—'}${st.gaps||st.blocked||st.overdue?' <span class="hdot" title="有缺口 / 卡關 / 逾期"></span>':''}</span>
-      <span class="r"><button class="btn sm" onclick="editSite('${s.id}')" title="編輯本廠區重點">✎ 重點</button><button class="btn sm" onclick="gotoMatrix({sites:['${s.id}']})" title="在矩陣中查看">▦</button></span></div>
+      <span class="r"><button class="btn sm" onclick="editSite('${s.id}')" title="編輯本廠區重點">✎</button><button class="btn sm" onclick="gotoMatrix({sites:['${s.id}']})" title="在矩陣中查看">▦</button></span></div>
     <div class="prog"><div class="pct">${st.ls.length?st.pct:'—'}<small>${st.ls.length?'%':''}</small></div>
-      <div class="bars"><div class="pbar"><i style="width:${st.pct}%"></i></div>${pdcaBar(st.cnt,true)}
-      <div class="muted" style="font-size:11px">${st.ls.length?STAGES.filter(x=>st.cnt[x.k]).map(x=>`${x.name} ${st.cnt[x.k]}`).join('・'):'尚無產線'}</div></div></div>
+      <div class="bars" title="${st.ls.length?STAGES.filter(x=>st.cnt[x.k]).map(x=>`${x.k} ${x.name} ${st.cnt[x.k]} 條`).join('、'):'尚無產線'}">${st.ls.length?pdcaBar(st.cnt,true):'<span class="muted" style="font-size:11px">尚無產線</span>'}</div></div>
     ${s.focus?`<div class="x-full"><div class="blk-t">本期重點${GI('focus')}</div><div class="focus">${esc(s.focus).replace(/\n/g,'<br>')}<div class="meta">${esc(s.updatedBy||'')} · ${relTime(s.updatedAt)}</div></div></div>`:''}
-    <div class="x-full"><div class="blk-t">現階段走到哪${GI('pdca')}</div>${lines||`<div class="empty">尚無產線，<a href="#" onclick="newLine('${s.id}');return false">新增一條</a></div>`}${st.ls.length>MAXL?`<div class="muted" style="font-size:11px;padding:2px 0">… 另 ${st.ls.length-MAXL} 條，<a href="#" onclick="gotoMatrix({sites:['${s.id}']});return false">在矩陣查看</a></div>`:''}</div>
-    <div class="x-full"><div class="blk-t">接下來要做${GI('next')}</div>${nexts.map(n=>`<div class="nx"><span class="d" style="color:${n.d<0?'var(--warn)':'inherit'}">${md(n.date)}</span><span class="t">${esc(n.what)} <span>· ${esc(lineLabel(n.l))}${n.who?' · '+esc(n.who):''}</span></span></div>`).join('')||'<div class="empty">各線目前關卡尚未填預計日</div>'}</div>
+    <div class="x-full"><div class="blk-t">各線目前關卡 · 預計日${GI('next')}</div>${lines||`<div class="empty">尚無產線，<a href="#" onclick="newLine('${s.id}');return false">新增一條</a></div>`}${st.ls.length>MAXL?`<div class="muted" style="font-size:11px;padding:2px 0">… 另 ${st.ls.length-MAXL} 條，<a href="#" onclick="gotoMatrix({sites:['${s.id}']});return false">在矩陣查看</a></div>`:''}</div>
     <div class="site-f">${st.gaps?`<span class="tag red">缺口 ${st.gaps}</span>`:''}${st.blocked?`<span class="tag red">卡關 ${st.blocked}</span>`:''}${st.overdue?`<span class="tag amb">逾期 ${st.overdue}</span>`:''}${st.stale?`<span class="tag amb">${st.stale} 條待更新</span>`:''}
       <span class="r">${st.last?'更新 '+relTime(st.last)+(st.lastBy?' · '+esc(st.lastBy):''):''}</span></div>
   </div>`;
@@ -1941,11 +1965,11 @@ function mPickTechs(iid){
   const note={pre:'一般由型態決定，項目通常不用勾',post:'通常不用勾'};
   openModal(`<div class="md-h"><b>需要的演算法 · ${esc(it.name)}</b><button class="x" onclick="closeModal()">✕</button></div>
   <div class="md-d">從上方「技術能力 × 版本」清單勾選這個檢測項目需要的技術。勾選的技術在某個版本<b>全部已釋出</b>，這個項目在該版本才算可檢。<br>
-    右側符號是各版本進度：<i class="pd pd-ok">●</i> 已釋出 <i class="pd pd-dev">◐</i> 開發中 <i class="pd pd-plan">○</i> 規劃中 <i class="pd pd-no">—</i> 不支援（編號對照下方版本）</div>
+    右側符號是各版本進度：<i class="pkd pkd-ok">●</i> 已釋出 <i class="pkd pkd-dev">◐</i> 開發中 <i class="pkd pkd-plan">○</i> 規劃中 <i class="pkd pkd-no">—</i> 不支援（編號對照下方版本）</div>
   <div class="pk-list"><div class="pk-hd"><span>技術能力</span><span class="pk-d">${plats.map((p,k)=>`<i class="pn" title="${esc(p.name)}">${numOf(k)}</i>`).join('')}</span></div>
   ${TCATS.map(g=>{ const ts=techs.filter(t=>tcat(t)===g.k); if(!ts.length) return '';
     return `<div class="pk-g"><span class="tcat-h tc-${g.k}">${g.k==='meas'||g.k==='det'?'演算法・':''}${g.t}</span>${note[g.k]?`<span class="muted pk-n">${note[g.k]}</span>`:''}</div>`+
-    ts.map(t=>`<label class="pk-r"><input type="checkbox" value="${t.id}" ${sel.has(t.id)?'checked':''} onchange="pkPrev()"><span class="pk-t">${esc(t.name)}</span><span class="pk-d">${plats.map(p=>{ const s=techPlat(t,p.id); return `<i class="pd pd-${s||'no'}" title="${esc(p.name)}：${PST.find(x=>x.k===s).t}">${PSYM[s]}</i>`; }).join('')}</span></label>`).join(''); }).join('')||'<div class="empty">上方還沒有建立技術能力</div>'}</div>
+    ts.map(t=>`<label class="pk-r"><input type="checkbox" value="${t.id}" ${sel.has(t.id)?'checked':''} onchange="pkPrev()"><span class="pk-t">${esc(t.name)}</span><span class="pk-d">${plats.map(p=>{ const s=techPlat(t,p.id); return `<i class="pkd pkd-${s||'no'}" title="${esc(p.name)}：${PST.find(x=>x.k===s).t}">${PSYM[s]}</i>`; }).join('')}</span></label>`).join(''); }).join('')||'<div class="empty">上方還沒有建立技術能力</div>'}</div>
   <div class="pk-prev" id="pk-prev"></div>
   <div class="md-b"><span class="muted" id="pk-cnt" style="font-size:11px;align-self:center"></span><span class="r"><button class="btn" onclick="closeModal()">取消</button><button class="btn pri" onclick="pkSave('${iid}')">儲存</button></span></div>`,true);
   pkPrev();
@@ -2443,7 +2467,7 @@ const GD_END={el:()=>$gd('about-fab'),t:'導覽結束 🎉',d:'隨時按右下�
 const GUIDES={
   overview:[
     {el:null,t:'總覽：這頁在看什麼？',d:'一眼看懂<b>各廠區畫檢 AOI 導入到哪、接下來要做什麼</b>。<br>資料由各廠區同仁在「能力矩陣」更新，這頁<b>自動彙整</b>，不用另外填。'},
-    {el:gq('.tiles'),t:'整體數字',d:'<b>PDCA 階段分佈</b>：全部產線各在哪個階段（P 規劃 → D 導入 → C 驗證 → A 量產）。<br><b style="color:#e0563f">紅字</b>代表要注意：檢測能力缺口（點一下直接看是哪些線）、逾期、卡關、超過 14 天沒更新。<br>'+GD_HINT},
+    {el:gq('.ov-strip'),t:'整體進度',d:'一條就看完：<b>PDCA 階段分佈</b>（P 規劃 → D 導入 → C 驗證 → A 量產，數字是幾條線）、產線數、平均完成度。<br>右邊「<b>需要注意</b>」只在有狀況時出現：<b>缺口</b>、<b>卡關</b>點一下會到能力矩陣看是哪幾條；<b>逾期</b>點一下捲到「接下來 30 天 & 逾期」。都沒有就顯示「✓ 沒有」。'},
     {el:gq('.region-h'),t:'地區區塊',d:'點地區名稱可以<b>收合 / 展開</b>整個地區。<br>右邊的「<b>卡片：完整</b>」按鈕切換這個地區的廠區卡顯示：<b>完整 → 重點</b>（只留完成度與警示）<b>→ 收合</b>（只剩一行）。<br>收合狀態只記在你這台電腦。'},
     {el:gq('.site'),t:'廠區卡片',d:'每個廠區一張：<b>完成度</b>和各階段幾條線。<br><b>本期重點</b>：負責人寫的現況（右上 <b>✎ 重點</b> 編輯）。<br><b>現階段走到哪</b>：每條線目前的 PDCA 步驟，點一下打開那條線。<br><b>接下來要做</b>：依到期日排序，紅字是逾期。'},
     {el:()=>$gd('roadmap'),t:'量產上線時程',d:'每一列是一個廠區，每個圈是一條線的量產上線日：<b style="color:#36b37e">● 已上線</b>、<b style="color:#2f6fd0">○ 計畫中</b>、<b style="color:#e0563f">○ 已過計畫日還沒上線</b>。<br>時間軸是<b>真實比例</b>，紅色虛線是今天。點圈可以打開那條線。'},

@@ -59,7 +59,7 @@ header .logo{width:30px;height:30px;border-radius:50%;object-fit:cover;backgroun
 
 /* ── Layout ── */
 main{padding:16px 18px 48px;max-width:1480px;margin:0 auto;}
-main.wide{max-width:none;}
+main.wide{max-width:none;padding-bottom:12px;}   /* 能力矩陣：表格自己捲動，整頁不捲 */
 .page{display:none;} .page.on{display:block;}
 .card{background:var(--glass-strong);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
   border:1px solid var(--glass-line);border-radius:var(--rad);box-shadow:var(--shadow);}
@@ -451,6 +451,24 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v3.3：矩陣篩選列一行 + 固定在頁首下方 ── */
+.mx-top{position:sticky;top:52px;z-index:30;margin:-16px -18px 0;padding:10px 18px 2px;background:rgba(238,242,247,.93);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+.mx-top .mbar{padding:0 0 8px;flex-wrap:nowrap;gap:6px;}
+.mx-top .mbar>*{flex-shrink:0;} .mx-top .mbar>select.in{flex-shrink:1;min-width:76px;} .mx-top .mbar #mq{flex:0 1 136px;min-width:84px;}
+@media (max-width:1200px){ .mx-top .mbar{flex-wrap:wrap;} }
+.mx-top .mbar .in{height:30px;font-size:12px;max-width:118px;}
+.mx-top .mbar #mq{max-width:none;}
+.mx-top .mbar label.ck{gap:4px;}
+.mx-top .mleg{padding:0 2px 8px;}
+.dd{position:relative;}
+.dd .dd-b{max-width:none!important;cursor:pointer;text-align:left;font-weight:600;white-space:nowrap;}
+.dd-m{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:60;min-width:220px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(20,40,80,.18);padding:8px 10px;}
+.dd.on .dd-m{display:block;}
+.dd-g{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;padding:4px 0;border-bottom:1px dashed var(--border);}
+.dd-g .lkb{flex-basis:100%;text-align:left;font-size:11.5px;text-decoration:none;}
+.dd-f{padding-top:8px;text-align:right;}
+.seg.rq button{padding:3px 7px;}
+.srow .seg.rq{margin-left:auto;}
 /* ── v3.2.1：產線面板 PDCA 橫向 ── */
 .pd-h{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:6px;}
 .pd-col{border:1px solid var(--border);border-radius:9px;padding:6px 7px 4px;background:#fff;min-width:0;}
@@ -474,7 +492,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .mx tr.ln.watch td:not(.stk):not(.t-x):not(.req){background:#fffcf2;}
 .ck-w.on{color:#9a6b00;font-weight:700;}
 /* ── v3.1：總覽收合 / 凍結、光學調整必填 ── */
-.ov-top{position:sticky;top:52px;z-index:20;margin:0 -8px;padding:0 8px 10px;background:rgba(238,242,247,.93);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid transparent;}
+.ov-top{position:sticky;top:52px;z-index:20;margin:-16px -18px 10px;padding:12px 18px 10px;background:rgba(238,242,247,.93);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid transparent;}
 .region-h{cursor:pointer;user-select:none;}
 .region-h small{font-size:11px;font-weight:500;color:var(--sub);}
 .region-h::after{order:2;} .region-h .rg-mode{order:3;font-weight:600;}
@@ -498,7 +516,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .op-f label .in{height:28px;font-size:12px;font-weight:400;color:var(--text);}
 .op-f .op-v{flex:1;}
 .op-f .in.bad{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 5%,#fff);}
-@media (max-width:760px){ .ov-top{position:static;margin:0;padding:0;background:none;backdrop-filter:none;} .ov-two{grid-template-columns:minmax(0,1fr);} }
+@media (max-width:760px){ .ov-top{position:static;margin:0 0 10px;padding:0;background:none;backdrop-filter:none;} .mx-top{position:static;margin:0;padding:0;background:none;backdrop-filter:none;} .ov-two{grid-template-columns:minmax(0,1fr);} }
 /* ── v3.0：光學調整 ── */
 .srow .op-d{width:132px;height:26px;font-size:11px;margin-left:auto;margin-right:6px;}
 .seg button.on.v-na{background:#8a96a8;color:#fff;} .seg button.on.v-x{background:#dfe5ee;color:var(--text);}
@@ -634,7 +652,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.2.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.3', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -817,7 +835,9 @@ function lineProg(l){
   for(const s of st){ if(done[s.id]) n++; else if(!cur) cur=s; else if(!nxt) nxt=s; }
   return {n,total:st.length,pct:st.length?Math.round(n/st.length*100):0,stage:cur?cur.stage:'A',cur,nxt,complete:!cur&&st.length>0};
 }
-const platName=id=>{ const p=byId('plats',id); return p&&!p.deleted?p.name:''; };
+/** 版本名稱（顯示用）＝簡稱；全名用 platFull（主檔設定、CSV、搜尋比對才用全名） */
+const platFull=id=>{ const p=byId('plats',id); return p&&!p.deleted?p.name:''; };
+const platName=id=>{ const p=byId('plats',id); return p&&!p.deleted?platShort(p):''; };
 const formName=id=>{ const f=byId('forms',id); return f&&!f.deleted?f.name:''; };
 const formLabel=ids=>(ids||[]).map(formName).filter(Boolean).join(' + ')||'未設定型態';
 const techPlat=(t,pid)=>((t&&t.plat)||{})[pid]||'';
@@ -836,7 +856,10 @@ function reqOf(pids,forms){ const s=new Set(); (pids||[]).forEach(p=>{ const fr=
   return [...s].filter(i=>{ const x=byId('items',i); return x&&!x.deleted; }); }
 /** 這條線有哪些「產品別 × 型態」組合在主檔還沒設定 */
 function unsetCombos(pids,forms){ const out=[]; (pids||[]).forEach(p=>{ const fr=((byId('products',p)||{}).fr)||{}; (forms||[]).forEach(f=>{ if(!fr[f]) out.push(`${prodName(p)} × ${formName(f)}`); }); }); return out; }
-const reqItems=l=>reqOf(lineProds(l),l.forms);
+/** 需求檢測項目：自動（產品別 × 型態）為預設，產線可手動加入（reqAdd）或排除（reqOff）。手動選了目前版本做不到的項目 → 直接顯示為缺口，提醒要升版 */
+const reqAuto=l=>reqOf(lineProds(l),l.forms);
+const reqItems=l=>{ const a=reqAuto(l), add=(l&&l.reqAdd)||[], off=(l&&l.reqOff)||[]; return [...a.filter(i=>!off.includes(i)),...add.filter(i=>!a.includes(i)&&byId('items',i))]; };
+const reqSrc=(l,iid)=>{ const a=reqAuto(l).includes(iid); return ((l.reqAdd||[]).includes(iid)&&!a)?'add':((l.reqOff||[]).includes(iid)&&a)?'off':a?'auto':''; };
 const isReq=(l,iid)=>reqItems(l).includes(iid);
 /** 檢測項目在某條線的能力：依「此線的軟體版本 → 該版本的技術能力進度 → 此線有沒有關掉」推算 */
 const tcat=t=>(t&&t.cat)||'det';
@@ -886,15 +909,15 @@ function fitGroupTags(fits){
 }
 /** short=true：用版本簡稱、只留符號（產品設定這類空間小的地方），滑鼠停留顯示全名與原因 */
 function fitTag(x,short){
-  const n=esc(short?platShort(x.p):x.p.name), full=short?esc(x.p.name)+'：':'';
+  const n=esc(platShort(x.p)), full=esc(x.p.name)+'：';
   if(short){
     if(x.lvl==='ok') return `<span class="tag grn" title="${full}需要的技術能力全部已釋出">● ${n}</span>`;
     if(x.lvl==='dev') return `<span class="tag amb" title="${full}開發中 ${x.dev.length} 項：${esc(x.dev.map(t=>t.name).join('、'))}">◐ ${n}</span>`;
     if(x.lvl==='shape') return `<span class="tag" title="${full}不支援這個型態">— ${n}</span>`;
     return `<span class="tag red" title="${full}不支援：${esc(x.miss.map(t=>t.name).join('、'))}">✕ ${n}</span>`;
   }
-  if(x.lvl==='ok') return `<span class="tag grn" title="需要的技術能力全部已釋出">✓ ${n}</span>`;
-  if(x.lvl==='dev') return `<span class="tag amb" title="開發中：${esc(x.dev.map(t=>t.name).join('、'))}">◐ ${n}${short?'':`（開發中 ${x.dev.length}）`}</span>`;
+  if(x.lvl==='ok') return `<span class="tag grn" title="${full}需要的技術能力全部已釋出">✓ ${n}</span>`;
+  if(x.lvl==='dev') return `<span class="tag amb" title="${full}開發中：${esc(x.dev.map(t=>t.name).join('、'))}">◐ ${n}${short?'':`（開發中 ${x.dev.length}）`}</span>`;
   if(x.lvl==='shape') return `<span class="tag" title="此版本不支援這個型態">${n}（型態不符）</span>`;
   return `<span class="tag red" title="不支援：${esc(x.miss.map(t=>t.name).join('、'))}">✕ ${n}${short?'':`（缺 ${x.miss.length}）`}</span>`;
 }
@@ -982,8 +1005,7 @@ function renderOverview(){
   const demoBanner=hasDemo()?`<div class="banner"><span>🧪 目前有 <b>5 條示範例</b>${GI('demo')}（虛構產線，標示「示範例」，用來看平台效果）。${DB.lines.some(l=>l.demo&&l.demoGen&&!l.deleted)?'示範例已發布到雲端，全部門都看得到；正式開始填寫前請清除。':'正式使用前請清除；本機示範例不會上傳雲端。'}</span><button class="btn sm" onclick="clearDemo()">清除示範例</button></div>`:'';
   const nameBanner=!USER.name?`<div class="banner"><span>👤 請先設定你的名字，變更紀錄才知道是誰更新的。</span><button class="btn sm" onclick="openUser()">設定</button></div>`:'';
   const dg=dupGroups(), dupBanner=dg.length?`<div class="banner bad"><span>⚠ 發現 <b>${dg.length} 組重複的產線</b>${GI('dup')}（${esc(dg.map(g=>g[0].site+' '+g[0].line).join('、'))}），可能是兩個人同時新增了同一條線。</span><button class="btn sm" onclick="openDup()">處理</button></div>`:'';
-  el.innerHTML=`${nameBanner}${dupBanner}${demoBanner}
-  <div class="ov-top">
+  el.innerHTML=`<div class="ov-top">
   <div class="sec-t">整體進度<small>${sites.length} 個廠區 · ${live('products').length} 個產品 · 截至 ${new Date().toLocaleString('zh-TW',{hour12:false})}</small></div>
   <div class="tiles">
     <div class="card tile wide"><div class="k">PDCA 階段分佈${GI('pdca')}</div><div style="margin-top:8px">${pdcaBar(cnt)}</div>${stageLegend()}</div>
@@ -993,6 +1015,7 @@ function renderOverview(){
     <div class="card tile ${overdue||blocked?'alert':''}"><div class="k">逾期 / 卡關${GI('overdue')}</div><div class="v">${overdue}<small>/ ${blocked}</small></div><div class="s">逾期行動 / 卡關產線</div></div>
     <div class="card tile ${stale?'alert':''}"><div class="k">資料待更新${GI('stale')}</div><div class="v">${stale}<small>條</small></div><div class="s">超過 ${STALE_DAYS} 天未更新</div></div>
   </div></div>
+  ${nameBanner}${dupBanner}${demoBanner}
   ${regions.map(r=>{ const st=ovRg(r.name), n=L.filter(l=>r.sites.some(s=>s.id===l.site)).length;
     return `<div class="region ${st.off?'rg-off':''}" data-rg="${esc(r.name)}"><div class="region-h" title="點一下收合 / 展開這個地區"><span class="rg-tg">▾</span>${esc(r.name)}<small>${r.sites.length} 個廠區 · ${n} 條線</small>
       <button class="btn sm rg-mode" title="切換這個地區的廠區卡顯示：完整 → 重點 → 收合">${OV_MODE[st.mode]}</button></div>
@@ -1112,7 +1135,7 @@ function filteredLines(){
     if(f.stage){ if(f.stage==='blocked'){ if(!l.blocked) return false; } else if(lineProg(l).stage!==f.stage) return false; }
     if(f.gapOnly&&!lineGaps(l)) return false;
     if(f.watchOnly&&!isWatch(l.id)) return false;
-    if(q){ const hay=[l.site,prodsLabel(l),l.line,lineSub(l),l.vendor,lineOwner(l),l.fabOwner,platName((l.sw||{}).plat),(l.sw||{}).ver,l.nextNote].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
+    if(q){ const hay=[l.site,prodsLabel(l),l.line,lineSub(l),l.vendor,lineOwner(l),l.fabOwner,platName((l.sw||{}).plat),platFull((l.sw||{}).plat),(l.sw||{}).ver,l.nextNote].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
     return true;
   }));
 }
@@ -1120,28 +1143,32 @@ function renderMatrix(){
   const f=UI.mf, el=$('#pg-matrix'), ls=filteredLines();
   const items=liveSorted('items').filter(i=>f.allItems||ls.some(l=>itemSt(l,i.id)!=='na'));
   const techs=techsSorted();
-  const sites=liveSorted('sites'), prods=liveSorted('products');
+  const sites=liveSorted('sites'), prods=liveSorted('products'), regs=[];
+  for(const s of sites){ let r=regs.find(x=>x.name===(s.region||'其他')); if(!r) regs.push(r={name:s.region||'其他',sites:[]}); r.sites.push(s); }
   const focusQ=document.activeElement&&document.activeElement.id==='mq';
+  const ow=$('#pg-matrix .mwrap'), osx=ow?ow.scrollLeft:0, osy=ow?ow.scrollTop:0;   // 重畫後維持表格捲動位置（例如按星號、快速編輯）
   const box=bg=>`<b style="display:inline-block;width:12px;height:12px;${bg};border:1px solid #cddcf3;border-radius:3px;vertical-align:-1px"></b>`;
   const opt=(k,label,arr)=>`<select class="in" onchange="setMF({${k}:this.value})"><option value="">${label}</option>${arr.map(x=>`<option value="${x.id}" ${f[k]===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`;
   el.innerHTML=`
-  <div class="card mbar">
-    <div class="grp"><span class="muted" style="font-size:11px;font-weight:700">廠區</span>${sites.map(s=>`<button class="chip ${f.sites.includes(s.id)?'on':''}" onclick="toggleSiteF('${s.id}')">${esc(s.id)}</button>`).join('')}${f.sites.length?`<button class="chip" onclick="setMF({sites:[]})">全部</button>`:''}</div>
-    <span class="sep"></span>
+  <div class="mx-top"><div class="mbar">
+    <div class="dd ${MXDD?'on':''}" id="mx-sd"><button class="in dd-b" onclick="mxDD(event)" title="選擇要看的廠區（可複選）">廠區：${!f.sites.length?'全部':f.sites.length<=2?esc(f.sites.join('、')):f.sites.length+' 個'} ▾</button>
+      <div class="dd-m">${regs.map(r=>`<div class="dd-g"><button class="lkb" onclick="setMF({sites:'${r.sites.map(s=>s.id).join(',')}'.split(',')})" title="只看這個地區">${esc(r.name)}</button>
+        ${r.sites.map(s=>`<label class="ck"><input type="checkbox" ${f.sites.includes(s.id)?'checked':''} onchange="toggleSiteF('${s.id}')">${esc(s.id)}</label>`).join('')}</div>`).join('')}
+        <div class="dd-f"><button class="btn sm" onclick="setMF({sites:[]})">全部廠區</button></div></div></div>
     ${opt('product','全部產品別',prods)}${opt('form','全部型態',liveSorted('forms'))}
     <select class="in" onchange="setMF({stage:this.value})"><option value="">全部階段</option>${STAGES.map(s=>`<option value="${s.k}" ${f.stage===s.k?'selected':''}>${s.k} ${s.name}</option>`).join('')}<option value="blocked" ${f.stage==='blocked'?'selected':''}>⚠ 卡關中</option></select>
     ${opt('plat','全部軟體版本',liveSorted('plats').map(p=>({id:p.id,name:platShort(p)})))}${opt('hw','全部相機',liveSorted('hws'))}
-    <input class="in" id="mq" placeholder="🔍 搜尋線別 / 相機 / 版本 / 負責人…" value="${esc(f.q)}" style="width:200px" oninput="UI.mf.q=this.value;saveUI();renderMatrix()">
-    <label class="ck ck-w ${f.watchOnly?'on':''}"><input type="checkbox" ${f.watchOnly?'checked':''} onchange="setMF({watchOnly:this.checked})">★ 只看關注<span class="muted">（${watchCount()}）</span></label>
-    <label class="ck"><input type="checkbox" ${f.gapOnly?'checked':''} onchange="setMF({gapOnly:this.checked})">只看有缺口</label>
-    <label class="ck"><input type="checkbox" ${f.allItems?'checked':''} onchange="setMF({allItems:this.checked})">顯示全部檢測項目</label>
+    <input class="in" id="mq" placeholder="🔍 搜尋線別 / 相機 / 版本…" title="可搜尋線別、相機、版本、負責人、下一步" value="${esc(f.q)}" style="width:136px" oninput="UI.mf.q=this.value;saveUI();renderMatrix()">
+    <label class="ck ck-w ${f.watchOnly?'on':''}"><input type="checkbox" ${f.watchOnly?'checked':''} onchange="setMF({watchOnly:this.checked})" title="只看你標記 ★ 的產線">★ 關注<span class="muted">（${watchCount()}）</span></label>
+    <label class="ck"><input type="checkbox" ${f.gapOnly?'checked':''} onchange="setMF({gapOnly:this.checked})" title="只看有檢測能力缺口的產線">只看缺口</label>
+    <label class="ck"><input type="checkbox" ${f.allItems?'checked':''} onchange="setMF({allItems:this.checked})" title="顯示全部檢測項目（預設只顯示這些線有用到的）">全部項目</label>
     <span style="margin-left:auto;display:flex;gap:6px">
       <button class="btn ${f.edit?'on':''}" id="mx-edit" onclick="setMF({edit:!UI.mf.edit})" title="開啟後，點技術能力格子即可切換開 / 關">✎ 快速編輯${f.edit?'：開':''}</button>
-      <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn" onclick="exportCSV()" title="匯出目前篩選結果為 CSV">⬇ CSV</button>
       <button class="btn pri" id="mx-add" onclick="newLine()">＋ 新增產線</button>
     </span>
   </div>
-  <div class="mleg" style="margin-top:8px">
+  <div class="mleg">
     <span class="s" style="font-weight:700;color:var(--text)">檢測項目（自動推算）${GI('itemst')}</span>
     <span class="s"><b class="s-ok">●</b>已具備</span><span class="s"><b class="s-off">○</b>可開啟</span><span class="s"><b class="s-dev">◐</b>開發中</span><span class="s"><b class="s-gap">✕</b>缺口</span><span class="s"><b class="s-unk">?</b>未設定對應技術</span><span class="s"><b class="s-na">·</b>不需</span>
     <span class="s">${box('background:var(--req)')}需求項目${GI('req')}</span>
@@ -1152,10 +1179,17 @@ function renderMatrix(){
     ${f.edit?'<span class="s" style="color:var(--accent-deep);font-weight:700">快速編輯中：點技術能力格子切換 開 / 關；點光學調整格子打開面板填寫（完成要填日期與參考值）</span>':''}
     <span class="s"><b style="color:#d99400">★</b>特別關注${GI('watch')}</span>
     <span class="s" style="margin-left:auto">${ls.length} 條產線</span>
-  </div>
+  </div></div>
   <div class="card mwrap">${ls.length?matrixTable(ls,items,techs):`<div class="empty" style="padding:30px;text-align:center">${f.watchOnly&&!watchCount()?'還沒有特別關注的產線：在線別旁點 ☆ 就能加入（先取消「★ 只看關注」看全部產線）':'沒有符合條件的產線'}</div>`}</div>`;
   if(focusQ){ const q=$('#mq'); q.focus(); q.setSelectionRange(q.value.length,q.value.length); }
+  const mw=$('#pg-matrix .mwrap'); if(mw){ mw.scrollLeft=osx; mw.scrollTop=osy; } mxFit();
 }
+/** 能力矩陣：篩選列固定在頁首下方，表格高度＝畫面剩下的空間（表格自己捲動，整頁不動） */
+function mxFit(){ const t=$('#pg-matrix .mx-top'), mw=$('#pg-matrix .mwrap'); if(!t||!mw||!t.offsetWidth) return;
+  mw.style.maxHeight=innerWidth>760?Math.max(260,innerHeight-$('header').offsetHeight-t.offsetHeight-16)+'px':''; }
+let MXDD=false;
+function mxDD(e){ e.stopPropagation(); MXDD=!MXDD; const d=$('#mx-sd'); if(d) d.classList.toggle('on',MXDD); }
+document.addEventListener('click',e=>{ if(MXDD&&!e.target.closest('#mx-sd')){ MXDD=false; const d=$('#mx-sd'); if(d) d.classList.remove('on'); } });
 function matrixTable(ls,items,techs){
   const NC=2+items.length+1+techs.length+OPTICS.length+2+1+1+1;
   let h=`<table class="mx ${UI.mf.edit?'edit':''}"><thead><tr class="h1">
@@ -1181,8 +1215,8 @@ function matrixTable(ls,items,techs){
     h+=`<tr class="ln ${isWatch(l.id)?'watch':''}" data-l="${l.id}">
       <td class="stk c-pr">${prodsLabel(l)!==lastProd?`<b>${esc(prodsLabel(l))}</b>`:''}</td>
       <td class="stk c-ln"><div class="ln-n">${watchBtn(l.id)}${esc(l.line||'?')} ${l.blocked?'<span class="tag red" title="'+esc(l.blockReason||'')+'">卡關</span>':''}${dupIds.has(l.id)?'<span class="tag red" title="同廠區、同線別、產品別重疊的產線有多筆，到總覽處理">重複</span>':''}${l.demo?'<span class="tag amb">示範例</span>':''}</div><div class="ln-s" title="${esc(l.vendor||'')}">${esc(lineSub(l))||'&nbsp;'}</div></td>
-      ${items.map(i=>{ const v=itemSt(l,i.id), c=itemCap(l,i.id); return `<td class="s s-${v} ${isReq(l,i.id)?'req':''}" data-t="i" data-k="${i.id}" title="${esc(i.name)}：${IST[v].t}${isReq(l,i.id)?'（需求項目）':''}${c.why&&v!=='na'?'\n'+esc(c.why):''}">${IST[v].sym}</td>`; }).join('')}
-      <td class="swc"><div class="sw" style="color:${swOff?'var(--amber)':'inherit'}" title="${swOff?esc(`「${fit.p.name}」${fit.lvl==='dev'?'仍在開發：'+fit.dev.map(t=>t.name).join('、'):fit.lvl==='shape'?'不支援此型態':'不支援：'+fit.miss.map(t=>t.name).join('、')}`):''}">${esc(sw.plat?platShort(byId('plats',sw.plat)):'未設定')}</div><div class="dim" title="${esc(platName(sw.plat)||'')}">${esc(sw.ver||'—')}</div></td>
+      ${items.map(i=>{ const v=itemSt(l,i.id), c=itemCap(l,i.id); return `<td class="s s-${v} ${isReq(l,i.id)?'req':''}" data-t="i" data-k="${i.id}" title="${esc(i.name)}：${IST[v].t}${isReq(l,i.id)?(reqSrc(l,i.id)==='add'?'（需求項目・手動加入）':'（需求項目）'):reqSrc(l,i.id)==='off'?'（手動排除）':''}${c.why&&v!=='na'?'\n'+esc(c.why):''}">${IST[v].sym}</td>`; }).join('')}
+      <td class="swc"><div class="sw" style="color:${swOff?'var(--amber)':'inherit'}" title="${swOff?esc(`「${platShort(fit.p)}」${fit.lvl==='dev'?'仍在開發：'+fit.dev.map(t=>t.name).join('、'):fit.lvl==='shape'?'不支援此型態':'不支援：'+fit.miss.map(t=>t.name).join('、')}`):''}">${esc(sw.plat?platShort(byId('plats',sw.plat)):'未設定')}</div><div class="dim" title="${esc(platName(sw.plat)||'')}">${esc(sw.ver||'—')}</div></td>
       ${techs.map(t=>{ const ps=techPlat(t,sw.plat), v=lineTech(l,t.id);
         return `<td class="s ${ps==='ok'?(v==='on'?'s-ok':'s-off'):'t-x'}" data-t="t" data-k="${t.id}" title="${esc(t.name)}：${ps==='ok'?(v==='on'?'已開啟':'未開啟'):'此版本'+(PST.find(x=>x.k===ps)||PST[0]).t}">${ps==='ok'?(v==='on'?'●':'○'):''}</td>`; }).join('')}
       ${OPTICS.map(o=>{ const v=opSt(l,o.k), x=opVal(l,o.k); return `<td class="s ${v==='ok'?'s-ok':v==='pend'?'s-dev':v==='na'?'s-na':'s-off'}" data-t="o" data-k="${o.k}" title="${esc(o.t)}：${v==='ok'?'已完成 '+esc(x.d)+'\n參考值：'+esc(x.v):v==='pend'?'選了完成，但還沒填齊完成日 / 參考值':v==='na'?'不適用':'未確認'}">${v==='ok'?'●':v==='pend'?'◐':v==='na'?'·':'○'}</td>`; }).join('')}
@@ -1257,7 +1291,7 @@ function renderDrawer(){
   const p=lineProg(w), steps=stepsSorted(), cur=byId('lines',w.id), sw=w.sw||{};
   ED.open=ED.open||{pdca:false,setup:ED.isNew,items:false,kpi:false};
   [ED.w,ED.orig].forEach(x=>{ if(x&&x.optic) for(const k of Object.keys(x.optic)){ const v=x.optic[k]; if(typeof v==='string'&&v!=='na') x.optic[k]={d:v,v:''}; } });
-  const req=reqItems(w), items=liveSorted('items').sort((a,b)=>(req.includes(b.id)?1:0)-(req.includes(a.id)?1:0));
+  const req=reqItems(w), items=liveSorted('items').sort((a,b)=>(req.includes(b.id)?1:0)-(req.includes(a.id)?1:0)), nMan=(w.reqAdd||[]).length+(w.reqOff||[]).length;
   const changedRemote=!ED.isNew&&cur&&cur.updatedAt!==ED.orig.updatedAt;
   const fld=(lb,p,ph,type,extra)=>`<div class="f"><label>${lb}</label><input class="in" ${type?`type="${type}"`:''} ${extra||''} data-p="${p}" value="${esc(edGet(p)??'')}" placeholder="${esc(ph||'')}"></div>`;
   const seg=(p,opts,v)=>`<span class="seg">${opts.map(o=>`<button class="v-${o.k} ${v===o.k?'on':''}" data-set="${p}" data-v="${o.k}">${o.t}</button>`).join('')}</span>`;
@@ -1309,10 +1343,10 @@ function renderDrawer(){
       </div>
       <div class="sub-t">軟體版本${GI('sw')}</div>
       <div class="fg c3">
-        <div class="f"><label>版本類別${GI('plat')}</label><select class="in" data-p="sw.plat"><option value="">— 選擇 —</option>${liveSorted('plats').map(x=>`<option value="${x.id}" ${sw.plat===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+        <div class="f"><label>版本類別${GI('plat')}</label><select class="in" data-p="sw.plat" title="${esc(platFull(sw.plat))}"><option value="">— 選擇 —</option>${liveSorted('plats').map(x=>`<option value="${x.id}" ${sw.plat===x.id?'selected':''} title="${esc(x.name)}">${esc(platShort(x))}</option>`).join('')}</select></div>
         ${fld('版本號'+(platLatest(sw.plat)?` <span class="muted" style="font-weight:500">（最新 ${esc(platLatest(sw.plat))}）</span>`:''),'sw.ver',platLatest(sw.plat)?'最新：'+platLatest(sw.plat):'例：2.0.3_20260918')}${fld('備註','sw.note','')}</div>
-      ${lineProds(w).length?`<div class="sugg"><span class="muted">「${esc(prodsLabel(w))} · ${esc(formLabel(w.forms))}」建議${GI('sugg')}：</span>${okFits.length?okFits.map(x=>fitTag(x)).join(' '):'<span class="tag red">目前沒有版本能完整支援</span> '+fits.filter(x=>x.lvl==='dev').map(x=>fitTag(x)).join(' ')}</div>`:''}
-      ${myFit&&myFit.lvl!=='ok'?`<div class="warnline">⚠ 「${esc(myFit.p.name)}」${myFit.lvl==='shape'?'不支援這個型態':myFit.lvl==='dev'?'還有功能在開發中：'+esc(myFit.dev.map(t=>t.name).join('、')):'不支援：'+esc(myFit.miss.map(t=>t.name).join('、'))}</div>`:''}
+      ${lineProds(w).length?`<div class="sugg"><span class="muted">「${esc(prodsLabel(w))} · ${esc(formLabel(w.forms))}」建議${GI('sugg')}：</span>${okFits.length?fitGroupTags(okFits):'<span class="tag red">目前沒有版本能完整支援</span> '+fitGroupTags(fits.filter(x=>x.lvl==='dev'))}</div>`:''}
+      ${myFit&&myFit.lvl!=='ok'?`<div class="warnline">⚠ 「${esc(platShort(myFit.p))}」${myFit.lvl==='shape'?'不支援這個型態':myFit.lvl==='dev'?'還有功能在開發中：'+esc(myFit.dev.map(t=>t.name).join('、')):'不支援：'+esc(myFit.miss.map(t=>t.name).join('、'))}</div>`:''}
       <div class="sub-t">技術能力${GI('tech')} <span class="muted" style="font-weight:500;margin-left:6px">${sw.plat?`版本已釋出的功能預設開啟，有關掉的才切換`:'先選版本類別'}</span></div>
       ${formPre(w.forms).length?`<div class="muted" style="font-size:11px;margin-bottom:4px">型態「${esc(formLabel(w.forms))}」需要的前處理：${formPre(w.forms).map(t=>`<b>${esc(t.name)}</b>`).join('、')}</div>`:''}
       ${sw.plat?(TCATS.map(g=>{ const ts=rel.filter(t=>tcat(t)===g.k); if(!ts.length) return '';
@@ -1329,8 +1363,12 @@ function renderDrawer(){
           <label class="op-v">參考值 *<input class="in ${String(x.v||'').trim()?'':'bad'}" data-p="optic.${o.k}.v" value="${esc(x.v||'')}" placeholder="${esc(o.ph)}"></label></div>`:''}</div>`; }).join('')}
     </details>
 
-    <details class="ds" data-sec="items" ${ED.open.items?'open':''}><summary><h4>檢測項目（自動推算）${GI('itemst')}<span class="r sumtxt">${req.length?`需求 ${req.length} 項：${['ok','off','dev','gap','unk'].filter(s=>cnt[s]).map(s=>`<b class="s-${s}">${IST[s].sym}</b>${cnt[s]}`).join(' ')}`:'<span class="muted">先選產品別</span>'}</span></h4></summary>
-      ${items.map(i=>{ const c=itemCap(w,i.id), v=itemSt(w,i.id); return `<div class="srow"><span class="n">${esc(i.name)} ${req.includes(i.id)?'<span class="tag blu">需求</span>':''}${c.why&&v!=='ok'&&v!=='na'?`<div class="muted" style="font-size:10.5px">${esc(c.why)}</div>`:''}</span>${istTag(v)}</div>`; }).join('')}</details>
+    <details class="ds" data-sec="items" ${ED.open.items?'open':''}><summary><h4>檢測項目${GI('itemst')} <small>自動推算，可手動調整</small><span class="r sumtxt">${req.length?`需求 ${req.length} 項${nMan?`（手動 ${nMan}）`:''}：${['ok','off','dev','gap','unk'].filter(s=>cnt[s]).map(s=>`<b class="s-${s}">${IST[s].sym}</b>${cnt[s]}`).join(' ')}`:'<span class="muted">先選產品別</span>'}</span></h4></summary>
+      <div class="muted" style="font-size:11px;margin:2px 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">需求項目依「產品別 × 型態」自動帶入；這條線實際要檢的不同，可逐項改「需要 / 不需要」。選了目前版本做不到的項目會顯示為缺口，代表要升版。
+        ${nMan?`<button class="lkb" data-reqreset="1">全部改回自動</button>`:''}</div>
+      ${items.map(i=>{ const c=itemCap(w,i.id), v=itemSt(w,i.id), src=reqSrc(w,i.id), on=req.includes(i.id);
+        return `<div class="srow"><span class="n">${esc(i.name)}${src==='add'?' <span class="tag blu">手動加入</span>':src==='off'?' <span class="tag">手動排除</span>':''}${c.why&&v!=='ok'&&v!=='na'?`<div class="muted" style="font-size:10.5px">${esc(c.why)}</div>`:''}</span>
+          <span class="seg rq">${[[1,'需要'],[0,'不需要']].map(([k,t])=>`<button class="v-${k?'on':'x'} ${on===!!k?'on':''}" data-req="${i.id}" data-v="${k}" title="${(src==='auto'||src==='off')===!!k?'與自動推算相同':'手動調整（自動推算：'+((src==='auto'||src==='off')?'需要':'不需要')+'）'}">${t}</button>`).join('')}</span>${istTag(v)}</div>`; }).join('')}</details>
 
     <details class="ds" data-sec="kpi" ${ED.open.kpi?'open':''}><summary><h4>上線後 KPI 監控${GI('kpi')} <small>量產後記錄</small><span class="r sumtxt muted">${kd.length?`${kd.length} 筆紀錄，最新 ${md(kd[kd.length-1])}`:'尚無紀錄'}</span></h4></summary>
       <div class="fg c3">${KPI_DEF.map(d=>`<div class="f"><label>目標 ${d.name}（${d.unit}，${d.better==='low'?'≤':'≥'}）${GI(d.k)}</label><input class="in" type="number" step="any" data-p="kpiT.${d.k}" data-num="1" value="${esc((w.kpiT||{})[d.k]??'')}" placeholder="${d.def}"></div>`).join('')}</div>
@@ -1383,6 +1421,11 @@ function onDrawerClick(e){
   const t=e.target; if(!ED) return;
   if(t.dataset.watch){ toggleWatch(t.dataset.watch); return; }
   if(t.dataset.set!==undefined){ edSet(t.dataset.set,t.dataset.v||''); renderDrawer(); return; }
+  if(t.dataset.req){ const id=t.dataset.req, want=t.dataset.v==='1', auto=reqAuto(ED.w).includes(id);
+    const add=(ED.w.reqAdd||[]).filter(x=>x!==id), off=(ED.w.reqOff||[]).filter(x=>x!==id);
+    if(want&&!auto) add.push(id); if(!want&&auto) off.push(id);
+    if(add.length) ED.w.reqAdd=add; else delete ED.w.reqAdd; if(off.length) ED.w.reqOff=off; else delete ED.w.reqOff; renderDrawer(); return; }
+  if(t.dataset.reqreset){ delete ED.w.reqAdd; delete ED.w.reqOff; renderDrawer(); return; }
   if(t.dataset.opt){ const o=ED.w.optic=Object.assign({},ED.w.optic||{}), k=t.dataset.opt, v=t.dataset.v;
     if(v==='ok'){ const s=opSt(ED.w,k); if(s!=='ok'&&s!=='pend') o[k]={d:todayStr(),v:''}; } else if(v==='na') o[k]='na'; else delete o[k];
     if(!Object.keys(o).length) delete ED.w.optic; renderDrawer();
@@ -1406,6 +1449,8 @@ function diffMsg(a,b){
   if(tch.length) out.push('技術能力 '+(tch.length>2?tch.slice(0,2).join('、')+` 等 ${tch.length} 項`:tch.join('、')));
   const ich=live('items').filter(i=>isReq(b,i.id)&&itemSt(a,i.id)!==itemSt(b,i.id)).map(i=>`${i.name}→${IST[itemSt(b,i.id)].t}`);
   if(ich.length) out.push('（檢測項目 '+(ich.length>2?ich.slice(0,2).join('、')+` 等 ${ich.length} 項`:ich.join('、'))+'）');
+  const rqa=reqItems(a), rqb=reqItems(b), rAdd=rqb.filter(i=>!rqa.includes(i)), rDel=rqa.filter(i=>!rqb.includes(i)), inm=i=>(byId('items',i)||{}).name||i;
+  if((rAdd.length||rDel.length)&&(!eq(a.reqAdd||[],b.reqAdd||[])||!eq(a.reqOff||[],b.reqOff||[]))) out.push('需求檢測項目'+(rAdd.length?' 加入 '+rAdd.map(inm).join('、'):'')+(rDel.length?' 排除 '+rDel.map(inm).join('、'):''));
   if(!eq(a.forms||[],b.forms||[])) out.push(`型態 → ${formLabel(b.forms)}`);
   if(!eq(lineProds(a),lineProds(b))) out.push(`產品別 → ${prodsLabel(b)}`);
   if((a.hw||'')!==(b.hw||'')) out.push(`相機 → ${hwName(b.hw)||'—'}`);
@@ -1458,7 +1503,7 @@ function renderQuick(){
     <label class="ck"><input type="checkbox" id="q-mine" ${q.mine?'checked':''}>只看我負責的${USER.name?`（${esc(USER.name)}）`:''}</label>
     <span class="muted" style="font-size:11px">${ls.length} 條線${stale?`・<b style="color:var(--amber)">${stale} 條超過 ${STALE_DAYS} 天未更新</b>`:''}</span>
     <span class="qbatch" id="q-batch"><span class="muted" style="font-size:11px">批次升版${GI('batch')}：已選 <b>${nSel}</b> 條</span>
-      <select class="in" id="qb-plat"><option value="">版本類別</option>${liveSorted('plats').map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>
+      <select class="in" id="qb-plat"><option value="">版本類別</option>${liveSorted('plats').map(p=>`<option value="${p.id}" title="${esc(p.name)}">${esc(platShort(p))}</option>`).join('')}</select>
       <input class="in" id="qb-ver" placeholder="版本號" style="width:150px"><button class="btn pri" data-qbatch="1" ${nSel?'':'disabled'}>套用</button></span>
   </div>
   <div class="card" style="overflow:auto;margin-top:10px">${ls.length?`<table class="tbl qtbl"><thead><tr><th style="width:1%"><input type="checkbox" id="q-all" ${nSel&&nSel===ls.length?'checked':''} title="全選"></th><th>廠區</th><th>產品別 / 線別</th><th>目前關卡</th><th>預計日</th><th></th><th>狀態</th><th>軟體版本</th><th>最後更新</th><th></th></tr></thead><tbody>
@@ -1586,9 +1631,9 @@ function renderGuideOut(){
   else {
     const txt=[];
     if(R.unlinked.length) txt.push(`<b>${names(R.unlinked)}</b> 在主檔還沒設定需要哪些技術能力，無法判斷`);
-    if(B&&B.lvl==='ok') txt.push(`需要的 ${R.need.length} 項技術能力在「${esc(B.p.name)}」都已釋出${R.okFits.length>1?`（另有 ${R.okFits.length-1} 個版本也可以）`:''}，建議用這個版本導入`);
-    else if(B&&B.lvl==='dev') txt.push(`最接近的「${esc(B.p.name)}」還有 <b>${names(B.dev)}</b> 在開發中，量產前需確認釋出時程`);
-    else if(B&&B.lvl==='no') txt.push(`目前沒有版本能完整支援；最接近的「${esc(B.p.name)}」不支援 <b>${names(B.miss)}</b>${B.dev.length?`、開發中 ${names(B.dev)}`:''}`);
+    if(B&&B.lvl==='ok') txt.push(`需要的 ${R.need.length} 項技術能力在「${esc(platShort(B.p))}」都已釋出${R.okFits.length>1?`（另有 ${R.okFits.length-1} 個版本也可以）`:''}，建議用這個版本導入`);
+    else if(B&&B.lvl==='dev') txt.push(`最接近的「${esc(platShort(B.p))}」還有 <b>${names(B.dev)}</b> 在開發中，量產前需確認釋出時程`);
+    else if(B&&B.lvl==='no') txt.push(`目前沒有版本能完整支援；最接近的「${esc(platShort(B.p))}」不支援 <b>${names(B.miss)}</b>${B.dev.length?`、開發中 ${names(B.dev)}`:''}`);
     else if(B&&B.lvl==='shape') txt.push(`目前沒有版本支援「${esc(formLabel(R.forms))}」`);
     verdict+=`<div class="vtext">${txt.join('；')}。</div>`;
     verdict+=`<div class="vref"><span class="muted" style="font-size:12px">建議軟體版本${GI('sugg')}</span>${B?fitTag(B):'—'}${R.okFits.slice(1).map(x=>fitTag(x)).join(' ')}</div>`;
@@ -1601,18 +1646,18 @@ function renderGuideOut(){
   const derived=[
     metric('需求檢測項目',R.items.length,'項',R.prod?`${esc(R.prod.name)} × ${esc(formLabel(R.forms))}`:'手動選擇'),
     metric('需要技術能力',R.need.length,'項',esc(R.need.map(t=>t.name).join('、')).slice(0,60)),
-    metric('可用軟體版本',R.okFits.length,'個',R.okFits.length?esc(R.okFits.map(x=>x.p.name).join('、')):'沒有版本能完整支援',!R.okFits.length&&R.verdict!=='empty')];
+    metric('可用軟體版本',R.okFits.length,'個',R.okFits.length?esc(R.okFits.map(x=>platShort(x.p)).join('、')):'沒有版本能完整支援',!R.okFits.length&&R.verdict!=='empty')];
   const risks=[];
   if(R.unset.length) risks.push(`「${R.unset.join('、')}」在主檔還沒設定檢測項目；目前用畫面上手動選的項目評估，建議到「主檔設定 → 產品設定」補上`);
   if(R.unlinked.length) risks.push(`「${R.unlinked.map(i=>i.name).join('、')}」在主檔尚未設定需要的技術能力，請到主檔設定 → 檢測項目補上`);
-  if(B&&B.lvl==='dev') B.dev.forEach(t=>{ const v=((t.pver||{})[B.p.id]||''); risks.push(`「${t.name}」在「${B.p.name}」仍在開發中${v?`（${v}）`:''}，尚未能在產線開啟`); });
+  if(B&&B.lvl==='dev') B.dev.forEach(t=>{ const v=((t.pver||{})[B.p.id]||''); risks.push(`「${t.name}」在「${platShort(B.p)}」仍在開發中${v?`（${v}）`:''}，尚未能在產線開啟`); });
   if(B&&B.lvl==='no') risks.push(`沒有任何版本支援「${B.miss.map(t=>t.name).join('、')}」，需列入開發計畫`);
-  if(R.verdict!=='empty'&&B&&B.lvl!=='shape'&&!R.platLines(B.p.id).length) risks.push(`部門${g.onlyA?'已量產產線':''}目前沒有線使用「${B.p.name}」，沒有現成 Recipe 可參考`);
+  if(R.verdict!=='empty'&&B&&B.lvl!=='shape'&&!R.platLines(B.p.id).length) risks.push(`部門${g.onlyA?'已量產產線':''}目前沒有線使用「${platShort(B.p)}」，沒有現成 Recipe 可參考`);
   if(R.verdict!=='empty'&&S.short>0) risks.push(`依${S.src.D==='預設值'?'預設':'部門歷史'}導入期需 ${Math.round(S.total/7)} 週，距目標量產日不足 ${Math.ceil(S.short/7)} 週；最早可行約 ${S.earliest}`);
-  if(top&&B&&!top.bestPlat) risks.push(`首選參考產線用的是「${platName((top.l.sw||{}).plat)||'未設定版本'}」，與建議版本「${B.p.name}」不同，複製 Recipe 前需確認相容性`);
+  if(top&&B&&!top.bestPlat) risks.push(`首選參考產線用的是「${platName((top.l.sw||{}).plat)||'未設定版本'}」，與建議版本「${platShort(B.p)}」不同，複製 Recipe 前需確認相容性`);
   if(top&&isStale(top.l)) risks.push(`首選參考產線資料已 ${Math.floor(daysSince(top.l.updatedAt))} 天未更新，參考前請先與 ${top.l.site} 確認現況`);
   if(top&&top.l.blocked) risks.push(`首選參考產線目前卡關：${top.l.blockReason||'未填原因'}`);
-  const platRows=R.fits.map(x=>`<tr><td><b style="font-weight:600">${esc(x.p.name)}</b><div class="muted" style="font-size:10.5px">支援 ${esc(formLabel(x.p.forms||shapeForms(x.p.shape)))}</div></td><td>${fitTag(x)}</td>
+  const platRows=R.fits.map(x=>`<tr><td><b style="font-weight:600">${esc(platShort(x.p))}</b><div class="muted" style="font-size:10.5px">支援 ${esc(formLabel(x.p.forms||shapeForms(x.p.shape)))}</div></td><td>${fitTag(x)}</td>
     <td style="font-size:11.5px">${x.lvl==='shape'?'<span class="muted">型態不符</span>':[x.miss.length?`<span style="color:#A32D2D">不支援：${names(x.miss)}</span>`:'',x.dev.length?`<span style="color:#854F0B">開發中：${names(x.dev)}</span>`:''].filter(Boolean).join('<br>')||'<span class="muted">—</span>'}</td>
     <td class="muted" style="font-size:11px">${R.platLines(x.p.id).length} 條線</td></tr>`).join('');
   const capRows=R.itemRows.map(r=>`<tr><td><b style="font-weight:600">${esc(r.i.name)}</b></td>
@@ -1639,7 +1684,7 @@ function renderGuideOut(){
       </div>
       <div class="gblock" id="gd-plat"><div class="gsub">軟體版本比較${GI('sugg')} <span class="muted" style="font-weight:500">依需要的 ${R.need.length} 項技術能力與型態比對各版本</span></div>
         ${R.items.length?`<table class="tbl captbl"><thead><tr><th>版本</th><th>支援程度</th><th>缺少 / 開發中的技術能力</th><th>部門使用中</th></tr></thead><tbody>${platRows}</tbody></table>`:'<div class="empty">尚未選擇檢測項目</div>'}</div>
-      <div class="gblock" id="gd-cap"><div class="gsub">檢測項目 → 技術能力${B?` → 「${esc(B.p.name)}」`:''}${GI('tree')} <span class="muted" style="font-weight:500">${g.onlyA?'（部門狀態只看已量產產線）':'（部門狀態含全部產線）'}</span></div>
+      <div class="gblock" id="gd-cap"><div class="gsub">檢測項目 → 技術能力${B?` → 「${esc(platShort(B.p))}」`:''}${GI('tree')} <span class="muted" style="font-weight:500">${g.onlyA?'（部門狀態只看已量產產線）':'（部門狀態含全部產線）'}</span></div>
         ${R.items.length?`<table class="tbl captbl"><thead><tr><th>檢測項目</th><th>需要的技術能力${B?'（建議版本的進度）':''}</th><th>部門狀態</th><th>在哪些廠區</th></tr></thead><tbody>${capRows}</tbody></table>`:'<div class="empty">尚未選擇檢測項目</div>'}</div>
       <div class="gblock" id="gd-sch"><div class="gsub">建議時程${GI('sched')} <span class="muted" style="font-weight:500">從目標量產日往回推；週數可自行調整</span></div>
         <div class="wkrow">${['P','D','C'].map(k=>`<label><b style="background:var(--s${k})">${k}</b>${STAGES[STG_IDX[k]].name}<input class="in" type="number" min="1" step="1" data-gwk="${k}" value="${(g.wk||{})[k]||''}" placeholder="${Math.round(S.dur[k]/7)}">週<span class="muted">${S.src[k]}</span></label>`).join('')}</div>
@@ -1689,7 +1734,7 @@ function guideCreateLine(){
   if(kstep('install')) plan[kstep('install').id]=S.Ds; if(kstep('sat')) plan[kstep('sat').id]=addDays(S.golive,-7); if(kstep('golive')) plan[kstep('golive').id]=S.golive;
   const l={id:uid('L'),site:g.site,product:g.product,products:[g.product],line:'',forms:R.forms.slice(),hw:'',vendor:'',owner:(byId('sites',g.site)||{}).owner?'':(USER.name||''),techs:{},done:{},plan,
     sw:B&&B.lvl!=='shape'?{plat:B.p.id}:{},kpi:{},kpiT:{},
-    note:`由導入指引建立（${todayStr()}）\n評估結論：${{ok:'可直接導入',cond:'有條件可行',no:'需新開發'}[R.verdict]||''}`+(B?`\n建議版本：${B.p.name}`:'')+
+    note:`由導入指引建立（${todayStr()}）\n評估結論：${{ok:'可直接導入',cond:'有條件可行',no:'需新開發'}[R.verdict]||''}`+(B?`\n建議版本：${platShort(B.p)}`:'')+
       (top?`\n參考產線：${top.l.site} ${lineLabel(top.l)}`:'')+(B&&B.dev.length?`\n開發中：${B.dev.map(t=>t.name).join('、')}`:'')+(B&&B.miss.length?`\n不支援：${B.miss.map(t=>t.name).join('、')}`:'')};
   ED={orig:clone(l),w:l,isNew:true,open:{setup:true}}; openDrawer(); toast('已帶入評估結果，請補上線別、相機後儲存');
 }
@@ -1990,7 +2035,7 @@ function exportCSV(all){
     ...techs.map(t=>'技術:'+t.name),...items.map(i=>'檢測:'+i.name),...OPTICS.map(o=>'光學:'+o.t),...st.flatMap(s=>[s.name+'(預計)',s.name+'(完成)']),...KPI_DEF.map(d=>`${d.name}(${d.unit})`),'KPI 日期','更新時間','更新者'];
   const rows=ls.map(l=>{ const p=lineProg(l), s=byId('sites',l.site)||{}, k=kpiLatest(l)||{}, nx=nextOf(l)||{};
     return [l.site,s.region,prodsLabel(l),l.line,formLabel(l.forms),hwName(l.hw),lineOwner(l),l.fabOwner,l.vendor,
-      p.complete?'完成':p.stage+' '+STAGES[STG_IDX[p.stage]].name,p.pct,p.cur?p.cur.name:'',l.nextNote,nx.due,l.blocked?'Y':'',l.blockReason,platName((l.sw||{}).plat),(l.sw||{}).ver,
+      p.complete?'完成':p.stage+' '+STAGES[STG_IDX[p.stage]].name,p.pct,p.cur?p.cur.name:'',l.nextNote,nx.due,l.blocked?'Y':'',l.blockReason,platFull((l.sw||{}).plat),(l.sw||{}).ver,
       ...techs.map(t=>({on:'已開啟',off:'未開啟','':'未釋出'})[lineTech(l,t.id)]),...items.map(i=>IST[itemSt(l,i.id)].t),...OPTICS.map(o=>{ const s=opSt(l,o.k), x=opVal(l,o.k); return s==='ok'?`${x.d} / ${x.v}`:({pend:'待補',na:'不適用','':''})[s]; }),...st.flatMap(x=>[(l.plan||{})[x.id],(l.done||{})[x.id]]),
       ...KPI_DEF.map(d=>k[d.k]),k.d,l.updatedAt?new Date(l.updatedAt).toLocaleString('zh-TW',{hour12:false}):'',l.updatedBy]; });
   const csv=[head,...rows].map(r=>r.map(v=>{ v=v==null?'':String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(',')).join('\r\n');
@@ -2549,7 +2594,7 @@ function init(){
   $('#fileIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(f) importJSON(f); };
   document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return; if($('#modal').classList.contains('on')) closeModal(MD_RES?false:undefined); else if(ED) closeDrawer(); });
   window.addEventListener('scroll',stickySoon,{passive:true}); window.addEventListener('resize',stickySoon);
-  let rt; window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ if(UI.page==='overview'){ drawRoadmap(); ovFit(); } if(UI.page==='guide') drawGantt(guideCalc()); },120); });
+  let rt; window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ if(UI.page==='overview'){ drawRoadmap(); ovFit(); } if(UI.page==='matrix') mxFit(); if(UI.page==='guide') drawGantt(guideCalc()); },120); });
   window.addEventListener('beforeunload',e=>{ if(ghReady()&&dirtyCount()){ e.preventDefault(); e.returnValue=''; } });
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&ghReady()&&Date.now()-LAST_PULL>SYNC_MS) (dirtyCount()?pushNow():pullNow()); });
   // 切到別的分頁、最小化或關閉頁面時，還沒上傳的修改先送出

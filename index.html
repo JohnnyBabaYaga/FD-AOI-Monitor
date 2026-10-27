@@ -47,9 +47,8 @@ header .logo{width:30px;height:30px;border-radius:50%;object-fit:cover;backgroun
 /* 版本號＋分頁同一個框（與 AOI Calculator 的 .hdr-vk 同一套） */
 .hdr-vk{display:flex;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);border-radius:999px;margin-left:14px;flex-shrink:0;}
 .ver-wrap{position:relative;display:flex;}
-.ver-btn{display:flex;align-items:center;border:0;border-right:1px solid rgba(255,255,255,.35);background:none;color:#fff;
-  font-size:12px;font-weight:700;letter-spacing:.2px;padding:0 12px 0 13px;border-radius:999px 0 0 999px;cursor:pointer;white-space:nowrap;transition:background .15s;}
-.ver-btn:hover{background:rgba(255,255,255,.18);}
+.ver-btn{display:flex;align-items:center;border-right:1px solid rgba(255,255,255,.35);color:#fff;
+  font-size:12px;font-weight:700;letter-spacing:.2px;padding:0 12px 0 13px;white-space:nowrap;cursor:default;}   /* 只顯示版本號，不能點（沒有 Beta 可切換） */
 .nav{display:flex;padding:2px;flex-shrink:0;}
 .nav button{border:0;background:none;color:rgba(255,255,255,.88);font-size:12px;font-weight:600;padding:5px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;}
 .nav button:hover{background:rgba(255,255,255,.14);}
@@ -465,7 +464,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .ab-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;border:none;background:none;border-radius:8px;padding:6px 0;font-size:12px;font-weight:600;color:var(--sub);cursor:pointer;transition:background .15s,color .15s;}
 .ab-tab:hover{color:var(--accent-deep);}
 .ab-tab.on{background:#fff;color:var(--accent-deep);box-shadow:0 1px 3px rgba(20,40,80,.15);}
-.ab-stack{display:grid;height:min(420px,62vh);}
+.ab-stack{display:grid;height:min(330px,60vh);}
 .ab-pane{grid-area:1/1;visibility:hidden;min-width:0;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;margin-right:-4px;}
 .ab-pane.on{visibility:visible;}
 .about-lbl{font-size:11px;font-weight:700;color:var(--sub);margin-bottom:6px;letter-spacing:.3px;}
@@ -473,6 +472,9 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .ab-who{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surf2);border-radius:9px;}
 .ab-av{width:36px;height:36px;border-radius:50%;background:#34c759;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
 .ab-who b{display:block;font-size:13px;font-weight:600;} .ab-who a{font-size:11px;color:var(--accent);text-decoration:none;}
+.ab-url{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surf2);border-radius:9px;}
+.ab-url a{flex:1;min-width:0;font-size:11.5px;color:var(--accent);text-decoration:none;word-break:break-all;line-height:1.45;}
+.ab-url .btn{flex-shrink:0;}
 .cl-ver{padding:10px 12px;background:var(--surf2);border-radius:9px;margin-bottom:8px;border:1px solid transparent;}
 .cl-ver:last-child{margin-bottom:0;}
 .cl-ver.cur{border-color:rgba(47,111,208,.35);}
@@ -751,9 +753,9 @@ details.ds[open]>summary h4{margin-bottom:8px;}
   <div class="ttl">
     <h1>畫檢 AOI 監控平台</h1>
   </div>
-  <!-- 版本號＋分頁同一個框（與 AOI Calculator 的版本號＋知識庫同一套）：左邊版本號點了直接開「版本更新」（目前沒有 Beta，不提供切換版本）；手機藏版本號，只留分頁 -->
+  <!-- 版本號＋分頁同一個框（與 AOI Calculator 的版本號＋知識庫同一套）：版本號只顯示、不能點（目前沒有 Beta 可切換；更新紀錄在右下角 i →「關於本平台」）；手機藏版本號，只留分頁 -->
   <div class="hdr-vk">
-    <div class="ver-wrap"><button type="button" class="ver-btn" id="verBtn" title="版本更新紀錄"></button></div>
+    <div class="ver-wrap"><span class="ver-btn" id="verBtn"></span></div>
     <nav class="nav" id="nav">
       <button data-pg="overview" class="on"><i>📊 </i>總覽</button>
       <button data-pg="matrix"><i>▦ </i><span class="nl">能力矩陣</span><span class="ns">矩陣</span></button>
@@ -788,7 +790,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.13', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.14', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -2487,6 +2489,7 @@ function copyShare(){
 /** 給使用者看的版本更新紀錄（目前這個大版本的每一版，新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點（**粗體** 標重點詞）。
  *  升大版本時：把這裡整理成一行一版搬進 ERAS 上一代的 t，這裡清空重新開始 */
 const CHANGELOG=[
+  {v:'3.14',d:'2026-10-27',t:['關於本平台加上**平台網址**，按「複製」就能傳給同仁','標題列**版本號**只顯示、不能點（目前沒有 Beta 版可切換）；版本更新在右下角 i →「關於本平台」']},
   {v:'3.13',d:'2026-10-27',t:['**關於本平台**改成和 AOI Calculator 相同：「聯絡資訊」與「版本更新」兩個分頁，版本依代號分組','點標題列的**版本號**直接打開版本更新']},
   {v:'3.12',d:'2026-10-27',t:['**版本代號**：每個大版本用一座太空望遠鏡命名（目前 v3 Spitzer）','原本的 v4.0 / v4.1 改號為 v3.10 / v3.11（內容不變，只是重新分類）','**版本號**移到分頁列左邊','**雲端同步**改成雲朵圖示（與 AOI Calculator 相同）：綠＝已同步、黃＝同步中 / 待上傳、紅＝失敗']},
   {v:'3.11',d:'2026-10-27',t:['**載入畫面**：重新載入時顯示「載入中 / 同步雲端」（與 AOI Calculator 相同），讀完雲端最新資料才進入']},
@@ -2541,11 +2544,18 @@ function openAbout(tab){
       <div class="about-lbl">👥 開發者／聯絡人／負責人</div>
       <div class="ab-hint">使用問題、資料更新、功能建議，都可以找 Johnny</div>
       <div class="ab-who"><div class="ab-av">J</div><div><b>Johnny Yang</b><a href="mailto:Johnny.Yang@auo.com">Johnny.Yang@auo.com</a></div></div>
+      <div class="about-lbl" style="margin-top:16px">🔗 平台網址</div>
+      <div class="ab-url"><a href="${SITE_URL}" target="_blank" rel="noopener">${SITE_URL}</a><button class="btn sm" onclick="copyAboutUrl()">複製</button></div>
     </div>
     <div class="ab-pane" id="ab-p-log">${log}</div>
   </div>`);
   $('#modal').classList.add('ab'); abTab(tab==='log'?'log':'info');
   try{ localStorage.setItem('aoim_seenver',APP_VER); }catch(e){} const n=$('#upd-note'); if(n) n.remove();
+}
+const SITE_URL='https://johnnybabayaga.github.io/FD-AOI-Monitor/';
+function copyAboutUrl(){
+  (navigator.clipboard?navigator.clipboard.writeText(SITE_URL):Promise.reject()).then(()=>toast('已複製平台網址','ok'))
+    .catch(()=>promptBox('平台網址（請手動複製）','',SITE_URL));
 }
 function abTab(k){
   $$('#modal .ab-tab').forEach(b=>b.classList.toggle('on',b.dataset.ab===k));
@@ -2783,7 +2793,7 @@ function renderAll(){
   if(SYNC.state!=='sync') setSync(ghReady()?(SYNC.state==='off'?'ok':SYNC.state==='ok'&&dirtyCount()?'dirty':SYNC.state==='dirty'&&!dirtyCount()?'ok':SYNC.state):'off',SYNC.msg);
 }
 function init(){
-  $('#verBtn').textContent='v'+APP_VER; $('#verBtn').onclick=()=>openAbout('log');
+  $('#verBtn').textContent='v'+APP_VER; $('#verBtn').title=`目前版本 v${APP_VER} ${APP_CODE}`;
   loadLocal();
   $('#nav').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) showPage(b.dataset.pg); });
   $('#userBtn').onclick=openUser; $('#syncBtn').onclick=()=>openCloud(); initTour();

@@ -44,7 +44,24 @@ header .logo{width:30px;height:30px;border-radius:50%;object-fit:cover;backgroun
 .ttl h1{font-size:14px;font-weight:800;letter-spacing:.3px;white-space:nowrap;}
 .ver-pill{display:inline-block;font-size:10px;font-weight:700;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);
   padding:0 7px;border-radius:999px;margin-left:6px;vertical-align:1px;}
-.nav{display:flex;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);border-radius:999px;padding:2px;margin-left:14px;flex-shrink:0;}
+/* 版本號＋分頁同一個框（與 AOI Calculator 的 .hdr-vk 同一套） */
+.hdr-vk{display:flex;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);border-radius:999px;margin-left:14px;flex-shrink:0;}
+.ver-wrap{position:relative;display:flex;}
+.ver-btn{display:flex;align-items:center;gap:5px;border:0;border-right:1px solid rgba(255,255,255,.35);background:none;color:#fff;
+  font-size:12px;font-weight:700;letter-spacing:.2px;padding:0 10px 0 13px;border-radius:999px 0 0 999px;cursor:pointer;white-space:nowrap;transition:background .15s;}
+.ver-btn:hover,.ver-wrap.open .ver-btn{background:rgba(255,255,255,.18);}
+.ver-btn i{font-style:normal;font-size:10px;opacity:.85;}
+.ver-menu{display:none;position:absolute;top:calc(100% + 8px);left:0;min-width:250px;z-index:60;background:#fff;color:var(--text);
+  border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-2);padding:5px;}
+.ver-wrap.open .ver-menu{display:block;}
+.ver-it{position:relative;padding:8px 10px 8px 27px;border-radius:7px;font-size:12.5px;font-weight:600;line-height:1.35;white-space:nowrap;}
+.ver-it.on{color:var(--accent-deep);} .ver-it.on::before{content:'✓';position:absolute;left:10px;top:8px;}
+.ver-it.past{color:var(--sub);}
+.ver-it small{display:block;font-size:11px;font-weight:400;color:var(--sub);margin-top:2px;}
+.ver-menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:7px;font-size:12.5px;color:var(--text);cursor:pointer;white-space:nowrap;}
+.ver-menu button:hover{background:var(--surf2);color:var(--accent-deep);}
+.ver-note{font-size:11px;color:var(--sub);line-height:1.5;padding:7px 10px 5px;margin-top:4px;border-top:1px solid var(--border);}
+.nav{display:flex;padding:2px;flex-shrink:0;}
 .nav button{border:0;background:none;color:rgba(255,255,255,.88);font-size:12px;font-weight:600;padding:5px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;}
 .nav button:hover{background:rgba(255,255,255,.14);}
 .nav button.on{background:#fff;color:var(--accent-deep);}
@@ -54,7 +71,6 @@ header .logo{width:30px;height:30px;border-radius:50%;object-fit:cover;backgroun
 .hbtn{display:flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;cursor:pointer;
   background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.38);color:#fff;font-size:12px;font-weight:600;white-space:nowrap;}
 .hbtn:hover{background:rgba(255,255,255,.28);}
-.hbtn .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.55);flex-shrink:0;}
 .hbtn.round{width:30px;padding:0;justify-content:center;}
 
 /* ── Layout ── */
@@ -308,7 +324,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 @media (max-width:1180px){ .tiles{grid-template-columns:repeat(4,minmax(0,1fr));} .tile.wide,.tiles .tile:last-child{grid-column:span 2;} }   /* 4 欄時 2+1+1 / 1+1+2，兩排剛好填滿；1280 以上維持一排（整體進度凍結在上方，不能太高） */
 @media (max-width:1100px){ .sites{grid-template-columns:repeat(2,minmax(0,1fr));} .two,.mgrid{grid-template-columns:minmax(0,1fr);} }
 @media (max-width:760px){
-  header{padding:0 10px;gap:8px;} .ttl{display:none;} .nav{margin-left:0;} .nav button{padding:5px 7px;font-size:11px;} .nav button i{display:none;}
+  header{padding:0 10px;gap:8px;} .ttl{display:none;} .hdr-vk{margin-left:0;} .ver-wrap{display:none;} .nav button{padding:5px 7px;font-size:11px;} .nav button i{display:none;}
   .hbtn .lb{display:none;} .hbtn{padding:0 9px;} #aboutBtn{display:none;} header .logo{width:26px;height:26px;}
   main{padding:12px 12px 40px;}
   .tiles{grid-template-columns:repeat(2,minmax(0,1fr));} .tile.wide,.tiles .tile:last-child{grid-column:1/-1;}
@@ -451,7 +467,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
-/* ── v4.0：版本更新紀錄 ── */
+/* ── v3.10：版本更新紀錄 ── */
 .cl-h{font-size:12px;font-weight:800;margin:12px 0 6px;padding-top:10px;border-top:1px solid var(--border);}
 .cl{max-height:42vh;overflow:auto;}
 .cl-r{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;}
@@ -688,7 +704,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 .nav .ns{display:none;}
 @media (max-width:760px){ .nav .nl{display:none;} .nav .ns{display:inline;} .qbatch{margin-left:0;} }
 @media print{ header,.mbar,.banner,#toast{display:none!important;} body{background:#fff;} .card{box-shadow:none;backdrop-filter:none;} }
-/* ── v4.1：載入畫面（與 AOI Calculator 同一套）：介面載完、雲端讀完（最多等 5 秒）才收掉 ── */
+/* ── v3.11：載入畫面（與 AOI Calculator 同一套）：介面載完、雲端讀完（最多等 5 秒）才收掉 ── */
 #boot{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(236,241,248,.22);
   -webkit-backdrop-filter:blur(2.5px);backdrop-filter:blur(2.5px);transition:opacity .35s ease;}
 #boot.out{opacity:0;pointer-events:none;}
@@ -723,17 +739,24 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 <header>
   <img class="logo" src="auo-logo.png" alt="AUO">
   <div class="ttl">
-    <h1>畫檢 AOI 監控平台<span class="ver-pill" id="ver"></span></h1>
+    <h1>畫檢 AOI 監控平台</h1>
   </div>
-  <nav class="nav" id="nav">
-    <button data-pg="overview" class="on"><i>📊 </i>總覽</button>
-    <button data-pg="matrix"><i>▦ </i><span class="nl">能力矩陣</span><span class="ns">矩陣</span></button>
-    <button data-pg="guide"><i>🧭 </i><span class="nl">導入指引</span><span class="ns">指引</span></button>
-    <button data-pg="master"><i>⚙ </i><span class="nl">主檔設定</span><span class="ns">主檔</span></button>
-  </nav>
+  <!-- 版本號＋分頁同一個框（與 AOI Calculator 的版本號＋知識庫同一套）：左邊版本號點開看代號與更新紀錄；手機藏版本號，只留分頁 -->
+  <div class="hdr-vk">
+    <div class="ver-wrap" id="ver-wrap">
+      <button type="button" class="ver-btn" id="verBtn" title="版本代號與更新紀錄" aria-haspopup="true"></button>
+      <div class="ver-menu" id="ver-menu"></div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-pg="overview" class="on"><i>📊 </i>總覽</button>
+      <button data-pg="matrix"><i>▦ </i><span class="nl">能力矩陣</span><span class="ns">矩陣</span></button>
+      <button data-pg="guide"><i>🧭 </i><span class="nl">導入指引</span><span class="ns">指引</span></button>
+      <button data-pg="master"><i>⚙ </i><span class="nl">主檔設定</span><span class="ns">主檔</span></button>
+    </nav>
+  </div>
   <div class="hdr-r">
     <button class="hbtn" id="userBtn" title="使用者設定"><span>👤</span><span class="lb" id="userLb">未設定</span></button>
-    <button class="hbtn" id="syncBtn" title="雲端同步設定"><span class="dot" id="syncDot"></span><span class="lb" id="syncLb">雲端未連線</span></button>
+    <button class="hbtn round" id="syncBtn" title="雲端未連線（點此設定）" aria-label="雲端未連線（點此設定）"></button>
   </div>
 </header>
 
@@ -758,7 +781,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.12', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -2296,12 +2319,17 @@ function buildDoc(includeDemo){
 }
 function setSync(state,msg){
   SYNC={state,msg:msg||''};
-  const map={off:['rgba(255,255,255,.55)','雲端未連線'],ok:['#7CFFA8','已同步'],sync:['#FFE08A','同步中…'],err:['#FF9B8A','同步失敗'],dirty:['#FFE08A','待上傳'],ro:['#9CC7FF','唯讀']};
-  const a=map[state]||map.off; $('#syncDot').style.background=a[0];
-  const n=dirtyCount();
-  $('#syncLb').textContent=(state==='ok'||state==='dirty')&&n?`待上傳 ${n}`:state==='off'&&n?`本機 · ${n} 筆未上傳`:a[1];
-  $('#syncBtn').title=(msg||a[1])+(GH.repo?`\n${GH.owner}/${GH.repo} · ${GH.path}`:'');
+  // 雲朵圖示（與 AOI Calculator 同一套）：用 SVG 而非 ☁ ⟳ ⚠ 字元，手機會把字元畫成彩色 emoji、顏色變不了
+  const map={off:['rgba(255,255,255,.55)','cloud','雲端未連線（點此設定）'],ok:['#7CFFA8','cloud','雲端已同步'],sync:['#FFE08A','sync','同步中…'],
+    err:['#FF9B8A','warn','同步失敗'],dirty:['#FFE08A','cloud','待上傳'],ro:['#9CC7FF','cloud','唯讀']};
+  const a=map[state]||map.off, n=dirtyCount(), b=$('#syncBtn');
+  const lb=(state==='ok'||state==='dirty')&&n?`待上傳 ${n} 筆`:state==='off'&&n?`雲端未連線 · 本機 ${n} 筆未上傳`:a[2];
+  b.innerHTML=SYNC_IC[a[1]]; b.style.color=a[0]; b.setAttribute('aria-label',lb);
+  b.title=lb+(msg&&msg!==lb?`\n${msg}`:'')+(GH.repo?`\n${GH.owner}/${GH.repo} · ${GH.path}`:'');
 }
+const SYNC_IC={cloud:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>',
+  sync:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+  warn:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'};
 /** 自動上傳：停止編輯 PUSH_IDLE（3 秒）後上傳；一直在編輯的話，從第一筆修改起最多 PUSH_MAX（15 秒）也會先送一次。期間的修改合併成一次上傳 */
 function schedulePush(){ if(!ghReady()){ setSync('off'); return; } setSync('dirty','停止編輯幾秒後自動上傳（也可以按這裡 →「⬆ 立即上傳」）');
   const now=Date.now(); if(!PUSH_FIRST) PUSH_FIRST=now; clearTimeout(PUSH_T);
@@ -2451,8 +2479,9 @@ function copyShare(){
 }
 /** 給使用者看的版本更新紀錄（新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點 */
 const CHANGELOG=[
-  {v:'4.1',d:'2026-10-27',t:['重新載入時顯示「載入中 / 同步雲端」畫面（與 AOI Calculator 相同），讀完雲端最新資料才進入']},
-  {v:'4.0',d:'2026-10-27',t:['「關於本平台」加入版本更新紀錄；更新後第一次打開會提示看更新內容','產線面板 PDCA 改用「PDCA 關卡 ▾」下拉勾選這條線要追蹤的時間點']},
+  {v:'3.12',d:'2026-10-27',t:['版本改用太空望遠鏡當代號，每個大版本一個（目前 v3 Spitzer）','原本的 v4.0 / v4.1 改號為 v3.10 / v3.11（內容不變，只是重新分類）','版本號移到分頁列左邊，點開可以看各版本代號與更新紀錄','雲端同步改成雲朵圖示（與 AOI Calculator 相同）：綠＝已同步、黃＝同步中 / 待上傳、紅＝失敗']},
+  {v:'3.11',d:'2026-10-27',t:['重新載入時顯示「載入中 / 同步雲端」畫面（與 AOI Calculator 相同），讀完雲端最新資料才進入']},
+  {v:'3.10',d:'2026-10-27',t:['「關於本平台」加入版本更新紀錄；更新後第一次打開會提示看更新內容','產線面板 PDCA 改用「PDCA 關卡 ▾」下拉勾選這條線要追蹤的時間點']},
   {v:'3.9',d:'2026-10-27',t:['特別關注跟著你的名字存到雲端，換電腦也看得到（兩台電腦請用同一個名字）','每條線可以排除不適用的 PDCA 關卡，不算進完成度與時程']},
   {v:'3.8',d:'2026-10-24',t:['導入指引新增第 ③ 步「光學架構」：到 AOI Calculator 評估後填回相機、台數、Pitch、WD','取樣 Pitch < 3 會在報告中警告；「依此建立產線」會帶入相機']},
   {v:'3.7',d:'2026-10-24',t:['導入指引重新開放','能力矩陣的圖例和篩選放在同一排；按鈕恢復文字']},
@@ -2465,8 +2494,23 @@ const CHANGELOG=[
   {v:'3.0',d:'2026-10-21',t:['新增「光學調整」確認：最佳 Pitch & WD、αβθ、對焦分數、側光效果']},
   {v:'2.9',d:'2026-10-21',t:['狀態統一用符號（● ◐ ○ —）；軟體版本有簡稱；表格標題列捲動時固定']},
 ];
+/** 大版本代號：太空望遠鏡，依發射年份排（AOI Calculator 用天文台）。資料架構或使用方式整個改變才升大版本、往下接一個代號 */
+const ERAS=[
+  {v:'3',code:'Spitzer',d:'光學調整、介面精簡、串接 AOI Calculator'},
+  {v:'2',code:'Chandra',d:'樹狀架構（版本 → 技術能力 → 檢測項目）、雲端協作'},
+  {v:'1',code:'Hubble',d:'平台雛形'},
+];   // 之後：Kepler、Gaia、TESS、Webb、Euclid、Roman
+const APP_CODE=(ERAS.find(e=>e.v===APP_VER.split('.')[0])||ERAS[0]).code;
+/** 標題列版本號選單：目前版本 ✓、歷代代號、版本更新紀錄 */
+function verMenuInit(){
+  $('#verBtn').innerHTML=`v${APP_VER}<i aria-hidden="true">▾</i>`;
+  $('#ver-menu').innerHTML=ERAS.map(e=>e.code===APP_CODE?`<div class="ver-it on">v${APP_VER} ${e.code}<small>${e.d}</small></div>`:`<div class="ver-it past">v${e.v} ${e.code}<small>${e.d}</small></div>`).join('')
+    +`<button onclick="verClose();openAbout()">📋 版本更新紀錄</button><div class="ver-note">每個大版本用一座太空望遠鏡命名，<br>依發射年份排序（AOI Calculator 用天文台）。</div>`;
+  $('#verBtn').onclick=e=>{ e.stopPropagation(); $('#ver-wrap').classList.toggle('open'); };
+}
+function verClose(){ const w=$gd('ver-wrap'); if(w) w.classList.remove('open'); }
 function openAbout(){
-  openModal(`<div class="md-h"><b>畫檢 AOI 監控平台</b><span class="ver-pill" style="background:#e6effc;color:var(--accent-deep);border-color:#cddcf3">v${APP_VER}</span><button class="x" onclick="closeModal()">✕</button></div>
+  openModal(`<div class="md-h"><b>畫檢 AOI 監控平台</b><span class="ver-pill" style="background:#e6effc;color:var(--accent-deep);border-color:#cddcf3">v${APP_VER} ${APP_CODE}</span><button class="x" onclick="closeModal()">✕</button></div>
   <div class="md-d" style="font-size:12px;color:var(--text)">
   · <b>總覽</b>：整體進度、需要注意的事項、各廠區各線目前關卡、量產上線時程、接下來 30 天與最新動態。<br>
   · <b>能力矩陣</b>：每條線的檢測項目、軟體版本、技術能力、光學調整、PDCA 進度；點線別編輯，★ 特別關注。<br>
@@ -2484,7 +2528,7 @@ const clRow=x=>`<div class="cl-r ${x.v===APP_VER?'now':''}"><div class="cl-v">v$
 /** 版本更新後第一次打開：右下角提示一次（點開看更新內容；全新使用者不提示） */
 function updNotice(){
   let seen=null; try{ seen=localStorage.getItem('aoim_seenver'); }catch(e){}
-  if(!seen&&!USER.name){ try{ localStorage.setItem('aoim_seenver',APP_VER); }catch(e){} return; }   // 全新使用者不提示；已設定過名字的舊同仁（v4.0 前沒有這筆紀錄）照樣提示
+  if(!seen&&!USER.name){ try{ localStorage.setItem('aoim_seenver',APP_VER); }catch(e){} return; }   // 全新使用者不提示；已設定過名字的舊同仁（v3.10 前沒有這筆紀錄）照樣提示
   if(seen===APP_VER) return; const x=CHANGELOG.find(c=>c.v===APP_VER)||CHANGELOG[0];
   const d=document.createElement('div'); d.id='upd-note';
   d.innerHTML=`<div class="un-t">🎉 平台已更新到 v${x?x.v:APP_VER}</div>${x?`<div class="un-d">${esc(x.t[0])}${x.t.length>1?` 等 ${x.t.length} 項`:''}</div>`:''}<div class="un-b"><button class="btn sm" onclick="try{localStorage.setItem('aoim_seenver',APP_VER)}catch(e){};this.closest('#upd-note').remove()">知道了</button><button class="btn sm pri" onclick="openAbout()">看更新內容</button></div>`;
@@ -2553,7 +2597,7 @@ const GUIDES={
     {el:()=>$gd('ov-up'),t:'接下來 30 天 & 逾期',d:'從每條線的「下一步行動」和還沒完成的里程碑整理出來，<b>逾期的排最前面</b>。開週會可以直接看這張。<br>點標題可以和右邊的「最新動態」<b>一起收合</b>；最新動態只顯示最近 7 筆，往下捲看更早的。'},
     {el:()=>$gd('ov-feed'),t:'最新動態',d:'誰在什麼時候改了什麼，全部門共用。想知道其他廠區最近在忙什麼，看這裡。'},
     {el:()=>$gd('nav'),t:'其他分頁',d:'<b>▦ 能力矩陣</b>：完整狀態，<b>各廠區在這裡更新資料</b>。<br><b>🧭 導入指引</b>：新產品 / 新產線導入前先評估。<br><b>⚙ 主檔設定</b>：產品、檢測項目、技術能力、PDCA 步驟的共用定義。<br>每頁都有自己的導覽，切過去再按右下角的 <b>i</b> →「導覽這一頁」。'},
-    {el:()=>[$gd('userBtn'),$gd('syncBtn')],t:'你的名字與雲端同步',d:'<b>👤</b> 是你的名字，會記錄在每一筆變更上。<br>同步燈號：<b style="color:#1d7a52">綠</b>＝已同步、<b style="color:#8a5d00">黃</b>＝同步中 / 待上傳、<b style="color:#b8391f">紅</b>＝失敗（修改已存在本機，會自動重試）。<br>第一次使用請按這裡貼上<b>自己的 GitHub 權杖</b>（找 Johnny 拿設定連結）。'},
+    {el:()=>[$gd('userBtn'),$gd('syncBtn')],t:'你的名字與雲端同步',d:'<b>👤</b> 是你的名字，會記錄在每一筆變更上。<br>雲朵顏色：<b style="color:#1d7a52">綠</b>＝已同步、<b style="color:#8a5d00">黃</b>＝同步中 / 待上傳、<b style="color:#b8391f">紅 ⚠</b>＝失敗（修改已存在本機，會自動重試）；滑鼠停在雲朵上看詳細狀態。<br>第一次使用請按這裡貼上<b>自己的 GitHub 權杖</b>（找 Johnny 拿設定連結）。'},
     GD_END],
   matrix:[
     {el:null,t:'能力矩陣：這頁在看什麼？',d:'<b>縱軸</b>是 廠區 → 產品 → 線別，<b>橫軸</b>是 檢測項目、軟體版本、技術能力、PDCA 進度、上線後 KPI、下一步。<br>各廠區同仁<b>在這裡維護自己線的狀態</b>，總覽會自動更新。'},
@@ -2687,6 +2731,7 @@ function initTour(){
     if(gi){ e.preventDefault(); e.stopPropagation(); (_glCur===gi)?glHide():glShow(gi); return; }
     if(_glCur&&!e.target.closest('#gl-pop')) glHide();
     if(!e.target.closest('#fab-wrap')) fabClose();
+    if(!e.target.closest('#ver-wrap')) verClose();
   },true);
   document.addEventListener('scroll',()=>{ if(_glCur) glHide(); if(_gd) requestAnimationFrame(gdPlace); },true);
   window.addEventListener('resize',()=>{ if(_gd) gdPlace(); });
@@ -2712,7 +2757,7 @@ function renderAll(){
   if(SYNC.state!=='sync') setSync(ghReady()?(SYNC.state==='off'?'ok':SYNC.state==='ok'&&dirtyCount()?'dirty':SYNC.state==='dirty'&&!dirtyCount()?'ok':SYNC.state):'off',SYNC.msg);
 }
 function init(){
-  $('#ver').textContent='v'+APP_VER;
+  verMenuInit();
   loadLocal();
   $('#nav').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) showPage(b.dataset.pg); });
   $('#userBtn').onclick=openUser; $('#syncBtn').onclick=()=>openCloud(); initTour();

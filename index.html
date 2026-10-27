@@ -688,9 +688,37 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 .nav .ns{display:none;}
 @media (max-width:760px){ .nav .nl{display:none;} .nav .ns{display:inline;} .qbatch{margin-left:0;} }
 @media print{ header,.mbar,.banner,#toast{display:none!important;} body{background:#fff;} .card{box-shadow:none;backdrop-filter:none;} }
+/* ── v4.1：載入畫面（與 AOI Calculator 同一套）：介面載完、雲端讀完（最多等 5 秒）才收掉 ── */
+#boot{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(236,241,248,.22);
+  -webkit-backdrop-filter:blur(2.5px);backdrop-filter:blur(2.5px);transition:opacity .35s ease;}
+#boot.out{opacity:0;pointer-events:none;}
+.boot-card{position:relative;overflow:hidden;width:112px;padding:13px 0 12px;border-radius:22px;isolation:isolate;
+  display:flex;flex-direction:column;align-items:center;gap:7px;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',sans-serif;
+  background:linear-gradient(160deg,rgba(255,255,255,.20) 0%,rgba(225,236,255,.06) 55%,rgba(255,255,255,.14) 100%);
+  -webkit-backdrop-filter:blur(7px) saturate(2.1) contrast(1.05);backdrop-filter:blur(7px) saturate(2.1) contrast(1.05);
+  border:1px solid rgba(255,255,255,.35);
+  box-shadow:inset 0 2px 1px -1px rgba(255,255,255,1), inset 0 -2px 2px -1px rgba(255,255,255,.7), inset 2px 0 3px -2px rgba(255,255,255,.8), inset -2px 0 3px -2px rgba(255,255,255,.6),
+    inset 0 0 10px rgba(255,255,255,.18), inset 0 -10px 16px -10px rgba(47,111,208,.18), 0 12px 32px rgba(30,60,120,.20), 0 2px 6px rgba(30,60,120,.10);}
+.boot-card::before{content:'';position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;
+  background:radial-gradient(90% 55% at 20% 0%,rgba(255,255,255,.62) 0%,rgba(255,255,255,0) 50%),radial-gradient(70% 45% at 88% 108%,rgba(255,255,255,.38) 0%,rgba(255,255,255,0) 60%);}
+.boot-card::after{content:'';position:absolute;top:-30%;bottom:-30%;width:38%;left:-60%;z-index:-1;pointer-events:none;
+  background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.38),rgba(255,255,255,0));transform:skewX(-18deg);animation:bootSheen 2.6s ease-in-out infinite;}
+.boot-dots{height:22px;display:flex;align-items:center;gap:6px;}
+.boot-dots i{width:8px;height:8px;border-radius:50%;background:#2F6FD0;box-shadow:0 1px 3px rgba(47,111,208,.35);animation:bootDot 1.2s infinite;}
+.boot-dots i:nth-child(2){animation-delay:.15s;} .boot-dots i:nth-child(3){animation-delay:.3s;}
+.boot-t{font-size:12.5px;font-weight:600;color:#1D3A66;letter-spacing:.4px;text-shadow:0 0 6px rgba(255,255,255,.9),0 1px 0 rgba(255,255,255,.7);}
+.boot-bar{position:relative;width:72px;height:3px;border-radius:2px;background:rgba(47,111,208,.16);overflow:hidden;}
+.boot-bar i{position:absolute;top:0;bottom:0;width:40%;border-radius:2px;background:#2F6FD0;animation:bootBar 1.1s ease-in-out infinite;}
+@keyframes bootDot{0%,80%,100%{transform:scale(.5);opacity:.35}40%{transform:scale(1);opacity:1}}
+@keyframes bootBar{0%{left:-40%}100%{left:100%}}
+@keyframes bootSheen{0%{left:-60%}60%,100%{left:130%}}
+@media (prefers-reduced-motion:reduce){ .boot-card *,.boot-card::after{animation-duration:3s !important;} }
 </style>
 </head>
 <body>
+<!-- 載入畫面（與 AOI Calculator 同一套）：介面還沒載完時蓋一層透明玻璃；有連雲端時顯示「同步雲端…」，讀完（最多等 5 秒）才收掉 -->
+<div id="boot" role="status" aria-live="polite"><div class="boot-card"><div class="boot-dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="boot-t" id="boot-t">載入中…</div><div class="boot-bar" aria-hidden="true"><i></i></div></div></div>
+<script>setTimeout(function(){ var b=document.getElementById('boot'); if(b) b.remove(); }, 15000);   /* 保險：程式出錯也不會一直蓋著 */</script>
 
 <header>
   <img class="logo" src="auo-logo.png" alt="AUO">
@@ -730,7 +758,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.0.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.1', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -2423,6 +2451,7 @@ function copyShare(){
 }
 /** 給使用者看的版本更新紀錄（新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點 */
 const CHANGELOG=[
+  {v:'4.1',d:'2026-10-27',t:['重新載入時顯示「載入中 / 同步雲端」畫面（與 AOI Calculator 相同），讀完雲端最新資料才進入']},
   {v:'4.0',d:'2026-10-27',t:['「關於本平台」加入版本更新紀錄；更新後第一次打開會提示看更新內容','產線面板 PDCA 改用「PDCA 關卡 ▾」下拉勾選這條線要追蹤的時間點']},
   {v:'3.9',d:'2026-10-27',t:['特別關注跟著你的名字存到雲端，換電腦也看得到（兩台電腦請用同一個名字）','每條線可以排除不適用的 PDCA 關卡，不算進完成度與時程']},
   {v:'3.8',d:'2026-10-24',t:['導入指引新增第 ③ 步「光學架構」：到 AOI Calculator 評估後填回相機、台數、Pitch、WD','取樣 Pitch < 3 會在報告中警告；「依此建立產線」會帶入相機']},
@@ -2626,7 +2655,7 @@ function gdSeen(p){ try{ const m=gdSeenMap(); m[p]=1; localStorage.setItem('aoim
 let _gdHintT=null;
 function guideHintSoon(){ clearTimeout(_gdHintT); _gdHintT=setTimeout(guideHint,700); }
 function guideHint(){
-  if(_gd||$('#modal').classList.contains('on')) return;
+  if(_gd||$('#modal').classList.contains('on')||$('#upd-note')) return;   // 更新提示還在時先不出現，避免兩個提示疊在一起
   const p=gdPage(); if(Object.keys(gdSeenMap()).length){ gdHintClose(); return; }
   let h=$gd('gd-hint'); if(!h){ h=document.createElement('div'); h.id='gd-hint'; document.body.appendChild(h); }
   h.innerHTML='<div class="gd-ht">👋 第一次用這個平台？</div><div class="gd-hd">花一分鐘看導覽，帶你走過「'+GD_NAME[p]+'」這一頁。之後每一頁都可以按右下角的 <b>i</b> →「導覽這一頁」。</div>'
@@ -2708,7 +2737,11 @@ function init(){
   showPage(UI.page||'overview'); watchMigrate(); updNotice();
   if(m&&!GH.token) openCloud('🔗 已從連結帶入 repo 設定，請貼上<b>你自己的</b> GitHub 權杖後按「儲存設定」。');
   else if(!USER.name) openUser();
-  if(ghReady()) pullNow({init:true});
+  let bootPull=null;
+  if(ghReady()){ const bt=$('#boot-t'); if(bt) bt.textContent='同步雲端…'; bootPull=pullNow({init:true}); }
+  // 收掉載入畫面：畫面畫完＋雲端讀完；雲端最多等 5 秒，網路慢也不會一直擋著
+  const pull=bootPull?Promise.race([bootPull.catch(()=>{}),new Promise(r=>setTimeout(r,5000))]):Promise.resolve();
+  pull.then(()=>{ const b=$('#boot'); if(!b) return; b.classList.add('out'); setTimeout(()=>b.remove(),400); });
 }
 init();
 </script>

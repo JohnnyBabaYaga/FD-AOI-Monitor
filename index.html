@@ -451,6 +451,16 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v3.9：每條線的 PDCA 關卡 ── */
+.pd-tools{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin:4px 0 2px;font-size:11px;}
+.pd-tools .muted{margin-right:auto;font-size:11px;}
+.pd-none{font-size:11px;color:var(--sub);padding:8px 4px;}
+.pd-edit{border-style:dashed;border-color:color-mix(in srgb,var(--accent) 40%,transparent);}
+.stp-t{display:flex;align-items:center;gap:6px;width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:7px;padding:6px 7px;margin:4px 0;font-size:12px;cursor:pointer;color:var(--sub);text-decoration:line-through;}
+.stp-t.on{color:var(--text);text-decoration:none;border-color:color-mix(in srgb,var(--accent) 35%,transparent);background:color-mix(in srgb,var(--accent) 5%,#fff);}
+.stp-t .ck{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:4px;border:1.5px solid var(--border2);font-size:11px;font-weight:800;color:#fff;flex-shrink:0;}
+.stp-t.on .ck{background:var(--accent);border-color:var(--accent);}
+.stp-t .tag{text-decoration:none;}
 /* ── v3.8：導入指引第 ③ 步（AOI Calculator） ── */
 .gstep .tag{margin-left:8px;font-size:10.5px;}
 .gopt .gol{margin:2px 0 8px 18px;padding:0;font-size:11.5px;line-height:1.6;color:var(--text);}
@@ -710,7 +720,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.8', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.9', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -871,6 +881,13 @@ function commit(c,obj,msg){
   if(msg) addLog(msg,{ref:obj.id,coll:c,site:c==='sites'?obj.id:(obj.site||''),demo:obj.demo||undefined});
   saveLocal(); schedulePush(); renderAll();
 }
+/** 安靜存檔：只同步資料，不改 updatedAt / updatedBy、不寫變更紀錄（用在個人的特別關注，避免誤觸「待更新」提醒與最新動態） */
+function commitQuiet(c,obj){
+  const arr=DB[c], i=arr.findIndex(x=>x.id===obj.id), prev=i>=0?arr[i]:undefined;
+  if(!has(DIRTY[c],obj.id)) DIRTY[c][obj.id]=prev?clone(prev):null;
+  if(i>=0) arr[i]=obj; else arr.push(obj);
+  saveLocal(); schedulePush(); renderAll();
+}
 function removeEnt(c,id,msg){ const p=byId(c,id); if(!p) return; commit(c,{...clone(p),deleted:true},msg); }
 function addLog(msg,extra){
   DB.log.push(Object.assign({id:uid('g'),t:new Date().toISOString(),by:USER.name||'未具名',msg},extra||{}));
@@ -888,8 +905,10 @@ const prodsLabel=l=>lineProds(l).map(prodName).join('+')||'(未指定產品別)'
 const lineLabel=l=>`${prodsLabel(l)} / ${l.line||'?'}`;
 const liveLines=()=>live('lines').filter(l=>{ const s=byId('sites',l.site); return s&&!s.deleted; });
 function stepsSorted(){ return live('steps').sort((a,b)=>STG_IDX[a.stage]-STG_IDX[b.stage]||(a.order||0)-(b.order||0)); }
+/** 這條線適用的 PDCA 關卡：主檔全部關卡 − 這條線排除的（lines.stepsOff，v3.9） */
+const lineSteps=l=>{ const off=(l&&l.stepsOff)||[]; return stepsSorted().filter(s=>!off.includes(s.id)); };
 function lineProg(l){
-  const st=stepsSorted(), done=l.done||{}; let n=0,cur=null,nxt=null;
+  const st=lineSteps(l), done=l.done||{}; let n=0,cur=null,nxt=null;
   for(const s of st){ if(done[s.id]) n++; else if(!cur) cur=s; else if(!nxt) nxt=s; }
   return {n,total:st.length,pct:st.length?Math.round(n/st.length*100):0,stage:cur?cur.stage:'A',cur,nxt,complete:!cur&&st.length>0};
 }
@@ -983,7 +1002,7 @@ const istTag=s=>`<span class="ist ist-${s}">${IST[s].sym} ${IST[s].t}</span>`;
 const lineSub=l=>[(l.forms||[]).map(formName).filter(Boolean).join('+'),hwName(l.hw)].filter(Boolean).join(' · ');
 /** 目前關卡與它的預計日（＝下一步） */
 function nextOf(l){ const p=lineProg(l); if(!p.cur) return null; return {step:p.cur,text:l.nextNote||p.cur.name,due:(l.plan||{})[p.cur.id]||''}; }
-function golive(l){ const s=stepsSorted().find(x=>x.key==='golive'); if(s){ const a=(l.done||{})[s.id], pl=(l.plan||{})[s.id]; if(a||pl) return {d:a||pl,act:!!a}; }
+function golive(l){ const s=lineSteps(l).find(x=>x.key==='golive'); if(s){ const a=(l.done||{})[s.id], pl=(l.plan||{})[s.id]; if(a||pl) return {d:a||pl,act:!!a}; }
   const g=(l.ms||{}).golive||{}; return g.actual||g.plan?{d:g.actual||g.plan,act:!!g.actual}:null; }
 /** 重複產線：同廠區、同線別（不分大小寫、忽略空白），且產品別有重疊 → 視為同一條線被建了兩次 */
 function dupGroups(){
@@ -1032,8 +1051,8 @@ function siteStats(sid){
   return {ls,cnt,pct:ls.length?Math.round(pct/ls.length):0,gaps,blocked,overdue,stale,last,lastBy};
 }
 function upcoming(ls,days){
-  const out=[], st=stepsSorted();
-  for(const l of ls){ const done=l.done||{}, plan=l.plan||{}, p=lineProg(l);
+  const out=[];
+  for(const l of ls){ const done=l.done||{}, plan=l.plan||{}, p=lineProg(l), st=lineSteps(l);
     for(const s of st){ if(done[s.id]||!plan[s.id]) continue; const d=daysFromToday(plan[s.id]); if(d>days) continue;
       const isCur=!!(p.cur&&p.cur.id===s.id);
       out.push({d,date:plan[s.id],l,what:isCur&&l.nextNote?l.nextNote:(s.key?'里程碑：':'')+s.name,who:lineOwner(l),kind:isCur?'act':'ms'}); } }
@@ -1173,15 +1192,24 @@ function drawRoadmap(){
 // 頁面：能力矩陣
 // ═══════════════════════════════════════════
 /** 特別關注（個人清單，存在本機 UI.watch，不寫進共用的產線資料：避免改到更新時間 / 待更新提醒 / 變更紀錄） */
-const isWatch=id=>(UI.watch||[]).includes(id);
+/** 特別關注（v3.9 起存雲端）：lines.watch＝關注這條線的人名清單，跟著「你的名字」走，換電腦用同一個名字就看得到。
+ *  用安靜存檔寫入，不改更新時間、不寫變更紀錄。還沒設定名字時暫存本機 UI.watch，設定名字後自動搬上雲端（watchMigrate） */
+const isWatch=id=>{ const me=USER.name; if(!me) return (UI.watch||[]).includes(id); const l=byId('lines',id); return !!(l&&(l.watch||[]).includes(me)); };
 const watchCount=()=>liveLines().filter(l=>isWatch(l.id)).length;
 function toggleWatch(id){
-  const w=UI.watch=(UI.watch||[]).filter(x=>byId('lines',x)&&!byId('lines',x).deleted), i=w.indexOf(id), l=byId('lines',id);
-  if(i>=0) w.splice(i,1); else w.push(id); saveUI();
-  toast(i>=0?`已取消關注 ${l?l.site+' '+lineLabel(l):''}`:`★ 已加入特別關注 ${l?l.site+' '+lineLabel(l):''}`);
-  if(UI.page==='matrix') renderMatrix(); if(ED) renderDrawer();
+  const l=byId('lines',id); if(!l) return; const on=isWatch(id), me=USER.name;
+  if(!me){ const w=UI.watch=(UI.watch||[]).filter(x=>x!==id); if(!on) w.push(id); saveUI(); if(UI.page==='matrix') renderMatrix(); }
+  else { const n=clone(l); n.watch=(n.watch||[]).filter(x=>x!==me); if(!on) n.watch.push(me); if(!n.watch.length) delete n.watch; commitQuiet('lines',n); }
+  toast(on?`已取消關注 ${l.site} ${lineLabel(l)}`:`★ 已加入特別關注 ${l.site} ${lineLabel(l)}${me?'':'（請先設定你的名字，才會同步到其他電腦）'}`);
+  if(ED) renderDrawer();
 }
-const watchBtn=id=>`<button class="wst ${isWatch(id)?'on':''}" data-watch="${id}" title="${isWatch(id)?'取消特別關注':'加入特別關注（只記在你這台電腦）'}">${isWatch(id)?'★':'☆'}</button>`;
+/** 舊版存在本機的關注清單（UI.watch）→ 有名字之後搬到雲端 */
+function watchMigrate(){
+  const me=USER.name, ids=UI.watch||[]; if(!me||!ids.length) return;
+  ids.forEach(id=>{ const l=byId('lines',id); if(l&&!l.deleted&&!(l.watch||[]).includes(me)){ const n=clone(l); n.watch=[...(n.watch||[]),me]; commitQuiet('lines',n); } });
+  delete UI.watch; saveUI();
+}
+const watchBtn=id=>`<button class="wst ${isWatch(id)?'on':''}" data-watch="${id}" title="${isWatch(id)?'取消特別關注':'加入特別關注（跟著你的名字同步，換電腦也看得到）'}">${isWatch(id)?'★':'☆'}</button>`;
 function filteredLines(){
   const f=UI.mf, q=(f.q||'').trim().toLowerCase();
   return sortLines(liveLines().filter(l=>{
@@ -1347,7 +1375,7 @@ function ackLine(){
 }
 function renderDrawer(){
   if(!ED) return; const w=ED.w, dw=$('#drawer'), body=$('.dw-b',dw), sc=body?body.scrollTop:0;
-  const p=lineProg(w), steps=stepsSorted(), cur=byId('lines',w.id), sw=w.sw||{};
+  const p=lineProg(w), steps=ED.stepEdit?stepsSorted():lineSteps(w), cur=byId('lines',w.id), sw=w.sw||{}, sOff=(w.stepsOff||[]).filter(id=>byId('steps',id));
   ED.open=ED.open||{pdca:false,setup:ED.isNew,items:false,kpi:false};
   [ED.w,ED.orig].forEach(x=>{ if(x&&x.optic) for(const k of Object.keys(x.optic)){ const v=x.optic[k]; if(typeof v==='string'&&v!=='na') x.optic[k]={d:v,v:''}; } });
   const req=reqItems(w), items=liveSorted('items').sort((a,b)=>(req.includes(b.id)?1:0)-(req.includes(a.id)?1:0)), nMan=(w.reqAdd||[]).length+(w.reqOff||[]).length;
@@ -1367,9 +1395,13 @@ function renderDrawer(){
   <div class="dw-b">
     ${changedRemote?`<div class="notice">🔄 你開啟後，這條線已被 ${esc(cur.updatedBy||'其他人')} 更新。儲存時只會寫入<b>你改動的欄位</b>，其他人的修改會保留。</div>`:''}
     <details class="ds" data-sec="pdca" ${ED.open.pdca?'open':''}><summary><h4>例行更新（PDCA）${GI('quick')} <small>勾選完成的關卡、填預計日</small><span class="r">${pdMini(w)} <span class="pct" style="font-size:12px;color:var(--sub);font-weight:700">${p.pct}%</span></span></h4></summary>
-      <div class="pd-h">${STAGES.map(st=>{ const ss=steps.filter(x=>x.stage===st.k); if(!ss.length) return '';
-        return `<div class="pd-col"><div class="stg-h" title="${esc(st.desc)}"><b style="background:var(--s${st.k})">${st.k}</b>${st.name}</div>`+
-        ss.map(s=>{ const dn=(w.done||{})[s.id], pl=(w.plan||{})[s.id], isCur=p.cur&&p.cur.id===s.id;
+      <div class="pd-tools">${ED.stepEdit?'<span class="muted">點關卡切換「適用 / 不適用」：不適用的關卡不顯示、也不算進完成度與時程</span>':sOff.length?`<span class="muted">這條線不適用 ${sOff.length} 個關卡：${esc(sOff.map(id=>byId('steps',id).name).join('、'))}</span>`:''}
+        <button class="${ED.stepEdit?'btn sm pri':'lkb'}" data-stepedit="1">${ED.stepEdit?'✓ 調整完成':'⚙ 調整這條線的關卡'}</button></div>
+      <div class="pd-h">${STAGES.map(st=>{ const all=stepsSorted().filter(x=>x.stage===st.k), ss=steps.filter(x=>x.stage===st.k); if(!all.length) return '';
+        const head=`<div class="pd-col ${ED.stepEdit?'pd-edit':''}"><div class="stg-h" title="${esc(st.desc)}"><b style="background:var(--s${st.k})">${st.k}</b>${st.name}</div>`;
+        if(ED.stepEdit) return head+all.map(s=>{ const on=!sOff.includes(s.id); return `<button class="stp-t ${on?'on':''}" data-stepoff="${s.id}" title="${on?'點一下設為不適用':'點一下恢復適用'}"><span class="ck">${on?'✓':''}</span>${esc(s.name)}${s.key?' <span class="tag">里程碑</span>':''}</button>`; }).join('')+'</div>';
+        if(!ss.length) return head+'<div class="pd-none">這條線不適用此階段</div></div>';
+        return head+ss.map(s=>{ const dn=(w.done||{})[s.id], pl=(w.plan||{})[s.id], isCur=p.cur&&p.cur.id===s.id;
           return `<div class="step2 ${isCur?'cur':''} ${dn?'dn':''}"><label class="sl"><input type="checkbox" data-step="${s.id}" ${dn?'checked':''}><span class="lbl">${esc(s.name)}</span></label>
             ${s.key||isCur?`<div class="stags">${s.key?'<span class="tag">里程碑</span>':''}${isCur?'<span class="curtag">◀ 目前</span>':''}</div>`:''}
             <span class="sd"><span>預計</span><input type="date" class="in" data-p="plan.${s.id}" value="${esc(pl||'')}">${dn?`<span>完成</span><input type="date" class="in" data-p="done.${s.id}" value="${esc(dn)}">`:''}</span>${!dn&&pl?`<div class="stags">${dueTag(pl)}</div>`:''}</div>`; }).join('')+'</div>'; }).join('')}</div>
@@ -1486,6 +1518,10 @@ function onDrawerClick(e){
     if(want&&!auto) add.push(id); if(!want&&auto) off.push(id);
     if(add.length) ED.w.reqAdd=add; else delete ED.w.reqAdd; if(off.length) ED.w.reqOff=off; else delete ED.w.reqOff; renderDrawer(); return; }
   if(t.dataset.reqreset){ delete ED.w.reqAdd; delete ED.w.reqOff; renderDrawer(); return; }
+  if(t.dataset.stepedit){ ED.stepEdit=!ED.stepEdit; ED.open.pdca=true; renderDrawer(); return; }
+  if(t.closest&&t.closest('[data-stepoff]')){ const id=t.closest('[data-stepoff]').dataset.stepoff, off=(ED.w.stepsOff||[]).slice(), i=off.indexOf(id);
+    if(i>=0) off.splice(i,1); else { if(stepsSorted().filter(s=>!off.includes(s.id)).length<=1){ toast('至少要保留一個關卡','err'); return; } off.push(id); }
+    if(off.length) ED.w.stepsOff=off; else delete ED.w.stepsOff; renderDrawer(); return; }
   if(t.dataset.opt){ const o=ED.w.optic=Object.assign({},ED.w.optic||{}), k=t.dataset.opt, v=t.dataset.v;
     if(v==='ok'){ const s=opSt(ED.w,k); if(s!=='ok'&&s!=='pend') o[k]={d:todayStr(),v:''}; } else if(v==='na') o[k]='na'; else delete o[k];
     if(!Object.keys(o).length) delete ED.w.optic; renderDrawer();
@@ -1499,7 +1535,7 @@ function onDrawerClick(e){
 function diffMsg(a,b){
   const out=[], pa=lineProg(a), pb=lineProg(b);
   if(pa.stage!==pb.stage||pa.complete!==pb.complete) out.push(`PDCA ${pa.complete?'完成':pa.stage}→${pb.complete?'全部完成':pb.stage+' '+STAGES[STG_IDX[pb.stage]].name}`);
-  else if(pa.n!==pb.n) out.push(pb.n>pa.n?`完成「${(stepsSorted().find(s=>(b.done||{})[s.id]&&!(a.done||{})[s.id])||{}).name||''}」`:'取消已完成關卡');
+  else if(pa.n!==pb.n&&eq(a.stepsOff||[],b.stepsOff||[])) out.push(pb.n>pa.n?`完成「${(stepsSorted().find(s=>(b.done||{})[s.id]&&!(a.done||{})[s.id])||{}).name||''}」`:'取消已完成關卡');
   const pc=stepsSorted().filter(s=>((a.plan||{})[s.id]||'')!==((b.plan||{})[s.id]||'')).map(s=>`${s.name} 預計 ${md((b.plan||{})[s.id])||'—'}`);
   if(pc.length) out.push(pc.slice(0,2).join('、')+(pc.length>2?` 等 ${pc.length} 項`:''));
   if(!!a.blocked!==!!b.blocked) out.push(b.blocked?`卡關：${b.blockReason||''}`:'解除卡關');
@@ -1516,6 +1552,8 @@ function diffMsg(a,b){
   if((a.hw||'')!==(b.hw||'')) out.push(`相機 → ${hwName(b.hw)||'—'}`);
   const och=OPTICS.filter(o=>opSt(a,o.k)!==opSt(b,o.k)||(opSt(b,o.k)==='ok'&&!eq(opVal(a,o.k),opVal(b,o.k)))).map(o=>{ const s=opSt(b,o.k), x=opVal(b,o.k); return `${o.t}→${s==='ok'?`完成（${x.d}，${x.v}）`:({pend:'待補',na:'不適用','':'未確認'})[s]}`; });
   if(och.length) out.push('光學調整 '+och.join('、'));
+  const so=(a.stepsOff||[]), sn=(b.stepsOff||[]), snm=id=>(byId('steps',id)||{}).name||id, sAdd=sn.filter(x=>!so.includes(x)), sDel=so.filter(x=>!sn.includes(x));
+  if(sAdd.length||sDel.length) out.push('PDCA 關卡'+(sAdd.length?' 不適用：'+sAdd.map(snm).join('、'):'')+(sDel.length?' 恢復：'+sDel.map(snm).join('、'):''));
   if((a.nextNote||'')!==(b.nextNote||'')&&b.nextNote) out.push(`下一步：${b.nextNote}`);
   if(!eq(a.kpi||{},b.kpi||{})||!eq(a.kpiT||{},b.kpiT||{})) out.push('KPI');
   if(a.site!==b.site||a.product!==b.product||a.line!==b.line||a.vendor!==b.vendor||a.owner!==b.owner||(a.fabOwner||'')!==(b.fabOwner||'')) out.push('基本資訊');
@@ -1561,8 +1599,8 @@ function gState(){
 }
 /** 從部門歷史推估每個階段的天數：階段最後一個關卡完成日 − 前一階段最後完成日（P 階段用第一個到最後一個關卡） */
 function stageHistory(){
-  const st=stepsSorted(), out={P:[],D:[],C:[]};
-  for(const l of liveLines()){ const d=l.done||{}; let prevEnd=null;
+  const out={P:[],D:[],C:[]};
+  for(const l of liveLines()){ const d=l.done||{}, st=lineSteps(l); let prevEnd=null;
     for(const k of ['P','D','C']){ const ss=st.filter(s=>s.stage===k); if(!ss.length||!ss.every(s=>d[s.id])) break;
       const ds=ss.map(s=>parseD(d[s.id])).filter(Boolean); const end=new Date(Math.max(...ds)), start=k==='P'?new Date(Math.min(...ds)):prevEnd;
       const days=Math.round((end-start)/864e5); if(days>0) out[k].push(days); prevEnd=end; } }
@@ -2061,7 +2099,7 @@ function exportCSV(all){
   const rows=ls.map(l=>{ const p=lineProg(l), s=byId('sites',l.site)||{}, k=kpiLatest(l)||{}, nx=nextOf(l)||{};
     return [l.site,s.region,prodsLabel(l),l.line,formLabel(l.forms),hwName(l.hw),lineOwner(l),l.fabOwner,l.vendor,
       p.complete?'完成':p.stage+' '+STAGES[STG_IDX[p.stage]].name,p.pct,p.cur?p.cur.name:'',l.nextNote,nx.due,l.blocked?'Y':'',l.blockReason,platFull((l.sw||{}).plat),(l.sw||{}).ver,
-      ...techs.map(t=>({on:'已開啟',off:'未開啟','':'未釋出'})[lineTech(l,t.id)]),...items.map(i=>IST[itemSt(l,i.id)].t),...OPTICS.map(o=>{ const s=opSt(l,o.k), x=opVal(l,o.k); return s==='ok'?`${x.d} / ${x.v}`:({pend:'待補',na:'不適用','':''})[s]; }),...st.flatMap(x=>[(l.plan||{})[x.id],(l.done||{})[x.id]]),
+      ...techs.map(t=>({on:'已開啟',off:'未開啟','':'未釋出'})[lineTech(l,t.id)]),...items.map(i=>IST[itemSt(l,i.id)].t),...OPTICS.map(o=>{ const s=opSt(l,o.k), x=opVal(l,o.k); return s==='ok'?`${x.d} / ${x.v}`:({pend:'待補',na:'不適用','':''})[s]; }),...st.flatMap(x=>(l.stepsOff||[]).includes(x.id)?['不適用','不適用']:[(l.plan||{})[x.id],(l.done||{})[x.id]]),
       ...KPI_DEF.map(d=>k[d.k]),k.d,l.updatedAt?new Date(l.updatedAt).toLocaleString('zh-TW',{hour12:false}):'',l.updatedBy]; });
   const csv=[head,...rows].map(r=>r.map(v=>{ v=v==null?'':String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(',')).join('\r\n');
   download(`aoi-monitor-${todayStr()}.csv`,'﻿'+csv,'text/csv');
@@ -2310,7 +2348,7 @@ function openUser(){
   <div class="md-f"><label>主要負責廠區（新增產線時預設帶入）</label><select class="in" id="u-site"><option value="">— 不指定 —</option>${liveSorted('sites').map(s=>`<option value="${s.id}" ${USER.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</select></div>
   <div class="md-b"><span class="r"><button class="btn pri" onclick="saveUser()">儲存</button></span></div>`);
 }
-function saveUser(){ const n=$('#u-name').value.trim(); if(!n){ toast('請輸入名字','err'); return; } USER={name:n,site:$('#u-site').value}; saveJSON(LS.user,USER); closeModal(); renderAll(); toast('已儲存'); }
+function saveUser(){ const n=$('#u-name').value.trim(); if(!n){ toast('請輸入名字','err'); return; } USER={name:n,site:$('#u-site').value}; saveJSON(LS.user,USER); closeModal(); watchMigrate(); renderAll(); toast('已儲存'); }
 function editSite(id){
   const s=byId('sites',id);
   openModal(`<div class="md-h"><b>✎ ${esc(id)} 廠區重點</b><button class="x" onclick="closeModal()">✕</button></div>
@@ -2407,13 +2445,13 @@ const GL={
   dup:['重複產線','同廠區、同線別（不分大小寫）、產品別有重疊的產線出現多筆，通常是兩個人同時新增了同一條線。按「處理」選要保留的那一筆，其他刪除（GitHub 歷史版本可找回）。'],
   optic:['光學調整','每條線的光學是否已調整完成，逐項確認：<b>最佳 Pitch & WD</b>、<b>αβθ 調整</b>、<b>對焦分數</b>、<b>側光效果</b>。<br>選「完成」後要填<b>完成日</b>與<b>參考值</b>（例如 Pitch / WD 數值、對焦分數）才算完成，沒填齊無法存檔；這條線用不到的項目設為「不適用」，不算進度。'],
   fabowner:['線體負責人（FAB Owner）','產線（線體）端的負責人，例如廠內設備 / 製程窗口。與「負責人」（AOI 導入負責人，預設沿用廠區負責人）分開記錄。'],
-  watch:['特別關注','在線別旁點 <b>☆</b> 變 <b>★</b>，把你想盯的產線標起來：整列會淡黃標示，篩選列勾「<b>★ 只看關注</b>」就只列這幾條。<br>這是<b>你個人的清單</b>，只記在這台電腦，不會影響其他人，也不算「更新」。'],
+  watch:['特別關注','在線別旁點 <b>☆</b> 變 <b>★</b>，把你想盯的產線標起來：整列會淡黃標示，篩選列勾「<b>★ 只看關注</b>」就只列這幾條。<br>這是<b>你個人的清單</b>，跟著你的名字存到雲端，換電腦用同一個名字就看得到；不算「更新」，不會影響其他人的待更新提醒。'],
   legend:['圖例','三個欄群用同一套符號（篩選列上的是簡稱）：<br><b>●</b> 可以用 / 完成（檢測項目已具備、技術已開啟、光學已完成）<br><b>◐</b> 進行中 / 待補（開發中、光學待補日期或參考值）<br><b>○</b> 未開 / 未確認（版本有但這條線沒開、光學未確認）<br><b>✕</b> 缺口（需要但做不到）　<b>·</b> 不需要 / 不適用　<b>?</b> 主檔還沒設定對應技術<br>格子上停一下會顯示詳細原因。技術能力預設收合成「開啟數 / 已釋出數」，點表頭展開。'],
   optcalc:['光學架構（AOI Calculator）','相機、鏡頭、工作距離、台數這類<b>光學計算</b>統一在 AOI Calculator 做（「畫檢評估」模式），這裡不重複計算，避免兩邊數字不一致。<br>評估完把<b>相機、台數、取樣 Pitch、WD</b> 填回 ③，報告會列出來；按「依此建立產線」時相機會自動帶入，其餘寫進備註。<br>取樣 Pitch 建議 ≥ 3。'],
   tcat:['技術能力分類','<b>前處理</b>：取像後、演算法前的影像處理（對位、校正、Moiré 抑制），由<b>型態</b>決定需要哪些。<br><b>演算法・量測</b>：算數值（亮度、色度、Mura 指標）。<b>演算法・檢測</b>：找缺陷（點線、Mura、異物）。檢測項目只連演算法。<br><b>判定 / 整合</b>：演算法之後（ADC、判等、資料輸出、MES、Recipe 工具），當成版本能力與產線開關來看。'],
   prodset:['產品設定','<b>產品別 → 型態 → 檢測項目</b>：每個「產品別 × 型態」組合各自勾選要檢的項目，右邊自動算出建議軟體版本。<br>產線選了產品別與型態後，需求檢測項目就是這些組合的聯集。'],
   req:['需求檢測項目','這條線的「產品別 × 型態」組合在主檔「產品設定」勾選的檢測項目（多個組合取聯集）。矩陣用淡藍底標示，沒具備的就算缺口。'],
-  quick:['例行更新（PDCA）','每週例行只要做三件事：<b>完成的關卡打勾</b>、<b>更新預計日</b>、<b>有沒有卡關</b>。<br>狀態沒有變化時，按面板最下面的「<b>✓ 無變動</b>」，會重設「待更新」提醒。'],
+  quick:['例行更新（PDCA）','這條線用不到的關卡，按「<b>⚙ 調整這條線的關卡</b>」設為不適用（不算進完成度與時程）。<br>每週例行只要做三件事：<b>完成的關卡打勾</b>、<b>更新預計日</b>、<b>有沒有卡關</b>。<br>狀態沒有變化時，按面板最下面的「<b>✓ 無變動</b>」，會重設「待更新」提醒。'],
   batch:['批次升版','勾選多條線，一次套用同一個版本類別與版本號，不用一條一條改。'],
   ms:['里程碑','PDCA 中標「里程碑」的關卡：<b>機台進廠、SAT 驗收、量產上線</b>。勾選完成就是實際日，不用另外填；總覽的「量產上線時程」用的是量產上線這一關。'],
   hw:['硬體（相機）','這條線畫檢設備用的<b>相機型號</b>（例如 151MP、AIL151-55）。清單在「主檔設定 → 硬體」維護；矩陣可以用「全部硬體」篩選，快速找出用同一款相機的線。'],
@@ -2625,7 +2663,7 @@ function init(){
   // 從「設定連結」帶入 repo 設定（不含權杖）
   const m=location.hash.match(/cfg=([^&]+)/);
   if(m){ try{ const c=JSON.parse(b64decode(decodeURIComponent(m[1]))); GH=Object.assign({},GH,c,{enabled:true}); saveJSON(LS.gh,GH); }catch(e){} history.replaceState(null,'',location.pathname+location.search); }
-  showPage(UI.page||'overview');
+  showPage(UI.page||'overview'); watchMigrate();
   if(m&&!GH.token) openCloud('🔗 已從連結帶入 repo 設定，請貼上<b>你自己的</b> GitHub 權杖後按「儲存設定」。');
   else if(!USER.name) openUser();
   if(ghReady()) pullNow({init:true});

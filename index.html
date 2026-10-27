@@ -451,16 +451,26 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .tree-i{font-size:11px;color:var(--sub);padding-left:26px;line-height:1.5;}
 .tree-x{font-size:10.5px;color:#a0aab9;margin-top:9px;border-top:1px dashed var(--border);padding-top:6px;}
 @media (max-width:760px){ .fg.c4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* ── v4.0：版本更新紀錄 ── */
+.cl-h{font-size:12px;font-weight:800;margin:12px 0 6px;padding-top:10px;border-top:1px solid var(--border);}
+.cl{max-height:42vh;overflow:auto;}
+.cl-r{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;}
+.cl-r.now .cl-v{color:var(--accent-deep);}
+.cl-v{font-weight:800;font-variant-numeric:tabular-nums;} .cl-v span{display:block;font-size:10.5px;font-weight:500;color:var(--sub);}
+.cl-r ul{margin:0;padding-left:16px;line-height:1.55;} .cl-r li{margin:1px 0;}
+.cl-more summary{cursor:pointer;font-size:11.5px;color:var(--accent-deep);font-weight:700;padding:6px 0;}
+#upd-note{position:fixed;right:18px;bottom:76px;z-index:85;width:min(300px,calc(100vw - 36px));background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(20,40,80,.2);padding:12px 14px;}
+#upd-note .un-t{font-weight:800;font-size:13px;} #upd-note .un-d{font-size:11.5px;color:var(--sub);margin:4px 0 8px;line-height:1.5;}
+#upd-note .un-b{display:flex;gap:6px;justify-content:flex-end;}
 /* ── v3.9：每條線的 PDCA 關卡 ── */
 .pd-tools{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin:4px 0 2px;font-size:11px;}
+.pd-tools .dd-b{height:28px;font-size:12px;}
+.dd-m.dd-r{left:auto;right:0;min-width:250px;max-height:60vh;overflow:auto;}
+.dd-gt{flex-basis:100%;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:var(--text);}
+.dd-gt b{display:inline-block;width:16px;height:16px;border-radius:4px;color:#fff;text-align:center;line-height:16px;font-size:10px;}
+.dd-g label.ck{font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer;}
+.pd-h{grid-template-columns:repeat(var(--pdn,4),minmax(0,1fr));}
 .pd-tools .muted{margin-right:auto;font-size:11px;}
-.pd-none{font-size:11px;color:var(--sub);padding:8px 4px;}
-.pd-edit{border-style:dashed;border-color:color-mix(in srgb,var(--accent) 40%,transparent);}
-.stp-t{display:flex;align-items:center;gap:6px;width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:7px;padding:6px 7px;margin:4px 0;font-size:12px;cursor:pointer;color:var(--sub);text-decoration:line-through;}
-.stp-t.on{color:var(--text);text-decoration:none;border-color:color-mix(in srgb,var(--accent) 35%,transparent);background:color-mix(in srgb,var(--accent) 5%,#fff);}
-.stp-t .ck{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:4px;border:1.5px solid var(--border2);font-size:11px;font-weight:800;color:#fff;flex-shrink:0;}
-.stp-t.on .ck{background:var(--accent);border-color:var(--accent);}
-.stp-t .tag{text-decoration:none;}
 /* ── v3.8：導入指引第 ③ 步（AOI Calculator） ── */
 .gstep .tag{margin-left:8px;font-size:10.5px;}
 .gopt .gol{margin:2px 0 8px 18px;padding:0;font-size:11.5px;line-height:1.6;color:var(--text);}
@@ -720,7 +730,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.9', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.0', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1273,6 +1283,7 @@ function mxFit(){ const t=$('#pg-matrix .mx-top'), mw=$('#pg-matrix .mwrap'); if
   mw.style.maxHeight=innerWidth>760?Math.max(260,innerHeight-$('header').offsetHeight-t.offsetHeight-16)+'px':''; }
 let MXDD='';   // 目前展開的下拉：'sd' 廠區 / 'fd' 篩選
 function mxDD(e,k){ e.stopPropagation(); MXDD=MXDD===k?'':k; ['sd','fd'].forEach(x=>{ const d=$('#mx-'+x); if(d) d.classList.toggle('on',MXDD===x); }); }
+document.addEventListener('click',e=>{ if(ED&&ED.stepDD&&!e.target.closest('#dw-sd')){ ED.stepDD=false; const d=$('#dw-sd'); if(d) d.classList.remove('on'); } });
 document.addEventListener('click',e=>{ if(MXDD&&!e.target.closest('.dd')){ MXDD=''; $$('#pg-matrix .dd.on').forEach(d=>d.classList.remove('on')); } });
 function matrixTable(ls,items,techs){
   const TC=!UI.mf.techOpen&&!UI.mf.edit;   // 技術能力收合成一欄摘要
@@ -1375,7 +1386,7 @@ function ackLine(){
 }
 function renderDrawer(){
   if(!ED) return; const w=ED.w, dw=$('#drawer'), body=$('.dw-b',dw), sc=body?body.scrollTop:0;
-  const p=lineProg(w), steps=ED.stepEdit?stepsSorted():lineSteps(w), cur=byId('lines',w.id), sw=w.sw||{}, sOff=(w.stepsOff||[]).filter(id=>byId('steps',id));
+  const p=lineProg(w), steps=lineSteps(w), allSteps=stepsSorted(), cur=byId('lines',w.id), sw=w.sw||{}, sOff=(w.stepsOff||[]).filter(id=>byId('steps',id));
   ED.open=ED.open||{pdca:false,setup:ED.isNew,items:false,kpi:false};
   [ED.w,ED.orig].forEach(x=>{ if(x&&x.optic) for(const k of Object.keys(x.optic)){ const v=x.optic[k]; if(typeof v==='string'&&v!=='na') x.optic[k]={d:v,v:''}; } });
   const req=reqItems(w), items=liveSorted('items').sort((a,b)=>(req.includes(b.id)?1:0)-(req.includes(a.id)?1:0)), nMan=(w.reqAdd||[]).length+(w.reqOff||[]).length;
@@ -1395,12 +1406,12 @@ function renderDrawer(){
   <div class="dw-b">
     ${changedRemote?`<div class="notice">🔄 你開啟後，這條線已被 ${esc(cur.updatedBy||'其他人')} 更新。儲存時只會寫入<b>你改動的欄位</b>，其他人的修改會保留。</div>`:''}
     <details class="ds" data-sec="pdca" ${ED.open.pdca?'open':''}><summary><h4>例行更新（PDCA）${GI('quick')} <small>勾選完成的關卡、填預計日</small><span class="r">${pdMini(w)} <span class="pct" style="font-size:12px;color:var(--sub);font-weight:700">${p.pct}%</span></span></h4></summary>
-      <div class="pd-tools">${ED.stepEdit?'<span class="muted">點關卡切換「適用 / 不適用」：不適用的關卡不顯示、也不算進完成度與時程</span>':sOff.length?`<span class="muted">這條線不適用 ${sOff.length} 個關卡：${esc(sOff.map(id=>byId('steps',id).name).join('、'))}</span>`:''}
-        <button class="${ED.stepEdit?'btn sm pri':'lkb'}" data-stepedit="1">${ED.stepEdit?'✓ 調整完成':'⚙ 調整這條線的關卡'}</button></div>
-      <div class="pd-h">${STAGES.map(st=>{ const all=stepsSorted().filter(x=>x.stage===st.k), ss=steps.filter(x=>x.stage===st.k); if(!all.length) return '';
-        const head=`<div class="pd-col ${ED.stepEdit?'pd-edit':''}"><div class="stg-h" title="${esc(st.desc)}"><b style="background:var(--s${st.k})">${st.k}</b>${st.name}</div>`;
-        if(ED.stepEdit) return head+all.map(s=>{ const on=!sOff.includes(s.id); return `<button class="stp-t ${on?'on':''}" data-stepoff="${s.id}" title="${on?'點一下設為不適用':'點一下恢復適用'}"><span class="ck">${on?'✓':''}</span>${esc(s.name)}${s.key?' <span class="tag">里程碑</span>':''}</button>`; }).join('')+'</div>';
-        if(!ss.length) return head+'<div class="pd-none">這條線不適用此階段</div></div>';
+      <div class="pd-tools"><span class="muted">${sOff.length?`已排除 ${sOff.length} 個不適用的關卡`:'使用主檔全部關卡'}</span>
+        <div class="dd ${ED.stepDD?'on':''}" id="dw-sd"><button class="in dd-b ${sOff.length?'act':''}" data-stepdd="1" title="勾選這條線要追蹤哪些時間點（關卡）">PDCA 關卡：${steps.length} / ${allSteps.length} ▾</button>
+          <div class="dd-m dd-r">${STAGES.map(st=>{ const ss=allSteps.filter(s=>s.stage===st.k); return ss.length?`<div class="dd-g"><span class="dd-gt"><b style="background:var(--s${st.k})">${st.k}</b>${st.name}</span>${ss.map(s=>`<label class="ck"><input type="checkbox" data-stepchk="${s.id}" ${sOff.includes(s.id)?'':'checked'}>${esc(s.name)}${s.key?'<span class="muted">（里程碑）</span>':''}</label>`).join('')}</div>`:''; }).join('')}
+            <div class="dd-f muted" style="font-size:10.5px;text-align:left">沒勾的關卡不顯示，也不算進完成度與時程；已填的日期會保留。</div></div></div></div>
+      <div class="pd-h" style="--pdn:${STAGES.filter(st=>steps.some(s=>s.stage===st.k)).length}">${STAGES.map(st=>{ const ss=steps.filter(x=>x.stage===st.k); if(!ss.length) return '';
+        const head=`<div class="pd-col"><div class="stg-h" title="${esc(st.desc)}"><b style="background:var(--s${st.k})">${st.k}</b>${st.name}</div>`;
         return head+ss.map(s=>{ const dn=(w.done||{})[s.id], pl=(w.plan||{})[s.id], isCur=p.cur&&p.cur.id===s.id;
           return `<div class="step2 ${isCur?'cur':''} ${dn?'dn':''}"><label class="sl"><input type="checkbox" data-step="${s.id}" ${dn?'checked':''}><span class="lbl">${esc(s.name)}</span></label>
             ${s.key||isCur?`<div class="stags">${s.key?'<span class="tag">里程碑</span>':''}${isCur?'<span class="curtag">◀ 目前</span>':''}</div>`:''}
@@ -1502,6 +1513,9 @@ function addKpi(){
 }
 function onDrawerInput(e){
   const t=e.target; if(!ED) return;
+  if(t.dataset.stepchk){ if(e.type!=='change') return; const id=t.dataset.stepchk, off=(ED.w.stepsOff||[]).filter(x=>x!==id);
+    if(!t.checked){ if(stepsSorted().filter(s=>!off.includes(s.id)).length<=1){ t.checked=true; toast('至少要保留一個關卡','err'); return; } off.push(id); }
+    if(off.length) ED.w.stepsOff=off; else delete ED.w.stepsOff; ED.stepDD=true; renderDrawer(); return; }
   if(t.dataset.p&&t.dataset.p.startsWith('optic.')){ t.classList.toggle('bad',!String(t.value).trim()); if(e.type==='change'){ edSet(t.dataset.p,t.value.trim()); const o=ED.w.optic||{}, k=t.dataset.p.split('.')[1]; if(!o[k]||typeof o[k]!=='object') o[k]={}; renderDrawer(); return; } }
   if(t.dataset.p){ let v=t.value; if(t.dataset.num) v=v===''?'':+v;
     // 換廠區：負責人如果就是舊廠區的廠區負責人 → 改回沿用（跟著新廠區的廠區負責人）
@@ -1518,10 +1532,7 @@ function onDrawerClick(e){
     if(want&&!auto) add.push(id); if(!want&&auto) off.push(id);
     if(add.length) ED.w.reqAdd=add; else delete ED.w.reqAdd; if(off.length) ED.w.reqOff=off; else delete ED.w.reqOff; renderDrawer(); return; }
   if(t.dataset.reqreset){ delete ED.w.reqAdd; delete ED.w.reqOff; renderDrawer(); return; }
-  if(t.dataset.stepedit){ ED.stepEdit=!ED.stepEdit; ED.open.pdca=true; renderDrawer(); return; }
-  if(t.closest&&t.closest('[data-stepoff]')){ const id=t.closest('[data-stepoff]').dataset.stepoff, off=(ED.w.stepsOff||[]).slice(), i=off.indexOf(id);
-    if(i>=0) off.splice(i,1); else { if(stepsSorted().filter(s=>!off.includes(s.id)).length<=1){ toast('至少要保留一個關卡','err'); return; } off.push(id); }
-    if(off.length) ED.w.stepsOff=off; else delete ED.w.stepsOff; renderDrawer(); return; }
+  if(t.dataset.stepdd){ e.stopPropagation(); ED.stepDD=!ED.stepDD; const d=$('#dw-sd'); if(d) d.classList.toggle('on',ED.stepDD); return; }
   if(t.dataset.opt){ const o=ED.w.optic=Object.assign({},ED.w.optic||{}), k=t.dataset.opt, v=t.dataset.v;
     if(v==='ok'){ const s=opSt(ED.w,k); if(s!=='ok'&&s!=='pend') o[k]={d:todayStr(),v:''}; } else if(v==='na') o[k]='na'; else delete o[k];
     if(!Object.keys(o).length) delete ED.w.optic; renderDrawer();
@@ -2410,14 +2421,45 @@ function copyShare(){
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('已複製設定連結（不含權杖），傳給同仁後他只要貼上自己的權杖即可','ok',5000))
     .catch(()=>promptBox('設定連結（請手動複製）','不含權杖',url));
 }
+/** 給使用者看的版本更新紀錄（新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點 */
+const CHANGELOG=[
+  {v:'4.0',d:'2026-10-27',t:['「關於本平台」加入版本更新紀錄；更新後第一次打開會提示看更新內容','產線面板 PDCA 改用「PDCA 關卡 ▾」下拉勾選這條線要追蹤的時間點']},
+  {v:'3.9',d:'2026-10-27',t:['特別關注跟著你的名字存到雲端，換電腦也看得到（兩台電腦請用同一個名字）','每條線可以排除不適用的 PDCA 關卡，不算進完成度與時程']},
+  {v:'3.8',d:'2026-10-24',t:['導入指引新增第 ③ 步「光學架構」：到 AOI Calculator 評估後填回相機、台數、Pitch、WD','取樣 Pitch < 3 會在報告中警告；「依此建立產線」會帶入相機']},
+  {v:'3.7',d:'2026-10-24',t:['導入指引重新開放','能力矩陣的圖例和篩選放在同一排；按鈕恢復文字']},
+  {v:'3.6',d:'2026-10-24',t:['移除「快速更新」分頁：例行更新統一在產線編輯面板做']},
+  {v:'3.5',d:'2026-10-24',t:['總覽精簡：整體進度一條、「需要注意」只列有狀況的','廠區卡每條線直接顯示目前關卡與預計日']},
+  {v:'3.4',d:'2026-10-24',t:['能力矩陣精簡：圖例合併、篩選收進「篩選 ▾」、技術能力欄預設收合']},
+  {v:'3.3',d:'2026-10-24',t:['版本名稱一律顯示簡稱','產線的檢測項目可以手動加入 / 排除，做不到的會顯示缺口，提醒要升版']},
+  {v:'3.2',d:'2026-10-24',t:['能力矩陣可以 ★ 特別關注產線','產線面板 PDCA 改成四欄橫向']},
+  {v:'3.1',d:'2026-10-24',t:['光學調整完成要填完成日與參考值','新增線體負責人（FAB Owner）','總覽地區可收合、卡片可切換完整 / 重點 / 收合']},
+  {v:'3.0',d:'2026-10-21',t:['新增「光學調整」確認：最佳 Pitch & WD、αβθ、對焦分數、側光效果']},
+  {v:'2.9',d:'2026-10-21',t:['狀態統一用符號（● ◐ ○ —）；軟體版本有簡稱；表格標題列捲動時固定']},
+];
 function openAbout(){
   openModal(`<div class="md-h"><b>畫檢 AOI 監控平台</b><span class="ver-pill" style="background:#e6effc;color:var(--accent-deep);border-color:#cddcf3">v${APP_VER}</span><button class="x" onclick="closeModal()">✕</button></div>
   <div class="md-d" style="font-size:12px;color:var(--text)">
-  · <b>總覽</b>：各廠區整體進度、現階段走到哪、接下來要做什麼、量產上線時程、最新動態。<br>
-  · <b>能力矩陣</b>：縱軸 廠區 → 產品 → 線別；橫軸 檢測項目、軟體版本、技術能力、PDCA 進度、上線後 KPI。<br>
-  · <b>主檔設定</b>：廠區、產品（需求檢測項目）、檢測項目、技術能力、PDCA 步驟，全部門共用。<br><br>
+  · <b>總覽</b>：整體進度、需要注意的事項、各廠區各線目前關卡、量產上線時程、接下來 30 天與最新動態。<br>
+  · <b>能力矩陣</b>：每條線的檢測項目、軟體版本、技術能力、光學調整、PDCA 進度；點線別編輯，★ 特別關注。<br>
+  · <b>導入指引</b>：新產品 / 新產線導入前評估建議版本、參考產線、光學架構（AOI Calculator）與時程。<br>
+  · <b>主檔設定</b>：廠區、相機、產品設定、軟體版本、技術能力、檢測項目、型態、PDCA 關卡，全部門共用。</div>
+  <div class="cl-h">版本更新</div>
+  <div class="cl">${CHANGELOG.slice(0,4).map(clRow).join('')}
+    ${CHANGELOG.length>4?`<details class="cl-more"><summary>更早的版本（${CHANGELOG.length-4}）</summary>${CHANGELOG.slice(4).map(clRow).join('')}</details>`:''}</div>
+  <div class="md-d" style="font-size:11px;margin-top:10px">
   資料格式 schema v${SCHEMA}｜本機待上傳 ${dirtyCount()} 筆｜${ghReady()?`雲端：${esc(GH.owner)}/${esc(GH.repo)}`:'未連線雲端'}<br>
   維護者：Johnny Yang（<a href="mailto:Johnny.Yang@auo.com">Johnny.Yang@auo.com</a>）</div>`,true);
+  try{ localStorage.setItem('aoim_seenver',APP_VER); }catch(e){} const n=$('#upd-note'); if(n) n.remove();
+}
+const clRow=x=>`<div class="cl-r ${x.v===APP_VER?'now':''}"><div class="cl-v">v${x.v}<span>${x.d.slice(5).replace('-','/')}</span></div><ul>${x.t.map(s=>`<li>${esc(s)}</li>`).join('')}</ul></div>`;
+/** 版本更新後第一次打開：右下角提示一次（點開看更新內容；第一次使用的人不提示） */
+function updNotice(){
+  let seen=null; try{ seen=localStorage.getItem('aoim_seenver'); }catch(e){}
+  if(!seen){ try{ localStorage.setItem('aoim_seenver',APP_VER); }catch(e){} return; }
+  if(seen===APP_VER) return; const x=CHANGELOG.find(c=>c.v===APP_VER);
+  const d=document.createElement('div'); d.id='upd-note';
+  d.innerHTML=`<div class="un-t">🎉 已更新到 v${APP_VER}</div>${x?`<div class="un-d">${esc(x.t[0])}${x.t.length>1?` 等 ${x.t.length} 項`:''}</div>`:''}<div class="un-b"><button class="btn sm" onclick="try{localStorage.setItem('aoim_seenver',APP_VER)}catch(e){};this.closest('#upd-note').remove()">知道了</button><button class="btn sm pri" onclick="openAbout()">看更新內容</button></div>`;
+  document.body.appendChild(d);
 }
 
 // ═══════════════════════════════════════════
@@ -2451,7 +2493,7 @@ const GL={
   tcat:['技術能力分類','<b>前處理</b>：取像後、演算法前的影像處理（對位、校正、Moiré 抑制），由<b>型態</b>決定需要哪些。<br><b>演算法・量測</b>：算數值（亮度、色度、Mura 指標）。<b>演算法・檢測</b>：找缺陷（點線、Mura、異物）。檢測項目只連演算法。<br><b>判定 / 整合</b>：演算法之後（ADC、判等、資料輸出、MES、Recipe 工具），當成版本能力與產線開關來看。'],
   prodset:['產品設定','<b>產品別 → 型態 → 檢測項目</b>：每個「產品別 × 型態」組合各自勾選要檢的項目，右邊自動算出建議軟體版本。<br>產線選了產品別與型態後，需求檢測項目就是這些組合的聯集。'],
   req:['需求檢測項目','這條線的「產品別 × 型態」組合在主檔「產品設定」勾選的檢測項目（多個組合取聯集）。矩陣用淡藍底標示，沒具備的就算缺口。'],
-  quick:['例行更新（PDCA）','這條線用不到的關卡，按「<b>⚙ 調整這條線的關卡</b>」設為不適用（不算進完成度與時程）。<br>每週例行只要做三件事：<b>完成的關卡打勾</b>、<b>更新預計日</b>、<b>有沒有卡關</b>。<br>狀態沒有變化時，按面板最下面的「<b>✓ 無變動</b>」，會重設「待更新」提醒。'],
+  quick:['例行更新（PDCA）','右上角「<b>PDCA 關卡 ▾</b>」勾選這條線要追蹤哪些時間點；沒勾的不顯示，也不算進完成度與時程。<br>每週例行只要做三件事：<b>完成的關卡打勾</b>、<b>更新預計日</b>、<b>有沒有卡關</b>。<br>狀態沒有變化時，按面板最下面的「<b>✓ 無變動</b>」，會重設「待更新」提醒。'],
   batch:['批次升版','勾選多條線，一次套用同一個版本類別與版本號，不用一條一條改。'],
   ms:['里程碑','PDCA 中標「里程碑」的關卡：<b>機台進廠、SAT 驗收、量產上線</b>。勾選完成就是實際日，不用另外填；總覽的「量產上線時程」用的是量產上線這一關。'],
   hw:['硬體（相機）','這條線畫檢設備用的<b>相機型號</b>（例如 151MP、AIL151-55）。清單在「主檔設定 → 硬體」維護；矩陣可以用「全部硬體」篩選，快速找出用同一款相機的線。'],
@@ -2663,7 +2705,7 @@ function init(){
   // 從「設定連結」帶入 repo 設定（不含權杖）
   const m=location.hash.match(/cfg=([^&]+)/);
   if(m){ try{ const c=JSON.parse(b64decode(decodeURIComponent(m[1]))); GH=Object.assign({},GH,c,{enabled:true}); saveJSON(LS.gh,GH); }catch(e){} history.replaceState(null,'',location.pathname+location.search); }
-  showPage(UI.page||'overview'); watchMigrate();
+  showPage(UI.page||'overview'); watchMigrate(); updNotice();
   if(m&&!GH.token) openCloud('🔗 已從連結帶入 repo 設定，請貼上<b>你自己的</b> GitHub 權杖後按「儲存設定」。');
   else if(!USER.name) openUser();
   if(ghReady()) pullNow({init:true});

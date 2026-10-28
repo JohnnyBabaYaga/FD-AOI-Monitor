@@ -872,7 +872,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.1', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.1.1', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1058,9 +1058,9 @@ const lineProds=l=>l.products&&l.products.length?l.products:(l.product?[l.produc
 const prodsLabel=l=>lineProds(l).map(prodName).join('+')||'(未指定產品別)';
 const lineLabel=l=>`${prodsLabel(l)} / ${l.line||'?'}`;
 /** 段別（v3.15）：由產線的產品別（第一個）在主檔「產品設定」的段別帶出；段別清單＝產品設定裡用到的段別，依 SEG_ORDER 排序 */
-const SEG_ORDER=['CT','PBI','SKD','FD','Set'];
+const SEG_ORDER=['CT','PBI','SKD','FD','Set'], SEG_HINT=['CT1','CT2','PBI1','PBI2','SKD','FD','Set'];   // 子段別（CT1、CT2、PBI1、PBI2…）排在主段別裡、依編號
 const lineSeg=l=>((byId('products',l.product)||{}).seg||'').trim();
-const segRank=s=>{ const i=SEG_ORDER.findIndex(x=>x.toLowerCase()===s.toLowerCase()); return i<0?99:i; };
+const segRank=s=>{ const m=String(s).match(/^(.*?)(\d*)$/), i=SEG_ORDER.findIndex(x=>x.toLowerCase()===m[1].toLowerCase()); return i<0?9999:i*100+(+m[2]||0); };
 const segList=()=>[...new Set(live('products').map(p=>(p.seg||'').trim()).filter(Boolean))].sort((a,b)=>segRank(a)-segRank(b)||a.localeCompare(b));
 /** 樓層 / 區域（lines.floor，v3.15）：沒填時由線別名稱推測（F7-PBI-10#-3 → F7、1C-CT2-13#-1 → 1C），只用來顯示，存檔時才帶入 */
 const floorGuess=n=>{ const m=String(n||'').trim().match(/^(\d[A-Za-z]|[A-Za-z]\d)(?=[-_])/); return m?m[1].toUpperCase():''; };
@@ -1295,7 +1295,7 @@ function ovFit(){
   fd.style.maxHeight=up.style.maxHeight=Math.max(h,160)+'px';
 }
 /** 總覽視角（v3.15，只存本機）：site 依廠區（預設）/ seg 依段別；依段別時可篩選 廠區（或整個地區）、產品別、樓層 / 區域，一次展開一個段別的明細 */
-const ovView=()=>(UI.ov||{}).view==='seg'?'seg':'site';
+const ovView=()=>(UI.ov||{}).view==='site'?'site':'seg';   // 預設依段別（v4.1.1）
 /** 依段別的「比較組」（Johnny：可以自己新增，同時看不同廠區的多個段別）：每組各自的篩選 sf 與展開狀態 open / all，只存本機。
  *  舊版只有一組（UI.ov.sf / segOpen / segAll），第一次讀到時轉成第一組 */
 const OV_BMAX=4;
@@ -1320,7 +1320,7 @@ function ovMatch(l,f,skipFloor){
   return true;
 }
 function ovViewBar(L,regions){
-  const v=ovView(), sw=`<span class="seg vw">${[['site','依廠區','每個廠區一張卡片'],['seg','依段別','每個段別一張卡片，可依廠區、產品別、樓層 / 區域篩選']].map(([k,t,tt])=>`<button class="${v===k?'on':''}" title="${tt}" onclick="ovSet({view:'${k}'})">${t}</button>`).join('')}</span>`;
+  const v=ovView(), sw=`<span class="seg vw">${[['seg','依段別','每個段別一張卡片，可依廠區、產品別、樓層 / 區域篩選'],['site','依廠區','每個廠區一張卡片']].map(([k,t,tt])=>`<button class="${v===k?'on':''}" title="${tt}" onclick="ovSet({view:'${k}'})">${t}</button>`).join('')}</span>`;
   if(v!=='seg') return `<div class="ov-vw">${sw}</div>`;
   const n=ovBlocks().length;
   return `<div class="ov-vw">${sw}<span class="ovf-n">共 <b>${L.length}</b> 台</span>${n<OV_BMAX?`<button class="btn sm" onclick="ovBAdd()" title="多一組篩選＋段別卡片，可以同時看不同廠區 / 產品別的段別（最多 ${OV_BMAX} 組，只存在這台電腦）">＋ 新增比較組</button>`:''}</div>`;
@@ -2124,7 +2124,7 @@ function renderMaster(){
       ${liveSorted('hws').map(h=>`<tr><td>${inp('hws',h.id,'name',h.name)}</td><td class="muted" style="font-size:11px">${L.filter(l=>l.hw===h.id).length} 條</td><td class="ac">${mv('hws',h.id)}</td></tr>`).join('')}</table></div>
 
     <div class="card mcard full" id="m-prod"><h3>📦 產品設定${GI('prodset')}<small>產品別（＋段別）→ 加入型態 → 勾選檢測項目 → 自動得到建議軟體版本</small><span class="h3r"><button class="btn sm" id="pb-allbtn" onclick="pbAllToggle()">▾ 全部收合</button><button class="btn sm" onclick="mAdd('products',{name:'新產品別',fr:{f01:[]}})">＋ 新增產品別</button></span></h3>
-      <datalist id="dl-seg">${[...new Set([...SEG_ORDER,...segList()])].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
+      <datalist id="dl-seg">${[...new Set([...SEG_HINT,...segList()])].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
       ${prods.map(p=>{ const fr=p.fr||{}, fids=forms.filter(f=>fr[f.id]).map(f=>f.id);
         return `<div class="pblk ${(UI.pc||{})[p.id]?'pb-off':''}" id="pb-${p.id}"><div class="pblk-h"><button class="pb-tg" onclick="pbToggle('${p.id}')" title="收合 / 展開">▾</button>${inp('products',p.id,'name',p.name,'產品別名稱','130px')}<span class="pb-seg" title="段別：同一個產品別在不同段別各自一筆，顯示成「產品別-段別」">段別${GI('seg')}<input class="in" list="dl-seg" style="width:74px" value="${esc(p.seg||'')}" placeholder="選擇" onchange="mSet('products','${p.id}','seg',this.value)"></span><span class="muted" style="font-size:11px">${L.filter(l=>lineProds(l).includes(p.id)).length} 條線</span>
           <span class="pb-sum" onclick="pbToggle('${p.id}')">${fids.map(f=>{ const its=fr[f]||[], okN=its.length?platFit(its,[f]).filter(x=>x.lvl==='ok').length:0; return `<span class="tag ${its.length&&!okN?'red':''}" title="${its.length?(okN?okN+' 個版本能完整支援':'沒有版本能完整支援'):'尚未勾選檢測項目'}">${esc(formName(f))} · ${its.length} 項</span>`; }).join('')||'<span class="muted" style="font-size:11px">尚未加入型態</span>'}</span>

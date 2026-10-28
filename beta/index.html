@@ -614,7 +614,9 @@ button.oa:hover{filter:brightness(.96);}
 .mx tr.ln.watch td:not(.stk):not(.t-x):not(.req){background:#fffcf2;}
 .ck-w.on{color:#9a6b00;font-weight:700;}
 /* ── v3.1：總覽收合 / 凍結、光學調整必填 ── */
-.ov-top{position:sticky;top:52px;z-index:20;margin:-16px -18px 10px;padding:12px 18px 10px;background:rgba(238,242,247,.93);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid transparent;}
+.ov-top{position:sticky;top:52px;z-index:20;margin:-16px -18px 10px;padding:12px 18px 10px;transition:background .15s;}
+/* 停在頂端時不加底色（Johnny：和頁面背景不同色很突兀）；往下捲、整體進度凍結在上方時才補底色，蓋住捲到下面的內容（ovTopStuck） */
+.ov-top.stuck{background:rgba(238,242,247,.93);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
 .region-h{cursor:pointer;user-select:none;}
 .region-h small{font-size:11px;font-weight:500;color:var(--sub);}
 .region-h::after{order:2;} .region-h .rg-mode{order:3;font-weight:600;}
@@ -860,7 +862,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.0', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.0.1', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1236,7 +1238,7 @@ function renderOverview(){
   const demoBanner=hasDemo()?`<div class="banner"><span>🧪 目前有 <b>5 條示範例</b>${GI('demo')}（虛構產線，標示「示範例」，用來看平台效果）。${DB.lines.some(l=>l.demo&&l.demoGen&&!l.deleted)?'示範例已發布到雲端，全部門都看得到；正式開始填寫前請清除。':'正式使用前請清除；本機示範例不會上傳雲端。'}</span><button class="btn sm" onclick="clearDemo()">清除示範例</button></div>`:'';
   const nameBanner=!USER.name?`<div class="banner"><span>👤 請先設定你的名字，變更紀錄才知道是誰更新的。</span><button class="btn sm" onclick="openUser()">設定</button></div>`:'';
   const dg=dupGroups(), dupBanner=dg.length?`<div class="banner bad"><span>⚠ 發現 <b>${dg.length} 組重複的產線</b>${GI('dup')}（${esc(dg.map(g=>g[0].site+' '+g[0].line).join('、'))}），可能是兩個人同時新增了同一條線。</span><button class="btn sm" onclick="openDup()">處理</button></div>`:'';
-  el.innerHTML=`<div class="ov-top"><div class="card ov-strip">
+  el.innerHTML=`<div class="ov-top${window.scrollY>4?' stuck':''}"><div class="card ov-strip">
     <div class="os-t">整體進度${GI('pdca')}</div>
     <div class="os-bar">${pdcaBar(cnt)}<div class="os-leg">${STAGES.map(s=>`<span><b style="background:var(--s${s.k})"></b>${s.k} ${s.name}</span>`).join('')}</div></div>
     <div class="os-n"><b>${L.length}</b><span>條線 · ${sites.length} 廠區</span></div>
@@ -2654,7 +2656,7 @@ function copyShare(){
 /** 給使用者看的版本更新紀錄（目前這個大版本的每一版，新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點（**粗體** 標重點詞）。
  *  升大版本時：把這裡整理成一行一版搬進 ERAS 上一代的 t，這裡清空重新開始 */
 const CHANGELOG=[
-  {v:'4.0',d:'2026-10-28',t:['總覽可以切換「**依廠區 / 依段別**」：依段別時每個段別（CT / PBI / SKD / FD / Set）一張卡片，看總台數、綠燈 / 黃燈台數、已量產 / 導入中，以及缺口、卡關、逾期一句話','可以依**廠區、產品別、樓層 / 區域**篩選；點段別卡片，各台機台會展開在卡片下方（可同時展開多個段別）','主檔「產品設定」每個產品別可以選**段別**，顯示成「產品別-段別」（例：FIDM-CT）','產線新增「**樓層 / 區域**」欄位（F1、F7、1C…），沒填時從線別名稱推測，存檔時帶入','**Beta 版**：點標題列的版本號可以切回 v3.14.1 正式版，兩版共用同一份雲端資料']},
+  {v:'4.0',d:'2026-10-28',t:['總覽可以切換「**依廠區 / 依段別**」：依段別時每個段別（CT / PBI / SKD / FD / Set）一張卡片，看總台數、綠燈 / 黃燈台數、已量產 / 導入中，以及缺口、卡關、逾期一句話','可以依**廠區、產品別、樓層 / 區域**篩選；點段別卡片，各台機台會展開在卡片下方（可同時展開多個段別）','主檔「產品設定」每個產品別可以選**段別**，顯示成「產品別-段別」（例：FIDM-CT）','產線新增「**樓層 / 區域**」欄位（F1、F7、1C…），沒填時從線別名稱推測，存檔時帶入','**Beta 版**：點標題列的版本號可以切回 v3.14 正式版，兩版共用同一份雲端資料']},
 ];
 /** 大版本代號：太空望遠鏡，依發射年份排（AOI Calculator 用地面天文台）。資料架構或使用方式整個改變才升大版本、往下接一個代號
  *  nm＝代號由來（—— 後面接對上這一版的什麼）；t＝上一代每一版一行（目前這一代的細節在 CHANGELOG） */
@@ -2724,7 +2726,7 @@ const SITE_URL='https://johnnybabayaga.github.io/FD-AOI-Monitor/'+(APP_BETA?'bet
  *  正式版與 Beta 的 index.html 這一段要一致；Beta 轉正式時：beta 的檔案上傳到根目錄、VERS 改成新的正式版 */
 const VERS=[
   {v:'4.0',code:'Kepler',beta:true,dir:'beta/',d:'總覽依段別（上帝視角）、樓層 / 區域'},
-  {v:'3.14.1',code:'Spitzer',dir:'',d:'目前正式版'},
+  {v:'3.14.2',code:'Spitzer',dir:'',d:'目前正式版'},
 ];
 const verHref=x=>(APP_BETA?'../':'')+x.dir||'./';
 function verMenuInit(){
@@ -2737,6 +2739,8 @@ function verMenuInit(){
   $('#verBtn').onclick=e=>{ e.stopPropagation(); $('#ver-wrap').classList.toggle('open'); };
   const f=$('#fab-ver'); if(f&&other){ f.textContent=APP_BETA?`⏪ 切回 v${other.v} 正式版`:`🧪 試用 v${other.v} Beta`; f.onclick=()=>{ location.href=verHref(other); }; }
 }
+/** 總覽「整體進度」凍結在上方時才加底色（停在頂端時和頁面同色） */
+function ovTopStuck(){ const t=document.querySelector('.ov-top'); if(t) t.classList.toggle('stuck',window.scrollY>4); }
 function verClose(){ const w=$('#ver-wrap'); if(w) w.classList.remove('open'); }
 function copyAboutUrl(){
   (navigator.clipboard?navigator.clipboard.writeText(SITE_URL):Promise.reject()).then(()=>toast('已複製平台網址','ok'))
@@ -2960,7 +2964,7 @@ function initTour(){
     if(!e.target.closest('#fab-wrap')) fabClose();
     if(!e.target.closest('#ver-wrap')) verClose();
   },true);
-  document.addEventListener('scroll',()=>{ if(_glCur) glHide(); if(_gd) requestAnimationFrame(gdPlace); },true);
+  document.addEventListener('scroll',()=>{ if(_glCur) glHide(); if(_gd) requestAnimationFrame(gdPlace); ovTopStuck(); },true);
   window.addEventListener('resize',()=>{ if(_gd) gdPlace(); });
   document.addEventListener('keydown',e=>{ if(!_gd) return; e.stopPropagation();
     if(e.key==='Escape') guideEnd(); else if(e.key==='ArrowRight') guideGo(1); else if(e.key==='ArrowLeft') guideGo(-1); },true);

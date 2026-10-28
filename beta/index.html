@@ -811,11 +811,17 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 .sgmore{border:1px dashed var(--border2);background:transparent;border-radius:8px;padding:6px;font-size:11.5px;font-weight:700;color:var(--accent-deep);cursor:pointer;}
 .sgmore:hover{background:#fff;}
 .pb-seg{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--sub);font-weight:700;}
+.ovb-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 2px 10px;}
+.ovb.multi+.ovb.multi{margin-top:20px;padding-top:16px;border-top:1.5px dashed var(--border2);}   /* 比較組之間的分隔 */
+.ovb-no{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ovb-x{border:1px solid var(--border);background:#fff;color:var(--sub);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:12px;flex-shrink:0;}
+.ovb-x:hover{color:#b3361f;border-color:#e3a99d;background:#fff5f3;}
 @media (max-width:1100px){ .sgs{grid-template-columns:repeat(min(var(--n),3),minmax(0,1fr));} }
 @media (max-width:760px){ .sgs{grid-template-columns:repeat(2,minmax(0,1fr));} .ovf-n{margin-left:0;flex:1;} .ovf .in{max-width:120px;} }
 @media (max-width:520px){ .sgs{grid-template-columns:minmax(0,1fr);}
   .ov-vw>.seg{flex-basis:100%;} .ov-vw>.seg button{flex:1;}
   .ovf{flex:1 1 40%;} .ovf>span{white-space:nowrap;} .ovf .in{max-width:none;flex:1;} .ovf-n{white-space:nowrap;}
+  .ov-vw .ovf-n{flex:1;} .ovb-h .ovf-n{flex:1;}
   .sgcol.zero{display:none;} }   /* 手機：篩選後沒有機台的段別不佔位置 */
 </style>
 </head>
@@ -866,7 +872,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.0.3', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.1', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1255,7 +1261,7 @@ function renderOverview(){
   </div></div>
   ${nameBanner}${dupBanner}${demoBanner}
   ${ovViewBar(L,regions)}
-  ${ovView()==='seg'?segSection(L):regions.map(r=>{ const st=ovRg(r.name), n=L.filter(l=>r.sites.some(s=>s.id===l.site)).length;
+  ${ovView()==='seg'?segSection(L,regions):regions.map(r=>{ const st=ovRg(r.name), n=L.filter(l=>r.sites.some(s=>s.id===l.site)).length;
     return `<div class="region ${st.off?'rg-off':''}" data-rg="${esc(r.name)}"><div class="region-h" title="點一下收合 / 展開這個地區"><span class="rg-tg">▾</span>${esc(r.name)}<small>${r.sites.length} 個廠區 · ${n} 條線</small>
       <button class="btn sm rg-mode" title="切換這個地區的廠區卡顯示：完整 → 重點 → 收合">${OV_MODE[st.mode]}</button></div>
       <div class="sites m-${st.mode}">${r.sites.map(siteCard).join('')}</div></div>`; }).join('')}
@@ -1290,9 +1296,22 @@ function ovFit(){
 }
 /** 總覽視角（v3.15，只存本機）：site 依廠區（預設）/ seg 依段別；依段別時可篩選 廠區（或整個地區）、產品別、樓層 / 區域，一次展開一個段別的明細 */
 const ovView=()=>(UI.ov||{}).view==='seg'?'seg':'site';
-const ovSF=()=>Object.assign({site:'',fam:'',floor:''},(UI.ov||{}).sf||{});
+/** 依段別的「比較組」（Johnny：可以自己新增，同時看不同廠區的多個段別）：每組各自的篩選 sf 與展開狀態 open / all，只存本機。
+ *  舊版只有一組（UI.ov.sf / segOpen / segAll），第一次讀到時轉成第一組 */
+const OV_BMAX=4;
+function ovBlocks(){
+  const o=UI.ov=UI.ov||{};
+  if(!Array.isArray(o.blocks)||!o.blocks.length){
+    const op=Array.isArray(o.segOpen)?o.segOpen:typeof o.segOpen==='string'?[o.segOpen]:[];
+    o.blocks=[{sf:o.sf||{},open:op,all:o.segAll||[]}]; delete o.sf; delete o.segOpen; delete o.segAll;
+  }
+  return o.blocks.map(b=>({sf:Object.assign({site:'',fam:'',floor:''},b.sf||{}),open:Array.isArray(b.open)?b.open:[],all:Array.isArray(b.all)?b.all:[]}));
+}
 function ovSet(o){ UI.ov=UI.ov||{}; Object.assign(UI.ov,o); saveUI(); renderOverview(); }
-function ovSetF(k,v){ const f=ovSF(); f[k]=v; if(k!=='floor') f.floor=''; ovSet({sf:f}); }
+function ovBSet(i,fn){ const bs=ovBlocks(); if(!bs[i]) return; fn(bs[i]); ovSet({blocks:bs}); }
+function ovSetF(i,k,v){ ovBSet(+i,b=>{ b.sf[k]=v; if(k!=='floor') b.sf.floor=''; }); }
+function ovBAdd(){ const bs=ovBlocks(); if(bs.length>=OV_BMAX) return; bs.push({sf:{},open:[],all:[]}); ovSet({blocks:bs}); }
+function ovBDel(i){ const bs=ovBlocks(); if(bs.length<2) return; bs.splice(+i,1); ovSet({blocks:bs}); }
 const prodFams=()=>[...new Set(liveSorted('products').map(p=>(p.name||'').trim()).filter(Boolean))];
 function ovMatch(l,f,skipFloor){
   if(f.site){ if(f.site.startsWith('rg:')){ if(((byId('sites',l.site)||{}).region||'其他')!==f.site.slice(3)) return false; } else if(l.site!==f.site) return false; }
@@ -1301,22 +1320,26 @@ function ovMatch(l,f,skipFloor){
   return true;
 }
 function ovViewBar(L,regions){
-  const v=ovView(), f=ovSF(), sw=`<span class="seg vw">${[['site','依廠區','每個廠區一張卡片'],['seg','依段別','每個段別一張卡片，可依廠區、產品別、樓層 / 區域篩選']].map(([k,t,tt])=>`<button class="${v===k?'on':''}" title="${tt}" onclick="ovSet({view:'${k}'})">${t}</button>`).join('')}</span>`;
+  const v=ovView(), sw=`<span class="seg vw">${[['site','依廠區','每個廠區一張卡片'],['seg','依段別','每個段別一張卡片，可依廠區、產品別、樓層 / 區域篩選']].map(([k,t,tt])=>`<button class="${v===k?'on':''}" title="${tt}" onclick="ovSet({view:'${k}'})">${t}</button>`).join('')}</span>`;
   if(v!=='seg') return `<div class="ov-vw">${sw}</div>`;
-  const fl=[...new Set(L.filter(l=>ovMatch(l,f,true)).map(l=>lineFloor(l)||'-'))].sort((a,b)=>a==='-'?1:b==='-'?-1:a.localeCompare(b,'zh-Hant',{numeric:true}));
-  const sel=(k,lb,opts)=>`<label class="ovf"><span>${lb}</span><select class="in ${f[k]?'act':''}" onchange="ovSetF('${k}',this.value)"><option value="">全部</option>${opts}</select></label>`;
-  const siteO=regions.map(r=>`<optgroup label="${esc(r.name)}"><option value="rg:${esc(r.name)}" ${f.site==='rg:'+r.name?'selected':''}>整個${esc(r.name)}</option>${r.sites.map(s=>`<option value="${esc(s.id)}" ${f.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</optgroup>`).join('');
-  const famO=prodFams().map(n=>`<option value="${esc(n)}" ${f.fam===n?'selected':''}>${esc(n)}</option>`).join('');
-  const flO=fl.map(x=>`<option value="${esc(x)}" ${f.floor===x?'selected':''}>${x==='-'?'（未填）':esc(x)}</option>`).join('');
-  const n=L.filter(l=>ovMatch(l,f)).length, any=f.site||f.fam||f.floor;
-  return `<div class="ov-vw">${sw}${sel('site','廠區',siteO)}${sel('fam','產品別',famO)}${sel('floor','樓層 / 區域',flO)}
-    <span class="ovf-n">${any?`篩選後 <b>${n}</b> / ${L.length} 台`:`共 <b>${L.length}</b> 台`}</span>${any?`<button class="btn sm" onclick="ovSet({sf:{}})">✕ 清除篩選</button>`:''}</div>`;
+  const n=ovBlocks().length;
+  return `<div class="ov-vw">${sw}<span class="ovf-n">共 <b>${L.length}</b> 台</span>${n<OV_BMAX?`<button class="btn sm" onclick="ovBAdd()" title="多一組篩選＋段別卡片，可以同時看不同廠區 / 產品別的段別（最多 ${OV_BMAX} 組，只存在這台電腦）">＋ 新增比較組</button>`:''}</div>`;
 }
-/** 展開的段別（可同時展開多個，只存本機）；舊版存的是單一字串 */
-const segOpenL=()=>{ const o=(UI.ov||{}).segOpen; return Array.isArray(o)?o:typeof o==='string'?[o]:[]; };
-/** 展開 / 收合段別；all＝這個段別顯示全部機台（預設先顯示 SEG_KMAX 台） */
-function ovSegTg(k){ const o=segOpenL(), on=o.includes(k); ovSet({segOpen:on?o.filter(x=>x!==k):[...o,k]}); }
-function ovSegAll(k){ const a=(UI.ov||{}).segAll||[]; ovSet({segAll:a.includes(k)?a.filter(x=>x!==k):[...a,k]}); }
+/** 一個比較組的篩選列：廠區（可選整個地區）、產品別、樓層 / 區域 */
+function ovBlockBar(L,regions,b,i,n){
+  const f=b.sf, fl=[...new Set(L.filter(l=>ovMatch(l,f,true)).map(l=>lineFloor(l)||'-'))].sort((a,b)=>a==='-'?1:b==='-'?-1:a.localeCompare(b,'zh-Hant',{numeric:true}));
+  const sel=(k,lb,opts)=>`<label class="ovf"><span>${lb}</span><select class="in ${f[k]?'act':''}" onchange="ovSetF(${i},'${k}',this.value)"><option value="">全部</option>${opts}</select></label>`;
+  const siteO=regions.map(r=>`<optgroup label="${esc(r.name)}"><option value="rg:${esc(r.name)}" ${f.site==='rg:'+r.name?'selected':''}>整個${esc(r.name)}</option>${r.sites.map(s=>`<option value="${esc(s.id)}" ${f.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</optgroup>`).join('');
+  const famO=prodFams().map(x=>`<option value="${esc(x)}" ${f.fam===x?'selected':''}>${esc(x)}</option>`).join('');
+  const flO=fl.map(x=>`<option value="${esc(x)}" ${f.floor===x?'selected':''}>${x==='-'?'（未填）':esc(x)}</option>`).join('');
+  const m=L.filter(l=>ovMatch(l,f)).length, any=f.site||f.fam||f.floor;
+  return `<div class="ovb-h">${n>1?`<span class="ovb-no">${i+1}</span>`:''}${sel('site','廠區',siteO)}${sel('fam','產品別',famO)}${sel('floor','樓層 / 區域',flO)}
+    <span class="ovf-n">${any?`篩選後 <b>${m}</b> 台`:`全部 <b>${m}</b> 台`}</span>${any?`<button class="btn sm" onclick="ovBSet(${i},b=>{b.sf={}})">清除篩選</button>`:''}${n>1?`<button class="ovb-x" onclick="ovBDel(${i})" title="移除這組">✕</button>`:''}</div>`;
+}
+/** 展開 / 收合段別（每個比較組各自，可同時展開多個）；all＝這個段別顯示全部機台（預設先顯示 SEG_KMAX 台）。el＝被點的元素，往上找 data-b 比較組 */
+const tgl=(a,k)=>a.includes(k)?a.filter(x=>x!==k):[...a,k];
+function ovSegTg(el){ ovBSet(+el.closest('[data-b]').dataset.b,b=>{ b.open=tgl(b.open,el.dataset.seg); }); }
+function ovSegAll(el){ ovBSet(+el.closest('[data-b]').dataset.b,b=>{ b.all=tgl(b.all,el.dataset.seg); }); }
 const SEG_KMAX=10;
 /** 段別卡片的統計：台數、綠 / 黃燈、已量產 / 導入中、缺口 / 卡關 / 逾期 */
 function segStats(ls){
@@ -1324,30 +1347,36 @@ function segStats(ls){
   for(const l of ls){ s[lineLight(l)]++; if(isMass(l)) s.mass++; if(lineGaps(l)) s.gap++; if(l.blocked) s.blocked++; if(isOverdue(l)) s.overdue++; }
   s.intro=s.n-s.mass; return s;
 }
-function segSection(L){
-  const f=ovSF(), ls=L.filter(l=>ovMatch(l,f)), segs=segList();
-  const groups=segs.map(k=>({k,ls:ls.filter(l=>lineSeg(l)===k)}));
-  const none=ls.filter(l=>!segs.includes(lineSeg(l))); if(none.length) groups.push({k:'',ls:none});
-  const open=segOpenL();
+function segSection(L,regions){
+  const segs=segList(), bs=ovBlocks();
   if(!segs.length&&!L.length) return '<div class="card empty" style="padding:16px">尚無產線</div>';
   const hint=!segs.length?`<div class="banner"><span>📦 主檔「產品設定」還沒有填<b>段別</b>：到 主檔設定 → 產品設定，在每個產品別旁選段別（CT / PBI / SKD / FD / Set），這裡就會依段別分卡片。</span><button class="btn sm" onclick="showPage('master')">前往主檔設定</button></div>`:'';
+  return hint+bs.map((b,i)=>`<div class="ovb ${bs.length>1?'multi':''}" data-b="${i}">${ovBlockBar(L,regions,b,i,bs.length)}${segBlock(L,b)}</div>`).join('');
+}
+/** 一個比較組的段別卡片 */
+function segBlock(L,b){
+  const f=b.sf, ls=L.filter(l=>ovMatch(l,f)), segs=segList();
+  const groups=segs.map(k=>({k,ls:ls.filter(l=>lineSeg(l)===k)}));
+  const none=ls.filter(l=>!segs.includes(lineSeg(l))); if(none.length) groups.push({k:'',ls:none});
+  const open=b.open;
   const cols=groups.map(g=>{ const s=segStats(g.ls), nm=g.k||'未分段', on=s.n&&open.includes(g.k);
     const say=[s.gap?`${s.gap} 台有缺口`:'',s.blocked?`${s.blocked} 台卡關`:'',s.overdue?`${s.overdue} 台逾期`:''].filter(Boolean);
-    return `<div class="sgcol ${s.n?'':'zero'}"><div class="card sgc ${on?'on':''} ${g.k?'':'nos'}" ${s.n?`data-seg="${esc(g.k)}" onclick="ovSegTg(this.dataset.seg)" title="${on?'收合':'點一下展開 '+esc(nm)+' 的各台機台'}"`:''}>
+    return `<div class="sgcol ${s.n?'':'zero'}"><div class="card sgc ${on?'on':''} ${g.k?'':'nos'}" ${s.n?`data-seg="${esc(g.k)}" onclick="ovSegTg(this)" title="${on?'收合':'點一下展開 '+esc(nm)+' 的各台機台'}"`:''}>
       <div class="sg-h"><span class="code">${esc(nm)}</span>${g.k?'':GI('noseg')}<span class="sg-n"><b>${s.n}</b>台</span></div>
       <div class="sg-lt"><span class="lt g" title="綠燈 ${s.g} 台"><i></i><b>${s.g}</b></span><span class="lt y" title="黃燈 ${s.y} 台"><i></i><b>${s.y}</b></span>${GI('light')}</div>
       <div class="sg-bar">${s.n?`${s.g?`<i class="g" style="flex:${s.g}"></i>`:''}${s.y?`<i class="y" style="flex:${s.y}"></i>`:''}`:''}</div>
       <div class="sg-m"><span>已量產<b>${s.mass}</b></span><span>導入中<b>${s.intro}</b></span></div>
       <div class="sg-s ${say.length?'bad':'ok'}">${!s.n?'<span class="muted">目前篩選沒有這個段別的機台</span>':say.length?'⚠ '+say.join('、'):'✓ 沒有缺口、卡關或逾期'}</div>
       ${s.n?`<div class="sg-x">${on?'▴ 收合':'▾ 展開 '+s.n+' 台'}</div>`:''}
-    </div>${on?segKids(g,f):''}</div>`; }).join('');
-  return `${hint}<div class="sgs" style="--n:${Math.min(Math.max(groups.length,1),6)}">${cols}</div>`;
+    </div>${on?segKids(g,b):''}</div>`; }).join('');
+  return `<div class="sgs" style="--n:${Math.min(Math.max(groups.length,1),6)}">${cols}</div>`;
 }
 /** 展開後長在段別卡片下方的各台小卡（樹狀連接線）；依廠區 → 樓層 / 區域排序，篩選沒固定廠區 / 樓層時插入分組小標 */
-function segKids(g,f){
+function segKids(g,b){
+  const f=b.sf;
   const so=id=>(byId('sites',id)||{}).order??999, fa=l=>lineFloor(l);   // 沒填樓層 / 區域的排在該廠區最後
   const ls=g.ls.slice().sort((a,b)=>so(a.site)-so(b.site)||(fa(a)?0:1)-(fa(b)?0:1)||fa(a).localeCompare(fa(b),'zh-Hant',{numeric:true})||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true}));
-  const all=((UI.ov||{}).segAll||[]).includes(g.k), show=all?ls:ls.slice(0,SEG_KMAX);
+  const all=b.all.includes(g.k), show=all?ls:ls.slice(0,SEG_KMAX);
   const grpSite=!f.site||f.site.startsWith('rg:'), grpFloor=!f.floor;
   let out='', pk=null;
   for(const l of show){
@@ -1360,7 +1389,7 @@ function segKids(g,f){
       ${isMass(l)||gp||l.blocked||od?`<div class="k3">${isMass(l)?'<span class="tag grn">已量產</span>':''}${gp?`<span class="tag red">缺口 ${gp}</span>`:''}${l.blocked?'<span class="tag red">卡關</span>':''}${od?'<span class="tag amb">逾期</span>':''}</div>`:''}
     </div>`;
   }
-  if(ls.length>SEG_KMAX) out+=`<button class="sgmore" data-seg="${esc(g.k)}" onclick="ovSegAll(this.dataset.seg)">${all?'▴ 只顯示前 '+SEG_KMAX+' 台':'▾ 顯示全部 '+ls.length+' 台（另 '+(ls.length-SEG_KMAX)+' 台）'}</button>`;
+  if(ls.length>SEG_KMAX) out+=`<button class="sgmore" data-seg="${esc(g.k)}" onclick="ovSegAll(this)">${all?'▴ 只顯示前 '+SEG_KMAX+' 台':'▾ 顯示全部 '+ls.length+' 台（另 '+(ls.length-SEG_KMAX)+' 台）'}</button>`;
   return `<div class="sgkids">${out}</div>`;
 }
 function siteCard(s){
@@ -2660,6 +2689,7 @@ function copyShare(){
 /** 給使用者看的版本更新紀錄（目前這個大版本的每一版，新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點（**粗體** 標重點詞）。
  *  升大版本時：把這裡整理成一行一版搬進 ERAS 上一代的 t，這裡清空重新開始 */
 const CHANGELOG=[
+  {v:'4.1',d:'2026-10-28',t:['總覽依段別可以**新增比較組**：每組各自選廠區、產品別、樓層 / 區域，上下排列，同時看不同廠區的段別（最多 4 組，只存在這台電腦）','**整體進度**、能力矩陣工具列凍結在上方時貼齊標題列，捲動時不會滑動，也沒有整條底色']},
   {v:'4.0',d:'2026-10-28',t:['總覽可以切換「**依廠區 / 依段別**」：依段別時每個段別（CT / PBI / SKD / FD / Set）一張卡片，看總台數、綠燈 / 黃燈台數、已量產 / 導入中，以及缺口、卡關、逾期一句話','可以依**廠區、產品別、樓層 / 區域**篩選；點段別卡片，各台機台會展開在卡片下方（可同時展開多個段別）','主檔「產品設定」每個產品別可以選**段別**，顯示成「產品別-段別」（例：FIDM-CT）','產線新增「**樓層 / 區域**」欄位（F1、F7、1C…），沒填時從線別名稱推測，存檔時帶入','**Beta 版**：點標題列的版本號可以切回 v3.14 正式版，兩版共用同一份雲端資料']},
 ];
 /** 大版本代號：太空望遠鏡，依發射年份排（AOI Calculator 用地面天文台）。資料架構或使用方式整個改變才升大版本、往下接一個代號

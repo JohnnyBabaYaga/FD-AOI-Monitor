@@ -48,7 +48,22 @@ header .logo{width:30px;height:30px;border-radius:50%;object-fit:cover;backgroun
 .hdr-vk{display:flex;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);border-radius:999px;margin-left:14px;flex-shrink:0;}
 .ver-wrap{position:relative;display:flex;}
 .ver-btn{display:flex;align-items:center;border-right:1px solid rgba(255,255,255,.35);color:#fff;
-  font-size:12px;font-weight:700;letter-spacing:.2px;padding:0 12px 0 13px;white-space:nowrap;cursor:default;}   /* 只顯示版本號，不能點（沒有 Beta 可切換） */
+  font-size:12px;font-weight:700;letter-spacing:.2px;padding:0 12px 0 13px;white-space:nowrap;
+  border-top:0;border-bottom:0;border-left:0;background:none;border-radius:999px 0 0 999px;cursor:pointer;transition:background .15s;}
+/* 版本切換選單（與 AOI Calculator 同一套）：正式版在網址根目錄、Beta 在 beta/，兩版共用同一份雲端資料 */
+.ver-btn:hover,.ver-wrap.open .ver-btn{background:rgba(255,255,255,.18);}
+.ver-btn i{font-style:normal;font-size:10px;opacity:.85;margin-left:5px;}
+.ver-menu{display:none;position:absolute;top:calc(100% + 8px);left:0;min-width:272px;z-index:60;background:#fff;color:var(--text);
+  border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-2);padding:5px;}
+.ver-wrap.open .ver-menu{display:block;}
+.ver-it{display:block;position:relative;padding:8px 10px 8px 27px;border-radius:7px;font-size:12.5px;font-weight:600;line-height:1.35;white-space:nowrap;color:var(--text);text-decoration:none;}
+a.ver-it:hover{background:var(--surf2);color:var(--accent-deep);}
+.ver-it.on{color:var(--accent-deep);cursor:default;} .ver-it.on::before{content:'✓';position:absolute;left:10px;top:8px;}
+.ver-it small{display:block;font-size:11px;font-weight:400;color:var(--sub);margin-top:2px;}
+.ver-menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:7px;font-size:12.5px;color:var(--text);cursor:pointer;white-space:nowrap;}
+.ver-menu button:hover{background:var(--surf2);color:var(--accent-deep);}
+.ver-note{font-size:11px;color:var(--sub);line-height:1.5;padding:7px 10px 5px;margin-top:4px;border-top:1px solid var(--border);}
+.fab-menu .fab-ver{display:none;}   /* 手機看不到標題列的版本號，從右下角 i 切換 */
 .nav{display:flex;padding:2px;flex-shrink:0;}
 .nav button{border:0;background:none;color:rgba(255,255,255,.88);font-size:12px;font-weight:600;padding:5px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;}
 .nav button:hover{background:rgba(255,255,255,.14);}
@@ -353,7 +368,7 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .fab-menu.on{display:block;}
 .fab-menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:7px;font-size:12.5px;cursor:pointer;white-space:nowrap;}
 .fab-menu button:hover{background:var(--surf2);color:var(--accent-deep);}
-@media (max-width:760px){ #fab-wrap{right:14px;bottom:14px;} #about-fab{width:40px;height:40px;font-size:17px;} #gd-hint{right:12px;left:12px;width:auto;bottom:68px;} }
+@media (max-width:760px){ .fab-menu .fab-ver{display:block;} #fab-wrap{right:14px;bottom:14px;} #about-fab{width:40px;height:40px;font-size:17px;} #gd-hint{right:12px;left:12px;width:auto;bottom:68px;} }
 @media print{ #fab-wrap,#gd-hint,.gi{display:none!important;} }
 /* ── Guide（導入指引：沿用 AOI Calculator v4 的結論優先版面）── */
 .gd{display:grid;grid-template-columns:330px minmax(0,1fr);gap:14px;align-items:start;}
@@ -755,7 +770,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
   </div>
   <!-- 版本號＋分頁同一個框（與 AOI Calculator 的版本號＋知識庫同一套）：版本號只顯示、不能點（目前沒有 Beta 可切換；更新紀錄在右下角 i →「關於本平台」）；手機藏版本號，只留分頁 -->
   <div class="hdr-vk">
-    <div class="ver-wrap"><span class="ver-btn" id="verBtn"></span></div>
+    <div class="ver-wrap" id="ver-wrap"><button type="button" class="ver-btn" id="verBtn" aria-haspopup="true"></button><div class="ver-menu" id="ver-menu"></div></div>
     <nav class="nav" id="nav">
       <button data-pg="overview" class="on"><i>📊 </i>總覽</button>
       <button data-pg="matrix"><i>▦ </i><span class="nl">能力矩陣</span><span class="ns">矩陣</span></button>
@@ -782,7 +797,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 <div id="modal" role="dialog"></div>
 <div id="toast"></div>
 <div id="fab-wrap"><button id="about-fab" title="導覽／關於本平台" onclick="fabToggle(event)">i</button>
-  <div class="fab-menu" id="help-menu"><button onclick="guideStart()">📖 導覽這一頁</button><button onclick="fabClose();openAbout()">ℹ️ 關於本平台</button></div></div>
+  <div class="fab-menu" id="help-menu"><button onclick="guideStart()">📖 導覽這一頁</button><button onclick="fabClose();openAbout()">ℹ️ 關於本平台</button><button class="fab-ver" id="fab-ver"></button></div></div>
 <input type="file" id="fileIn" accept=".json,application/json" style="display:none">
 
 <script>
@@ -790,7 +805,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.14', SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.14.1', APP_BETA=false, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -968,7 +983,8 @@ function addLog(msg,extra){
 // 衍生計算
 // ═══════════════════════════════════════════
 const hwName=id=>{ const h=byId('hws',id); return h&&!h.deleted?h.name:''; };
-const prodName=id=>{ const p=byId('products',id); return p?p.name:'(未指定產品)'; };
+const prodFull=p=>{ const s=(p.seg||'').trim(); return (p.name||'')+(s?'-'+s:''); };   // v3.14.1：Beta 版主檔加了段別，正式版照樣顯示「產品別-段別」
+const prodName=id=>{ const p=byId('products',id); return p?prodFull(p):'(未指定產品)'; };
 /** 一條線跑的產品別（可複選；l.product 永遠是第一個，用來分組排序） */
 const lineProds=l=>l.products&&l.products.length?l.products:(l.product?[l.product]:[]);
 const prodsLabel=l=>lineProds(l).map(prodName).join('+')||'(未指定產品別)';
@@ -1306,7 +1322,7 @@ function renderMatrix(){
   const box=bg=>`<b style="display:inline-block;width:12px;height:12px;${bg};border:1px solid #cddcf3;border-radius:3px;vertical-align:-1px"></b>`;
   const opt=(k,label,arr)=>`<select class="in" onchange="setMF({${k}:this.value})"><option value="">${label}</option>${arr.map(x=>`<option value="${x.id}" ${f[k]===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`;
   const STG=v=>v==='blocked'?'⚠ 卡關中':(STAGES.find(s=>s.k===v)?v+' '+STAGES.find(s=>s.k===v).name:v);
-  const act=[['product','產品別',v=>(byId('products',v)||{}).name],['form','型態',v=>(byId('forms',v)||{}).name],['stage','階段',STG],['plat','軟體版本',v=>platName(v)],['hw','相機',v=>hwName(v)]].filter(([k])=>f[k]);
+  const act=[['product','產品別',v=>byId('products',v)?prodName(v):''],['form','型態',v=>(byId('forms',v)||{}).name],['stage','階段',STG],['plat','軟體版本',v=>platName(v)],['hw','相機',v=>hwName(v)]].filter(([k])=>f[k]);
   const view=f.watchOnly?'watch':f.gapOnly?'gap':'all';
   el.innerHTML=`
   <div class="mx-top"><div class="mbar">
@@ -1316,7 +1332,7 @@ function renderMatrix(){
         <div class="dd-f"><button class="btn sm" onclick="setMF({sites:[]})">全部廠區</button></div></div></div>
     <div class="dd ${MXDD==='fd'?'on':''}" id="mx-fd"><button class="in dd-b ${act.length?'act':''}" onclick="mxDD(event,'fd')" title="依產品別、型態、階段、軟體版本、相機篩選">篩選${act.length?` (${act.length})`:''} ▾</button>
       <div class="dd-m fd-m">
-        <label class="fd-r"><span>產品別</span>${opt('product','全部',prods)}</label>
+        <label class="fd-r"><span>產品別</span>${opt('product','全部',prods.map(p=>({id:p.id,name:prodFull(p)})))}</label>
         <label class="fd-r"><span>型態</span>${opt('form','全部',liveSorted('forms'))}</label>
         <label class="fd-r"><span>階段</span><select class="in" onchange="setMF({stage:this.value})"><option value="">全部</option>${STAGES.map(s=>`<option value="${s.k}" ${f.stage===s.k?'selected':''}>${s.k} ${s.name}</option>`).join('')}<option value="blocked" ${f.stage==='blocked'?'selected':''}>⚠ 卡關中</option></select></label>
         <label class="fd-r"><span>軟體版本</span>${opt('plat','全部',liveSorted('plats').map(p=>({id:p.id,name:platShort(p)})))}</label>
@@ -1495,7 +1511,7 @@ function renderDrawer(){
         :`🏭 <b>${esc(w.site)}</b> 廠區負責人：${esc(so)} · 本線另外指定 <b>${esc(w.owner)}</b> <button class="lkb" data-set="owner" data-v="">改回沿用廠區負責人</button>`)
         :`🏭 <b>${esc(w.site)}</b> 尚未設定廠區負責人<span class="muted">（主檔設定 → 廠區；設定後，負責人留空的產線會自動沿用）</span>`}</div>
       <div class="sub-t">產品別 *（可複選）${GI('prodset')}</div>
-      <div class="reqs">${liveSorted('products').map(x=>`<button class="chip ${lineProds(w).includes(x.id)?'on':''}" data-prod="${x.id}">${esc(x.name)}</button>`).join('')}</div>
+      <div class="reqs">${liveSorted('products').map(x=>`<button class="chip ${lineProds(w).includes(x.id)?'on':''}" data-prod="${x.id}">${esc(prodFull(x))}</button>`).join('')}</div>
       <div class="sub-t">型態（可複選）${GI('forms')}</div>
       <div class="reqs">${liveSorted('forms').map(f=>`<button class="chip ${(w.forms||[]).includes(f.id)?'on':''}" data-form="${f.id}">${esc(f.name)}</button>`).join('')}</div>
       ${unset.length?`<div class="warnline">⚠ 主檔還沒設定「${esc(unset.join('、'))}」的檢測項目，請到「主檔設定 → 產品設定」加入這個型態</div>`:''}
@@ -1713,7 +1729,7 @@ function renderGuide(){
     <div class="gd-in">
       <div class="gstep"><b>1</b>產品別 → 型態 → 檢測項目</div>
       <div class="card gcard">
-        <div class="grow"><label>產品別</label><select class="in" data-g="product" style="width:170px;text-align:left"><option value="">（不指定，直接選項目）</option>${liveSorted('products').map(p=>`<option value="${p.id}" ${g.product===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>
+        <div class="grow"><label>產品別</label><select class="in" data-g="product" style="width:170px;text-align:left"><option value="">（不指定，直接選項目）</option>${liveSorted('products').map(p=>`<option value="${p.id}" ${g.product===p.id?'selected':''}>${esc(prodFull(p))}</option>`).join('')}</select></div>
         <div class="ghint" style="margin-top:6px">型態（可複選）${GI('forms')}${prod?' <span class="muted">· 虛線框＝主檔還沒設定這個組合</span>':''}</div>
         <div class="reqs">${liveSorted('forms').map(f=>`<button class="chip ${forms.includes(f.id)?'on':''} ${prod&&!fr[f.id]?'unset':''}" data-gform="${f.id}">${esc(f.name)}</button>`).join('')}</div>
         <div class="ghint" style="margin-top:8px">檢測項目 <span class="muted">（${prod?'已帶入主檔「產品別 × 型態」的設定，可再增減':'點選需要的項目'}）</span></div>
@@ -2095,12 +2111,12 @@ async function mAddCombo(pid,fid){ if(!fid) return;
   const p=byId('products',pid), n=clone(p); n.fr=n.fr||{};
   // 從這個產品別已設定的第一個型態複製檢測項目，再增減就好（避免重工）
   const first=Object.keys(n.fr).find(f=>formName(f)); n.fr[fid]=first?n.fr[first].slice():[];
-  commit('products',n,`產品別「${p.name}」加入型態「${formName(fid)}」${first?`（檢測項目先複製自「${formName(first)}」）`:''}`); }
+  commit('products',n,`產品別「${prodFull(p)}」加入型態「${formName(fid)}」${first?`（檢測項目先複製自「${formName(first)}」）`:''}`); }
 async function mDelCombo(pid,fid){ const p=byId('products',pid), used=liveLines().filter(l=>lineProds(l).includes(pid)&&(l.forms||[]).includes(fid)).length;
-  if(!(await confirmBox(`移除「${p.name} × ${formName(fid)}」的設定？${used?`\n目前有 ${used} 條產線使用這個組合，移除後它們的需求檢測項目會變少。`:''}`,'移除'))) return;
-  const n=clone(p); delete n.fr[fid]; commit('products',n,`產品別「${p.name}」移除型態「${formName(fid)}」`); }
+  if(!(await confirmBox(`移除「${prodFull(p)} × ${formName(fid)}」的設定？${used?`\n目前有 ${used} 條產線使用這個組合，移除後它們的需求檢測項目會變少。`:''}`,'移除'))) return;
+  const n=clone(p); delete n.fr[fid]; commit('products',n,`產品別「${prodFull(p)}」移除型態「${formName(fid)}」`); }
 function mToggleCombo(pid,fid,iid){ const p=byId('products',pid), n=clone(p); n.fr=n.fr||{}; const a=n.fr[fid]=(n.fr[fid]||[]).slice(), i=a.indexOf(iid); if(i>=0) a.splice(i,1); else a.push(iid);
-  commit('products',n,`「${p.name} × ${formName(fid)}」檢測項目${i>=0?'移除':'加入'}「${(byId('items',iid)||{}).name}」`); }
+  commit('products',n,`「${prodFull(p)} × ${formName(fid)}」檢測項目${i>=0?'移除':'加入'}「${(byId('items',iid)||{}).name}」`); }
 function mTogglePlatForm(pid,fid){ const p=byId('plats',pid), n=clone(p); n.forms=(n.forms||shapeForms(n.shape)).slice(); delete n.shape; const i=n.forms.indexOf(fid); if(i>=0) n.forms.splice(i,1); else n.forms.push(fid);
   commit('plats',n,`軟體版本「${p.name}」${i>=0?'不再支援':'支援'}型態「${formName(fid)}」`); }
 function mToggleFormPre(fid,tid){ const f=byId('forms',fid), n=clone(f); n.pre=(n.pre||[]).slice(); const i=n.pre.indexOf(tid); if(i>=0) n.pre.splice(i,1); else n.pre.push(tid);
@@ -2489,6 +2505,7 @@ function copyShare(){
 /** 給使用者看的版本更新紀錄（目前這個大版本的每一版，新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點（**粗體** 標重點詞）。
  *  升大版本時：把這裡整理成一行一版搬進 ERAS 上一代的 t，這裡清空重新開始 */
 const CHANGELOG=[
+  {v:'3.14.1',d:'2026-10-28',t:['點標題列的**版本號**可以切換到 **v4.0 Kepler Beta** 試用新功能（總覽依段別看全部機台）；兩版共用同一份雲端資料，隨時可以切回來','主檔產品別有設定段別時，顯示成「產品別-段別」（例：FIDM-CT）']},
   {v:'3.14',d:'2026-10-27',t:['關於本平台加上**平台網址**，按「複製」就能傳給同仁','標題列**版本號**只顯示、不能點（目前沒有 Beta 版可切換）；版本更新在右下角 i →「關於本平台」']},
   {v:'3.13',d:'2026-10-27',t:['**關於本平台**改成和 AOI Calculator 相同：「聯絡資訊」與「版本更新」兩個分頁，版本依代號分組','點標題列的**版本號**直接打開版本更新']},
   {v:'3.12',d:'2026-10-27',t:['**版本代號**：每個大版本用一座太空望遠鏡命名（目前 v3 Spitzer）','原本的 v4.0 / v4.1 改號為 v3.10 / v3.11（內容不變，只是重新分類）','**版本號**移到分頁列左邊','**雲端同步**改成雲朵圖示（與 AOI Calculator 相同）：綠＝已同步、黃＝同步中 / 待上傳、紅＝失敗']},
@@ -2550,9 +2567,27 @@ function openAbout(tab){
     <div class="ab-pane" id="ab-p-log">${log}</div>
   </div>`);
   $('#modal').classList.add('ab'); abTab(tab==='log'?'log':'info');
-  try{ localStorage.setItem('aoim_seenver',APP_VER); }catch(e){} const n=$('#upd-note'); if(n) n.remove();
+  try{ localStorage.setItem(SEEN_KEY,APP_VER); }catch(e){} const n=$('#upd-note'); if(n) n.remove();
 }
-const SITE_URL='https://johnnybabayaga.github.io/FD-AOI-Monitor/';
+const SITE_URL='https://johnnybabayaga.github.io/FD-AOI-Monitor/'+(APP_BETA?'beta/':'');
+/** 版本切換（與 AOI Calculator 同一套）：正式版放網址根目錄、Beta 放 beta/。兩版同網址底下，本機資料、名字、權杖、雲端主檔都共用。
+ *  正式版與 Beta 的 index.html 這一段要一致；Beta 轉正式時：beta 的檔案上傳到根目錄、VERS 改成新的正式版 */
+const VERS=[
+  {v:'4.0',code:'Kepler',beta:true,dir:'beta/',d:'總覽依段別（上帝視角）、樓層 / 區域'},
+  {v:'3.14.1',code:'Spitzer',dir:'',d:'目前正式版'},
+];
+const verHref=x=>(APP_BETA?'../':'')+x.dir||'./';
+function verMenuInit(){
+  const cur=VERS.find(x=>!!x.beta===APP_BETA), other=VERS.find(x=>x!==cur);
+  $('#verBtn').innerHTML=`v${APP_VER}${APP_BETA?' Beta':''}<i aria-hidden="true">▾</i>`; $('#verBtn').title='切換版本 / 版本更新紀錄';
+  $('#ver-menu').innerHTML=VERS.map(x=>x===cur
+      ?`<span class="ver-it on">v${APP_VER} ${x.code}${x.beta?' Beta':''}<small>${x.d}</small></span>`
+      :`<a class="ver-it" href="${verHref(x)}">v${x.v} ${x.code}${x.beta?' Beta':''}<small>${x.d}</small></a>`).join('')
+    +`<button onclick="verClose();openAbout('log')">📋 版本更新紀錄</button><div class="ver-note">兩版共用同一份雲端資料，修改會互相同步。<br>${APP_BETA?'Beta 是試用版，可以隨時切回正式版。':'Beta 是還沒正式發布的新版，歡迎試用。'}</div>`;
+  $('#verBtn').onclick=e=>{ e.stopPropagation(); $('#ver-wrap').classList.toggle('open'); };
+  const f=$('#fab-ver'); if(f&&other){ f.textContent=APP_BETA?`⏪ 切回 v${other.v} 正式版`:`🧪 試用 v${other.v} Beta`; f.onclick=()=>{ location.href=verHref(other); }; }
+}
+function verClose(){ const w=$('#ver-wrap'); if(w) w.classList.remove('open'); }
 function copyAboutUrl(){
   (navigator.clipboard?navigator.clipboard.writeText(SITE_URL):Promise.reject()).then(()=>toast('已複製平台網址','ok'))
     .catch(()=>promptBox('平台網址（請手動複製）','',SITE_URL));
@@ -2562,13 +2597,14 @@ function abTab(k){
   $$('#modal .ab-pane').forEach(p=>p.classList.toggle('on',p.id==='ab-p-'+k));
   $('#ab-p-log').scrollTop=0;
 }
+const SEEN_KEY=APP_BETA?'aoim_seenver_beta':'aoim_seenver';   // Beta 與正式版各記各的，來回切換不會一直提示
 /** 版本更新後第一次打開：右下角提示一次（點開看更新內容；全新使用者不提示） */
 function updNotice(){
-  let seen=null; try{ seen=localStorage.getItem('aoim_seenver'); }catch(e){}
-  if(!seen&&!USER.name){ try{ localStorage.setItem('aoim_seenver',APP_VER); }catch(e){} return; }   // 全新使用者不提示；已設定過名字的舊同仁（v3.10 前沒有這筆紀錄）照樣提示
+  let seen=null; try{ seen=localStorage.getItem(SEEN_KEY); }catch(e){}
+  if(!seen&&!USER.name){ try{ localStorage.setItem(SEEN_KEY,APP_VER); }catch(e){} return; }   // 全新使用者不提示；已設定過名字的舊同仁（v3.10 前沒有這筆紀錄）照樣提示
   if(seen===APP_VER) return; const x=CHANGELOG.find(c=>c.v===APP_VER)||CHANGELOG[0];
   const d=document.createElement('div'); d.id='upd-note';
-  d.innerHTML=`<div class="un-t">🎉 平台已更新到 v${x?x.v:APP_VER}</div>${x?`<div class="un-d">${esc(x.t[0].replace(/\*\*/g,''))}${x.t.length>1?` 等 ${x.t.length} 項`:''}</div>`:''}<div class="un-b"><button class="btn sm" onclick="try{localStorage.setItem('aoim_seenver',APP_VER)}catch(e){};this.closest('#upd-note').remove()">知道了</button><button class="btn sm pri" onclick="openAbout('log')">看更新內容</button></div>`;
+  d.innerHTML=`<div class="un-t">${APP_BETA?'🧪 歡迎試用 Beta 版 v':'🎉 平台已更新到 v'}${x?x.v:APP_VER}</div>${x?`<div class="un-d">${esc(x.t[0].replace(/\*\*/g,''))}${x.t.length>1?` 等 ${x.t.length} 項`:''}</div>`:''}<div class="un-b"><button class="btn sm" onclick="try{localStorage.setItem(SEEN_KEY,APP_VER)}catch(e){};this.closest('#upd-note').remove()">知道了</button><button class="btn sm pri" onclick="openAbout('log')">看更新內容</button></div>`;
   document.body.appendChild(d);
 }
 
@@ -2768,6 +2804,7 @@ function initTour(){
     if(gi){ e.preventDefault(); e.stopPropagation(); (_glCur===gi)?glHide():glShow(gi); return; }
     if(_glCur&&!e.target.closest('#gl-pop')) glHide();
     if(!e.target.closest('#fab-wrap')) fabClose();
+    if(!e.target.closest('#ver-wrap')) verClose();
   },true);
   document.addEventListener('scroll',()=>{ if(_glCur) glHide(); if(_gd) requestAnimationFrame(gdPlace); },true);
   window.addEventListener('resize',()=>{ if(_gd) gdPlace(); });
@@ -2793,7 +2830,7 @@ function renderAll(){
   if(SYNC.state!=='sync') setSync(ghReady()?(SYNC.state==='off'?'ok':SYNC.state==='ok'&&dirtyCount()?'dirty':SYNC.state==='dirty'&&!dirtyCount()?'ok':SYNC.state):'off',SYNC.msg);
 }
 function init(){
-  $('#verBtn').textContent='v'+APP_VER; $('#verBtn').title=`目前版本 v${APP_VER} ${APP_CODE}`;
+  verMenuInit();
   loadLocal();
   $('#nav').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) showPage(b.dataset.pg); });
   $('#userBtn').onclick=openUser; $('#syncBtn').onclick=()=>openCloud(); initTour();

@@ -614,9 +614,10 @@ button.oa:hover{filter:brightness(.96);}
 .mx tr.ln.watch td:not(.stk):not(.t-x):not(.req){background:#fffcf2;}
 .ck-w.on{color:#9a6b00;font-weight:700;}
 /* ── v3.1：總覽收合 / 凍結、光學調整必填 ── */
-.ov-top{position:sticky;top:52px;z-index:20;margin:-16px -18px 10px;padding:12px 18px 10px;transition:background .15s;}
-/* 停在頂端時不加底色（Johnny：和頁面背景不同色很突兀）；往下捲、整體進度凍結在上方時才補底色，蓋住捲到下面的內容（ovTopStuck） */
-.ov-top.stuck{background:rgba(238,242,247,.93);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+.ov-top{position:sticky;top:52px;z-index:20;margin:-4px 0 10px;}
+/* 不加底色（Johnny）：凍結時卡片直接貼在標題列下方、上下不留縫，捲到下面的內容就不會從縫裡露出來；貼住時上方改直角接標題列（ovTopStuck） */
+.ov-top .ov-strip{transition:border-radius .15s;}
+.ov-top.stuck .ov-strip{border-top-left-radius:0;border-top-right-radius:0;box-shadow:0 8px 18px rgba(20,40,80,.13);}
 .region-h{cursor:pointer;user-select:none;}
 .region-h small{font-size:11px;font-weight:500;color:var(--sub);}
 .region-h::after{order:2;} .region-h .rg-mode{order:3;font-weight:600;}
@@ -640,7 +641,7 @@ button.oa:hover{filter:brightness(.96);}
 .op-f label .in{height:28px;font-size:12px;font-weight:400;color:var(--text);}
 .op-f .op-v{flex:1;}
 .op-f .in.bad{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 5%,#fff);}
-@media (max-width:760px){ .ov-top{position:static;margin:0 0 10px;padding:0;background:none;backdrop-filter:none;} .mx-top{position:static;margin:0;padding:0;background:none;backdrop-filter:none;} .ov-two{grid-template-columns:minmax(0,1fr);} }
+@media (max-width:760px){ .ov-top{position:static;margin:0 0 10px;} .ov-top.stuck .ov-strip{border-radius:var(--rad);} .mx-top{position:static;margin:0;padding:0;background:none;backdrop-filter:none;} .ov-two{grid-template-columns:minmax(0,1fr);} }
 /* ── v3.0：光學調整 ── */
 .srow .op-d{width:132px;height:26px;font-size:11px;margin-left:auto;margin-right:6px;}
 .seg button.on.v-na{background:#8a96a8;color:#fff;} .seg button.on.v-x{background:#dfe5ee;color:var(--text);}
@@ -807,7 +808,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='3.14.2', APP_BETA=false, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='3.14.3', APP_BETA=false, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -2576,7 +2577,7 @@ const SITE_URL='https://johnnybabayaga.github.io/FD-AOI-Monitor/'+(APP_BETA?'bet
  *  正式版與 Beta 的 index.html 這一段要一致；Beta 轉正式時：beta 的檔案上傳到根目錄、VERS 改成新的正式版 */
 const VERS=[
   {v:'4.0',code:'Kepler',beta:true,dir:'beta/',d:'總覽依段別（上帝視角）、樓層 / 區域'},
-  {v:'3.14.2',code:'Spitzer',dir:'',d:'目前正式版'},
+  {v:'3.14.3',code:'Spitzer',dir:'',d:'目前正式版'},
 ];
 const verHref=x=>(APP_BETA?'../':'')+x.dir||'./';
 function verMenuInit(){

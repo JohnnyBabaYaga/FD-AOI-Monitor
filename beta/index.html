@@ -768,7 +768,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 .ovf .in{height:30px;max-width:150px;}
 .ovf .in.act{border-color:var(--accent);color:var(--accent-deep);background:color-mix(in srgb,var(--accent) 6%,#fff);}
 .ovf-n{font-size:12px;color:var(--sub);margin-left:auto;} .ovf-n b{color:var(--text);font-variant-numeric:tabular-nums;}
-.sgs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-flow:row dense;gap:12px;align-items:start;}   /* 卡片寬度固定（一排 6 張）；dense：展開面板佔整排，同一排其他卡片往前補 */
+.sgs{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));grid-auto-flow:row dense;gap:12px;}   /* 各組欄數相同（segSection 統一算），上下對齊；dense：展開面板佔整排，同一排其他卡片往前補 */
 .sgc{padding:13px 14px 10px;display:flex;flex-direction:column;gap:9px;min-width:0;cursor:pointer;border:1.5px solid transparent;transition:border-color .12s,box-shadow .12s;}
 .sgc:hover{border-color:color-mix(in srgb,var(--accent) 35%,transparent);}
 .sgc.on{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent);}
@@ -786,7 +786,13 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 .sg-bar i.g{background:var(--green);} .sg-bar i.y{background:#f0b400;}
 .sg-m{display:flex;gap:14px;font-size:12px;color:var(--sub);font-weight:600;}
 .sg-m b{color:var(--text);margin-left:4px;font-variant-numeric:tabular-nums;}
-.sg-s{font-size:12px;line-height:1.45;border-top:1px solid var(--border);padding-top:8px;min-height:2.9em;}
+.sg-s{font-size:12px;line-height:1.45;border-top:1px solid var(--border);padding-top:8px;min-height:2.9em;margin-top:auto;}   /* 同一排卡片等高，說明列貼底對齊 */
+.sg-sub{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--sub);}
+.sg-sub>div{display:flex;align-items:center;gap:8px;white-space:nowrap;} .sg-sub>div.zero{opacity:.45;}
+.sg-sub .sc{font-weight:800;color:var(--text);min-width:36px;}
+.sg-sub b{color:var(--text);font-variant-numeric:tabular-nums;}
+.sg-sub .lt{font-variant-numeric:tabular-nums;} .sg-sub .lt.g{margin-left:auto;}
+.sgc.zero{cursor:default;opacity:.5;box-shadow:none;} .sgc.zero:hover{border-color:transparent;}
 .sg-s.bad{color:#b3361f;font-weight:600;} .sg-s.ok{color:var(--green);font-weight:600;}
 .sg-x{font-size:11px;color:var(--accent-deep);font-weight:700;text-align:center;margin-top:-2px;}
 .sgp{grid-column:1/-1;position:relative;padding:10px 14px 14px;border:1.5px solid var(--accent);border-radius:var(--rad);background:#f7faff;}
@@ -829,7 +835,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
   .ov-vw>.seg{flex-basis:100%;} .ov-vw>.seg button{flex:1;}
   .ovf{flex:1 1 40%;} .ovf>span{white-space:nowrap;} .ovf .in{max-width:none;flex:1;} .ovf-n{white-space:nowrap;}
   .ov-vw .ovf-n{flex:1;} .ovb-h .ovf-n{flex:1;}
-  .sgp{padding:10px 10px 12px;} }
+  .sgp{padding:10px 10px 12px;} .sgc.zero{display:none;} }   /* 手機一欄不用對齊，0 台的段別不佔位置 */
 </style>
 </head>
 <body>
@@ -879,7 +885,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.2', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.2.1', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1064,10 +1070,14 @@ const prodName=id=>{ const p=byId('products',id); return p?prodFull(p):'(未指�
 const lineProds=l=>l.products&&l.products.length?l.products:(l.product?[l.product]:[]);
 const prodsLabel=l=>lineProds(l).map(prodName).join('+')||'(未指定產品別)';
 const lineLabel=l=>`${prodsLabel(l)} / ${l.line||'?'}`;
-/** 段別（v3.15）：由產線的產品別（第一個）在主檔「產品設定」的段別帶出；段別清單＝產品設定裡用到的段別，依 SEG_ORDER 排序 */
-const SEG_ORDER=['CT','PBI','SKD','FD','Set'], SEG_HINT=['CT1','CT2','PBI1','PBI2','SKD','FD','Set'];   // 子段別（CT1、CT2、PBI1、PBI2…）排在主段別裡、依編號
+/** 段別（v3.15）：由產線的產品別（第一個）在主檔「產品設定」的段別帶出。主段別依製程順序（SEG_MAIN，Johnny 2026-10-28）：CT → PBI → SKD → BIM → FD → Set → EOL；
+ *  CT / PBI / FD 再分 1、2（主檔存 CT1、CT2…，卡片歸到主段別）；opt＝只有特定廠區才有，總覽只在有機台時才顯示 */
+const SEG_MAIN=[{k:'CT',sub:['CT1','CT2']},{k:'PBI',sub:['PBI1','PBI2']},{k:'SKD',opt:1},{k:'BIM',opt:1},{k:'FD',sub:['FD1','FD2']},{k:'Set',opt:1},{k:'EOL',opt:1}];
+const SEG_HINT=SEG_MAIN.flatMap(m=>m.sub||[m.k]);
+const segSplit=s=>{ const t=String(s||'').trim(), m=t.match(/^(.*?)(\d*)$/), i=SEG_MAIN.findIndex(x=>x.k.toLowerCase()===m[1].toLowerCase()); return {main:i<0?t:SEG_MAIN[i].k,n:+m[2]||0,i}; };
+const segMain=s=>segSplit(s).main;
 const lineSeg=l=>((byId('products',l.product)||{}).seg||'').trim();
-const segRank=s=>{ const m=String(s).match(/^(.*?)(\d*)$/), i=SEG_ORDER.findIndex(x=>x.toLowerCase()===m[1].toLowerCase()); return i<0?9999:i*100+(+m[2]||0); };
+const segRank=s=>{ const x=segSplit(s); return x.i<0?9999:x.i*100+(x.n||(SEG_MAIN[x.i].sub?99:0)); };   // 有分 1、2 的段別，只填主段別（沒編號）的排在最後
 const segList=()=>[...new Set(live('products').map(p=>(p.seg||'').trim()).filter(Boolean))].sort((a,b)=>segRank(a)-segRank(b)||a.localeCompare(b));
 /** 樓層 / 區域（lines.floor，v3.15）：沒填時由線別名稱推測（F7-PBI-10#-3 → F7、1C-CT2-13#-1 → 1C），只用來顯示，存檔時才帶入 */
 const floorGuess=n=>{ const m=String(n||'').trim().match(/^(\d[A-Za-z]|[A-Za-z]\d)(?=[-_])/); return m?m[1].toUpperCase():''; };
@@ -1312,7 +1322,7 @@ function ovBlocks(){
     const op=Array.isArray(o.segOpen)?o.segOpen:typeof o.segOpen==='string'?[o.segOpen]:[];
     o.blocks=[{sf:o.sf||{},open:op,all:o.segAll||[]}]; delete o.sf; delete o.segOpen; delete o.segAll;
   }
-  return o.blocks.map(b=>({sf:Object.assign({site:'',fam:'',floor:''},b.sf||{}),open:Array.isArray(b.open)?b.open:[],all:Array.isArray(b.all)?b.all:[],fc:Array.isArray(b.fc)?b.fc:[]}));
+  return o.blocks.map(b=>({sf:Object.assign({site:'',fam:'',floor:''},b.sf||{}),open:Array.isArray(b.open)?b.open:[],all:Array.isArray(b.all)?b.all:[],fc:Array.isArray(b.fc)?b.fc:[],sub:b.sub||''}));
 }
 function ovSet(o){ UI.ov=UI.ov||{}; Object.assign(UI.ov,o); saveUI(); renderOverview(); }
 function ovBSet(i,fn){ const bs=ovBlocks(); if(!bs[i]) return; fn(bs[i]); ovSet({blocks:bs}); }
@@ -1345,8 +1355,9 @@ function ovBlockBar(L,regions,b,i,n){
 }
 /** 展開 / 收合段別（每個比較組各自，可同時展開多個）；all＝這個段別顯示全部機台（預設先顯示 SEG_KMAX 台）。el＝被點的元素，往上找 data-b 比較組 */
 const tgl=(a,k)=>a.includes(k)?a.filter(x=>x!==k):[...a,k];
-function ovSegTg(el){ ovBSet(+el.closest('[data-b]').dataset.b,b=>{ b.open=b.open.includes(el.dataset.seg)?[]:[el.dataset.seg]; }); }   // 一組一次只展開一個段別
+function ovSegTg(el){ ovBSet(+el.closest('[data-b]').dataset.b,b=>{ b.open=b.open.includes(el.dataset.seg)?[]:[el.dataset.seg]; b.sub=''; }); }   // 一組一次只展開一個段別
 function ovSegAll(el){ ovBSet(+el.closest('[data-b]').dataset.b,b=>{ b.all=tgl(b.all,el.dataset.k); }); }
+function ovSegSub(el){ ovBSet(+el.closest('[data-b]').dataset.b,b=>{ b.sub=el.dataset.s; }); }
 function ovSegFc(el){ ovBSet(+el.closest('[data-b]').dataset.b,b=>{ b.fc=tgl(b.fc,el.dataset.k); }); }
 /** 展開面板上緣的小三角對準被展開的段別卡片 */
 function segPtr(){ document.querySelectorAll('.sgp').forEach(p=>{ const c=p.parentElement.querySelector('.sgc.on'); if(!c) return; const r=c.getBoundingClientRect(); p.style.setProperty('--ax',(r.left-p.getBoundingClientRect().left+r.width/2)+'px'); }); }
@@ -1358,49 +1369,61 @@ function segStats(ls){
   s.intro=s.n-s.mass; return s;
 }
 function segSection(L,regions){
-  const segs=segList(), bs=ovBlocks();
-  if(!segs.length&&!L.length) return '<div class="card empty" style="padding:16px">尚無產線</div>';
-  const hint=!segs.length?`<div class="banner"><span>📦 主檔「產品設定」還沒有填<b>段別</b>：到 主檔設定 → 產品設定，在每個產品別旁選段別（CT1 / CT2 / PBI1 / PBI2 / SKD / FD / Set），這裡就會依段別分卡片。</span><button class="btn sm" onclick="showPage('master')">前往主檔設定</button></div>`:'';
-  return hint+bs.map((b,i)=>`<div class="ovb ${bs.length>1?'multi':''}" data-b="${i}">${ovBlockBar(L,regions,b,i,bs.length)}${segBlock(L,b)}</div>`).join('');
+  const bs=ovBlocks();
+  if(!L.length) return '<div class="card empty" style="padding:16px">尚無產線</div>';
+  const hint=!segList().length?`<div class="banner"><span>📦 主檔「產品設定」還沒有填<b>段別</b>：到 主檔設定 → 產品設定，在每個產品別旁選段別（${SEG_HINT.join(' / ')}），這裡就會依段別分卡片。</span><button class="btn sm" onclick="showPage('master')">前往主檔設定</button></div>`:'';
+  // 各組共用同一排欄位（上下對齊）：CT / PBI / FD 一定有；SKD、BIM、Set、EOL 與主檔以外的段別，任何一組有機台才加；有沒分段的機台時最後多一欄「未分段」
+  const has=new Set(); let none=false;
+  for(const b of bs) for(const l of L) if(ovMatch(l,b.sf)){ const m=segMain(lineSeg(l)); if(m) has.add(m); else none=true; }
+  const mains=[...SEG_MAIN.filter(m=>!m.opt||has.has(m.k)).map(m=>m.k),...[...has].filter(k=>!SEG_MAIN.some(m=>m.k===k)).sort()];
+  return hint+bs.map((b,i)=>`<div class="ovb ${bs.length>1?'multi':''}" data-b="${i}">${ovBlockBar(L,regions,b,i,bs.length)}${segBlock(L,b,mains,mains.length+(none?1:0))}</div>`).join('');
 }
-/** 一個比較組的段別卡片：只列出目前篩選有機台的段別（v4.2）；展開的段別在那一排下方出現整排寬的面板 */
-function segBlock(L,b){
-  const f=b.sf, ls=L.filter(l=>ovMatch(l,f)), segs=segList();
-  const groups=segs.map(k=>({k,ls:ls.filter(l=>lineSeg(l)===k)})).filter(g=>g.ls.length);
-  const none=ls.filter(l=>!segs.includes(lineSeg(l))); if(none.length) groups.push({k:'',ls:none});
-  if(!groups.length) return '<div class="card empty" style="padding:14px">目前篩選沒有機台</div>';
-  const op=groups.find(g=>b.open.includes(g.k));
+/** 一個比較組的段別卡片（v4.3）：主段別一張卡，CT / PBI / FD 卡片裡再列 1、2 的小計；這組沒有機台的段別淡色、不能展開；展開的段別在那一排下方出現整排寬的面板 */
+function segBlock(L,b,mains,cols){
+  const f=b.sf, ls=L.filter(l=>ovMatch(l,f));
+  const groups=mains.map(k=>{ const d=SEG_MAIN.find(m=>m.k===k)||{}, gl=ls.filter(l=>segMain(lineSeg(l))===k);
+    const subs=d.sub?[...new Set([...d.sub,...gl.map(lineSeg)])].sort((a,b)=>segRank(a)-segRank(b)||a.localeCompare(b)):[];   // 只填「CT」沒分 1 / 2 的也列一行「未分」
+    return {k,ls:gl,subs}; });
+  const none=ls.filter(l=>!segMain(lineSeg(l))); if(cols>mains.length) groups.push({k:'',ls:none,subs:[]});
+  const op=groups.find(g=>g.ls.length&&b.open.includes(g.k));
   const cards=groups.map(g=>{ const s=segStats(g.ls), nm=g.k||'未分段', on=g===op;
     const say=[s.gap?`${s.gap} 台有缺口`:'',s.blocked?`${s.blocked} 台卡關`:'',s.overdue?`${s.overdue} 台逾期`:''].filter(Boolean);
+    const sub=g.subs.length?`<div class="sg-sub">${g.subs.map(x=>{ const t=segStats(g.ls.filter(l=>lineSeg(l)===x));
+      return `<div class="${t.n?'':'zero'}"><span class="sc">${x===g.k?'未分':esc(x)}</span><span><b>${t.n}</b> 台</span><span class="lt g"><i></i>${t.g}</span><span class="lt y"><i></i>${t.y}</span></div>`; }).join('')}</div>`:'';
+    if(!s.n) return `<div class="card sgc zero ${g.k?'':'nos'}"><div class="sg-h"><span class="code">${esc(nm)}</span><span class="sg-n"><b>0</b>台</span></div>${sub}<div class="sg-s"><span class="muted">${g.k?'這個篩選沒有 '+esc(g.k)+' 段的機台':'沒有未分段的機台'}</span></div></div>`;
     return `<div class="card sgc ${on?'on':''} ${g.k?'':'nos'}" data-seg="${esc(g.k)}" onclick="ovSegTg(this)" title="${on?'收合':'點一下展開 '+esc(nm)+' 的各台機台'}">
       <div class="sg-h"><span class="code">${esc(nm)}</span>${g.k?'':GI('noseg')}<span class="sg-n"><b>${s.n}</b>台</span></div>
       <div class="sg-lt"><span class="lt g" title="綠燈 ${s.g} 台"><i></i><b>${s.g}</b></span><span class="lt y" title="黃燈 ${s.y} 台"><i></i><b>${s.y}</b></span>${GI('light')}</div>
       <div class="sg-bar">${s.g?`<i class="g" style="flex:${s.g}"></i>`:''}${s.y?`<i class="y" style="flex:${s.y}"></i>`:''}</div>
+      ${sub}
       <div class="sg-m"><span>已量產<b>${s.mass}</b></span><span>導入中<b>${s.intro}</b></span></div>
       <div class="sg-s ${say.length?'bad':'ok'}">${say.length?'⚠ '+say.join('、'):'✓ 沒有缺口、卡關或逾期'}</div>
       <div class="sg-x">${on?'▴ 收合':'▾ 展開 '+s.n+' 台'}</div>
     </div>${on?segPanel(g,b):''}`; }).join('');
-  return `<div class="sgs">${cards}</div>`;
+  return `<div class="sgs" style="--n:${cols}">${cards}</div>`;
 }
-/** 展開面板：依廠區 → 樓層 / 區域分組（可收合），組內有問題的排前面（卡關 / 逾期 / 缺口 → 黃燈 → 綠燈），每組先顯示 SEG_KMAX 台 */
+/** 展開面板：可切換子段別（全部 / CT1 / CT2）；依子段別 → 廠區 → 樓層 / 區域分組（可收合），組內有問題的排前面（卡關 / 逾期 / 缺口 → 黃燈 → 綠燈），每組先顯示 SEG_KMAX 台 */
 function segPanel(g,b){
   const f=b.sf, so=id=>(byId('sites',id)||{}).order??999, fa=l=>lineFloor(l);   // 沒填樓層 / 區域的排在該廠區最後
-  const grpSite=!f.site||f.site.startsWith('rg:'), grpFloor=!f.floor, grp=grpSite||grpFloor;
+  const cur=g.subs.includes(b.sub)?b.sub:'', grpSub=g.subs.length>1&&!cur, grpSite=!f.site||f.site.startsWith('rg:'), grpFloor=!f.floor, grp=grpSub||grpSite||grpFloor;
+  const sl=x=>x===g.k?g.k+' 未分 1 / 2':x;
   const pr=l=>l.blocked||isOverdue(l)||lineGaps(l)?0:lineLight(l)==='y'?1:2;
-  const ls=g.ls.slice().sort((a,b)=>so(a.site)-so(b.site)||(fa(a)?0:1)-(fa(b)?0:1)||fa(a).localeCompare(fa(b),'zh-Hant',{numeric:true}));
-  const sub=[]; for(const l of ls){ const key=(grpSite?l.site:'')+'|'+(grpFloor?fa(l):''); let t=sub[sub.length-1]; if(!t||t.key!==key) sub.push(t={key,ls:[]}); t.ls.push(l); }
+  const ls=g.ls.filter(l=>!cur||lineSeg(l)===cur).sort((a,b)=>(grpSub?segRank(lineSeg(a))-segRank(lineSeg(b)):0)||so(a.site)-so(b.site)||(fa(a)?0:1)-(fa(b)?0:1)||fa(a).localeCompare(fa(b),'zh-Hant',{numeric:true}));
+  const sub=[]; for(const l of ls){ const key=[grpSub?lineSeg(l):'',grpSite?l.site:'',grpFloor?fa(l):''].join('|'); let t=sub[sub.length-1]; if(!t||t.key!==key) sub.push(t={key,ls:[]}); t.ls.push(l); }
   const kid=l=>{ const p=lineProg(l), nx=nextOf(l), od=isOverdue(l), gp=lineGaps(l), lc=lineLight(l);
     return `<div class="sgk ${lc}" onclick="openLine('${l.id}')" title="${esc(l.site+' · '+lineLabel(l))}（點一下開啟）">
       <div class="k1"><span class="lt ${lc}" title="${lc==='g'?'綠燈：需求檢測項目都能滿足':'黃燈：有未滿足或待新增的需求'}"><i></i></span><b>${esc(l.line||'?')}</b><span class="kp">${esc(prodsLabel(l))}</span></div>
       <div class="k2">${pdMini(l,true)}<span class="kt">${p.complete?'✓ 全部完成':esc(nx?nx.text:'')}</span>${nx&&nx.due?`<span class="kd ${od?'od':''}">${md(nx.due)}</span>`:''}</div>
       ${isMass(l)||gp||l.blocked||od?`<div class="k3">${isMass(l)?'<span class="tag grn">已量產</span>':''}${gp?`<span class="tag red">缺口 ${gp}</span>`:''}${l.blocked?'<span class="tag red">卡關</span>':''}${od?'<span class="tag amb">逾期</span>':''}</div>`:''}
     </div>`; };
-  const body=sub.map(t=>{ const k=g.k+'|'+t.key, off=grp&&b.fc.includes(k), all=b.all.includes(k), s=segStats(t.ls), [st,fl]=t.key.split('|');
+  const body=sub.map(t=>{ const k=g.k+'|'+t.key, off=grp&&b.fc.includes(k), all=b.all.includes(k), s=segStats(t.ls), [sg,st,fl]=t.key.split('|');
     const kl=t.ls.slice().sort((a,b)=>pr(a)-pr(b)||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true})), show=all?kl:kl.slice(0,SEG_KMAX);
     const say=[s.gap?`<span class="tag red">缺口 ${s.gap}</span>`:'',s.blocked?`<span class="tag red">卡關 ${s.blocked}</span>`:'',s.overdue?`<span class="tag amb">逾期 ${s.overdue}</span>`:''].join('');
-    const h=grp?`<div class="sgg ${off?'off':''}" data-k="${esc(k)}" onclick="ovSegFc(this)" title="${off?'展開':'收合'}這一區"><span class="car">▾</span><b>${[grpSite?esc(st):'',grpFloor?(fl?esc(fl):'未填樓層'):''].filter(Boolean).join(' · ')}</b><span>${s.n} 台</span><span class="lt g"><i></i><b>${s.g}</b></span><span class="lt y"><i></i><b>${s.y}</b></span>${say}</div>`:'';
+    const h=grp?`<div class="sgg ${off?'off':''}" data-k="${esc(k)}" onclick="ovSegFc(this)" title="${off?'展開':'收合'}這一區"><span class="car">▾</span><b>${[grpSub?esc(sl(sg)):'',grpSite?esc(st):'',grpFloor?(fl?esc(fl):'未填樓層'):''].filter(Boolean).join(' · ')}</b><span>${s.n} 台</span><span class="lt g"><i></i><b>${s.g}</b></span><span class="lt y"><i></i><b>${s.y}</b></span>${say}</div>`:'';
     return h+(off?'':`<div class="sgkg">${show.map(kid).join('')}${kl.length>SEG_KMAX?`<button class="sgmore" data-k="${esc(k)}" onclick="ovSegAll(this)">${all?'▴ 只顯示前 '+SEG_KMAX+' 台':'▾ 顯示全部 '+kl.length+' 台（另 '+(kl.length-SEG_KMAX)+' 台）'}</button>`:''}</div>`); }).join('');
-  return `<div class="sgp"><div class="sgp-h"><span class="code">${esc(g.k||'未分段')}</span><span>${g.ls.length} 台 · 有缺口、卡關、逾期或黃燈的排前面</span><button class="btn sm" data-seg="${esc(g.k)}" onclick="ovSegTg(this)">▴ 收合</button></div>${body}</div>`;
+  const tabs=g.subs.length>1?`<span class="seg vw">${['',...g.subs].map(x=>{ const n=x?g.ls.filter(l=>lineSeg(l)===x).length:g.ls.length;
+    return `<button class="${cur===x?'on':''}" data-s="${esc(x)}" onclick="ovSegSub(this)" ${n?'':'disabled'}>${x?esc(x===g.k?'未分':x):'全部'} ${n}</button>`; }).join('')}</span>`:'';
+  return `<div class="sgp"><div class="sgp-h"><span class="code">${esc(g.k||'未分段')}</span>${tabs}<span>${ls.length} 台 · 有缺口、卡關、逾期或黃燈的排前面</span><button class="btn sm" data-seg="${esc(g.k)}" onclick="ovSegTg(this)">▴ 收合</button></div>${body||'<div class="empty">沒有機台</div>'}</div>`;
 }
 function siteCard(s){
   const st=siteStats(s.id), MAXL=6;

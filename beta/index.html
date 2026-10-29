@@ -861,7 +861,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 .sg-sub b{color:var(--text);font-variant-numeric:tabular-nums;}
 .sg-sub .lt{font-variant-numeric:tabular-nums;} .sg-sub .lt.g{margin-left:auto;}
 .sgc.zero{cursor:default;opacity:.5;box-shadow:none;} .sgc.zero:hover{border-color:transparent;}
-.sg-s.bad{color:#b3361f;font-weight:600;} .sg-s.ok{color:var(--green);font-weight:600;}
+.sg-s.bad{color:#b3361f;font-weight:600;} .sg-s.warn{color:#9a6700;font-weight:600;} .sg-s.ok{color:var(--green);font-weight:600;}
 .sg-x{font-size:11px;color:var(--accent-deep);font-weight:700;text-align:center;margin-top:-2px;}
 .sgp{grid-column:1/-1;position:relative;padding:10px 14px 14px;border:1.5px solid var(--accent);border-radius:var(--rad);background:#f7faff;}
 .sgp::before{content:"";position:absolute;top:-7.5px;left:calc(var(--ax,40px) - 7px);width:12px;height:12px;background:#f7faff;border-left:1.5px solid var(--accent);border-top:1.5px solid var(--accent);transform:rotate(45deg);}   /* 指向展開的段別卡片（segPtr 算位置） */
@@ -953,7 +953,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.5.1', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.5.2', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1441,8 +1441,9 @@ function segPtr(){ document.querySelectorAll('.sgp').forEach(p=>{ const c=p.pare
 const SEG_KMAX=10;
 /** 段別卡片的統計：台數、綠 / 黃燈、已量產 / 導入中、缺口 / 卡關 / 逾期 */
 function segStats(ls){
-  const s={n:ls.length,g:0,y:0,mass:0,gap:0,blocked:0,overdue:0};
-  for(const l of ls){ s[lineLight(l)]++; if(isMass(l)) s.mass++; if(lineGaps(l)) s.gap++; if(l.blocked) s.blocked++; if(isOverdue(l)) s.overdue++; }
+  const s={n:ls.length,g:0,y:0,mass:0,gap:0,blocked:0,overdue:0,cap:0,cust:0};   // cap＝黃燈但不是缺口（開發中、未設定、待新增需求）；cust＝客戶未 commit
+  for(const l of ls){ s[lineLight(l)]++; if(isMass(l)) s.mass++; const gp=lineGaps(l); if(gp) s.gap++; if(l.blocked) s.blocked++; if(isOverdue(l)) s.overdue++;
+    if(!gp&&!lineCapOk(l)) s.cap++; if(l.cust!=='y') s.cust++; }
   s.intro=s.n-s.mass; return s;
 }
 function segSection(L,regions){
@@ -1464,7 +1465,7 @@ function segBlock(L,b,mains,cols){
   const none=ls.filter(l=>!segMain(lineSeg(l))); if(cols>mains.length) groups.push({k:'',ls:none,subs:[]});
   const op=groups.find(g=>g.ls.length&&b.open.includes(g.k));
   const cards=groups.map(g=>{ const s=segStats(g.ls), nm=g.k||'未分段', on=g===op;
-    const say=[s.gap?`${s.gap} 台有缺口`:'',s.blocked?`${s.blocked} 台卡關`:'',s.overdue?`${s.overdue} 台逾期`:''].filter(Boolean);
+    const say=[s.gap?`${s.gap} 台有缺口`:'',s.blocked?`${s.blocked} 台卡關`:'',s.overdue?`${s.overdue} 台逾期`:''].filter(Boolean), yw=[s.cap?`${s.cap} 台能力未達標`:'',s.cust?`${s.cust} 台客戶未 commit`:''].filter(Boolean);   // 黃燈的其他原因
     const sub=g.subs.length?`<div class="sg-sub">${g.subs.map(x=>{ const t=segStats(g.ls.filter(l=>lineSeg(l)===x));
       return `<div class="${t.n?'':'zero'}"><span class="sc">${x===g.k?'未分':esc(x)}</span><span><b>${t.n}</b> 台</span><span class="lt g"><i></i>${t.g}</span><span class="lt y"><i></i>${t.y}</span></div>`; }).join('')}</div>`:'';
     if(!s.n) return `<div class="card sgc zero ${g.k?'':'nos'}"><div class="sg-h"><span class="code">${esc(nm)}</span><span class="sg-n"><b>0</b>台</span></div>${sub}<div class="sg-s"><span class="muted">${g.k?'這個篩選沒有 '+esc(g.k)+' 段的機台':'沒有未分段的機台'}</span></div></div>`;
@@ -1474,7 +1475,7 @@ function segBlock(L,b,mains,cols){
       <div class="sg-bar">${s.g?`<i class="g" style="flex:${s.g}"></i>`:''}${s.y?`<i class="y" style="flex:${s.y}"></i>`:''}</div>
       ${sub}
       <div class="sg-m"><span>已量產<b>${s.mass}</b></span><span>導入中<b>${s.intro}</b></span></div>
-      <div class="sg-s ${say.length?'bad':'ok'}">${say.length?'⚠ '+say.join('、'):'✓ 沒有缺口、卡關或逾期'}</div>
+      <div class="sg-s ${say.length?'bad':s.y?'warn':'ok'}" title="${s.cap?'能力未達標：有開發中、主檔未設定演算法，或產品別 × 型態還沒設定需求項目；':''}${s.cust?'客戶未 commit：產線編輯 →「檢測項目」勾「✓ 已 commit」':''}">${say.length?'⚠ '+[...say,...yw].join('、'):s.y?'● 黃燈 '+s.y+' 台：'+yw.join('、'):'✓ 全部綠燈，沒有缺口、卡關或逾期'}</div>
       <div class="sg-x">${on?'▴ 收合':'▾ 展開 '+s.n+' 台'}</div>
     </div>${on?segPanel(g,b):''}`; }).join('');
   return `<div class="sgs" style="--n:${cols}">${cards}</div>`;

@@ -908,7 +908,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 .ovb-no{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ovb-x{border:1px solid var(--border);background:#fff;color:var(--sub);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:12px;flex-shrink:0;}
 .ovb-x:hover{color:#b3361f;border-color:#e3a99d;background:#fff5f3;}
-@media (max-width:1100px){ .sgs{grid-template-columns:repeat(3,minmax(0,1fr));} }
+@media (max-width:1100px){ .sgs{grid-template-columns:repeat(3,minmax(0,1fr));} .sgc-gap{display:none;} }
 @media (max-width:760px){ .sgs{grid-template-columns:repeat(2,minmax(0,1fr));} .ovf-n{margin-left:0;flex:1;} .ovf .in{max-width:120px;} }
 @media (max-width:520px){ .sgs{grid-template-columns:minmax(0,1fr);}
   .ov-vw>.seg{flex-basis:100%;} .ov-vw>.seg button{flex:1;}
@@ -965,7 +965,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.6', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.6.1', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1490,6 +1490,7 @@ function segBlock(L,b,mains,cols){
     const say=[s.gap?`${s.gap} 台有缺口`:'',s.blocked?`${s.blocked} 台卡關`:'',s.overdue?`${s.overdue} 台逾期`:''].filter(Boolean), yw=[s.cap?`${s.cap} 台能力未達標`:'',s.cust?`${s.cust} 台客戶未 commit`:''].filter(Boolean);   // 黃燈的其他原因
     const sub=g.subs.length?`<div class="sg-sub">${g.subs.map(x=>{ const t=segStats(g.ls.filter(l=>lineSeg(l)===x));
       return `<div class="${t.n?'':'zero'}"><span class="sc">${x===g.k?'未分':esc(x)}</span><span><b>${t.n}</b> 台</span><span class="lt g"><i></i>${t.g}</span><span class="lt y"><i></i>${t.y}</span></div>`; }).join('')}</div>`:'';
+    if(!s.n&&!SEG_MAIN.some(m=>m.k===g.k&&!m.opt)) return '<div class="sgc-gap" aria-hidden="true"></div>';   // SKD / BIM / Set / EOL / 未分段 這組沒有機台就不放卡片，留空位維持上下對齊（Johnny 2026-10-29）
     if(!s.n) return `<div class="card sgc zero ${g.k?'':'nos'}"><div class="sg-h"><span class="code">${esc(nm)}</span><span class="sg-n"><b>0</b>台</span></div><div class="sg-s"><span class="muted">${g.k?'這個篩選沒有 '+esc(g.k)+' 段的機台':'沒有未分段的機台'}</span></div></div>`;
     return `<div class="card sgc ${on?'on':''} ${g.k?'':'nos'}" data-seg="${esc(g.k)}" onclick="ovSegTg(this)" title="${on?'收合':'點一下展開 '+esc(nm)+' 的各台機台'}">
       <div class="sg-h"><span class="code">${esc(nm)}</span>${g.k?'':GI('noseg')}<span class="sg-n"><b>${s.n}</b>台</span></div>

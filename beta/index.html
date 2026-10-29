@@ -862,7 +862,17 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 .sg-sub .lt{font-variant-numeric:tabular-nums;} .sg-sub .lt.g{margin-left:auto;}
 .sgc.zero{cursor:default;opacity:.5;box-shadow:none;} .sgc.zero:hover{border-color:transparent;}
 .sg-s.bad{color:#b3361f;font-weight:600;} .sg-s.warn{color:#9a6700;font-weight:600;}
-option.rg-o{font-weight:700;color:var(--text);} .sg-s.ok{color:var(--green);font-weight:600;}
+.ovsd .dd-b{height:30px;min-width:96px;}
+.ovsd-m{padding:6px;min-width:0;}
+.ovsd-m button{display:block;width:100%;border:0;background:none;text-align:left;padding:4px 10px;border-radius:6px;font-size:12.5px;color:var(--text);cursor:pointer;white-space:nowrap;font-family:inherit;}
+.ovsd-m button:hover{background:var(--surf2);}
+.ovsd-m button.on{background:color-mix(in srgb,var(--accent) 12%,#fff);color:var(--accent-deep);font-weight:700;}
+.ovsd-all{margin-bottom:4px;border-bottom:1px solid var(--border)!important;border-radius:6px 6px 0 0!important;}
+.ovsd-c{display:flex;gap:4px;}
+.ovsd-col{display:flex;flex-direction:column;gap:6px;min-width:110px;}
+.ovsd-col+.ovsd-col{border-left:1px dashed var(--border);padding-left:4px;}
+.ovsd-m .ovsd-r{font-weight:800;}
+.ovsd-m .ovsd-s{padding-left:18px;color:var(--sub);} .sg-s.ok{color:var(--green);font-weight:600;}
 .sg-x{font-size:11px;color:var(--accent-deep);font-weight:700;text-align:center;margin-top:-2px;}
 .sgp{grid-column:1/-1;position:relative;padding:10px 14px 14px;border:1.5px solid var(--accent);border-radius:var(--rad);background:#f7faff;}
 .sgp::before{content:"";position:absolute;top:-7.5px;left:calc(var(--ax,40px) - 7px);width:12px;height:12px;background:#f7faff;border-left:1.5px solid var(--accent);border-top:1.5px solid var(--accent);transform:rotate(45deg);}   /* 指向展開的段別卡片（segPtr 算位置） */
@@ -902,7 +912,8 @@ option.rg-o{font-weight:700;color:var(--text);} .sg-s.ok{color:var(--green);font
 @media (max-width:760px){ .sgs{grid-template-columns:repeat(2,minmax(0,1fr));} .ovf-n{margin-left:0;flex:1;} .ovf .in{max-width:120px;} }
 @media (max-width:520px){ .sgs{grid-template-columns:minmax(0,1fr);}
   .ov-vw>.seg{flex-basis:100%;} .ov-vw>.seg button{flex:1;}
-  .ovf{flex:1 1 40%;} .ovf>span{white-space:nowrap;} .ovf .in{max-width:none;flex:1;} .ovf-n{white-space:nowrap;}
+  .ovf{flex:1 1 40%;} .ovf>span{white-space:nowrap;} .ovf .in{max-width:none;flex:1;} .ovf .ovsd{flex:1;} .ovf .ovsd .dd-b{width:100%;}
+  .ovf:has(.ovsd){position:relative;} .ovf .ovsd{position:static;} .ovsd-m{max-width:calc(100vw - 32px);} .ovsd-col{min-width:0;flex:1;} .ovsd-m button{padding:4px 6px;} .ovsd-m .ovsd-s{padding-left:12px;} .ovf-n{white-space:nowrap;}
   .ov-vw .ovf-n{flex:1;} .ovb-h .ovf-n{flex:1;}
   .sgp{padding:10px 10px 12px;} .sgc.zero{display:none;} }   /* 手機一欄不用對齊，0 台的段別不佔位置 */
 </style>
@@ -954,7 +965,7 @@ option.rg-o{font-weight:700;color:var(--text);} .sg-s.ok{color:var(--green);font
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.5.5', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.6', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1425,14 +1436,22 @@ function ovViewBar(L,regions){
 function ovBlockBar(L,regions,b,i,n){
   const f=b.sf, fl=[...new Set(L.filter(l=>ovMatch(l,f,true)).map(l=>lineFloor(l)||'-'))].sort((a,b)=>a==='-'?1:b==='-'?-1:a.localeCompare(b,'zh-Hant',{numeric:true}));
   const sel=(k,lb,opts)=>`<label class="ovf"><span>${lb}</span><select class="in ${f[k]?'act':''}" onchange="ovSetF(${i},'${k}',this.value)"><option value="">全部</option>${opts}</select></label>`;
-  // 地區本身就是一個選項（粗體＝整個地區），廠區接在下面（不縮排：選到廠區時框裡的字才不會往右偏）；不用 optgroup（標題點不了，Johnny 2026-10-29）
-  const siteO=regions.map(r=>`<option value="rg:${esc(r.name)}" class="rg-o" ${f.site==='rg:'+r.name?'selected':''}>${esc(r.name)}</option>${r.sites.map(s=>`<option value="${esc(s.id)}" ${f.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}`).join('');
+  // 廠區：自訂下拉，依洲分三欄（亞洲 / 歐洲 / 美洲，不標州名）；地區名稱（粗體）點了＝整個地區，廠區列在地區下面（Johnny 2026-10-29）
+  const siteLb=!f.site?'全部':f.site.startsWith('rg:')?f.site.slice(3):f.site, cols=[0,1,2].map(c=>regions.filter(r=>siteCont(r.sites[0].id)===c)).filter(x=>x.length);
+  const pick=(v,t,c)=>`<button class="${c} ${f.site===v?'on':''}" onclick="ovSetF(${i},'site','${esc(v)}')">${esc(t)}</button>`;
+  const siteDD=`<div class="ovf"><span>廠區</span><div class="dd ovsd"><button class="in dd-b ${f.site?'act':''}" onclick="ovSdTg(event,this)" title="選廠區或整個地區">${esc(siteLb)} ▾</button>
+    <div class="dd-m ovsd-m">${pick('','全部','ovsd-all')}<div class="ovsd-c">${cols.map(col=>`<div class="ovsd-col">${col.map(r=>`<div class="ovsd-g">${pick('rg:'+r.name,r.name,'ovsd-r')}${r.sites.map(x=>pick(x.id,x.id,'ovsd-s')).join('')}</div>`).join('')}</div>`).join('')}</div></div></div></div>`;
   const famO=prodFams().map(x=>`<option value="${esc(x)}" ${f.fam===x?'selected':''}>${esc(x)}</option>`).join('');
   const flO=fl.map(x=>`<option value="${esc(x)}" ${f.floor===x?'selected':''}>${x==='-'?'（未填）':esc(x)}</option>`).join('');
   const m=L.filter(l=>ovMatch(l,f)).length, any=f.site||f.fam||f.floor;
-  return `<div class="ovb-h">${n>1?`<span class="ovb-no">${i+1}</span>`:''}${sel('site','廠區',siteO)}${sel('fam','產品別',famO)}${sel('floor','樓層 / 區域',flO)}
+  return `<div class="ovb-h">${n>1?`<span class="ovb-no">${i+1}</span>`:''}${siteDD}${sel('fam','產品別',famO)}${sel('floor','樓層 / 區域',flO)}
     <span class="ovf-n">${any?`篩選後 <b>${m}</b> 台`:`全部 <b>${m}</b> 台`}</span>${any?`<button class="btn sm" onclick="ovBSet(${i},b=>{b.sf={}})">清除篩選</button>`:''}${n>1?`<button class="ovb-x" onclick="ovBDel(${i})" title="移除這組">✕</button>`:''}</div>`;
 }
+/** 廠區所在的洲：0 亞洲（預設）、1 歐洲、2 美洲；依廠區代號前綴判斷，新的海外廠區代號要加在這裡 */
+const SITE_CONT={BG:1,GM:1,DE:1,CZ:1,SK:1,PL:1,HU:1,NL:1,UK:1,MX:2,US:2,BR:2,CA:2};
+const siteCont=id=>SITE_CONT[String(id||'').split('-')[0].toUpperCase()]||0;
+function ovSdTg(e,btn){ e.stopPropagation(); const d=btn.parentElement, on=!d.classList.contains('on'); $$('.ovsd.on').forEach(x=>x.classList.remove('on')); d.classList.toggle('on',on); }
+document.addEventListener('click',e=>{ if(!e.target.closest('.ovsd')) $$('.ovsd.on').forEach(d=>d.classList.remove('on')); });
 /** 展開 / 收合段別（每個比較組各自，可同時展開多個）；all＝這個段別顯示全部機台（預設先顯示 SEG_KMAX 台）。el＝被點的元素，往上找 data-b 比較組 */
 const tgl=(a,k)=>a.includes(k)?a.filter(x=>x!==k):[...a,k];
 function ovSegTg(el){ ovBSet(+el.closest('[data-b]').dataset.b,b=>{ b.open=b.open.includes(el.dataset.seg)?[]:[el.dataset.seg]; b.sub=''; }); }   // 一組一次只展開一個段別
@@ -2877,6 +2896,7 @@ function copyShare(){
 /** 給使用者看的版本更新紀錄（目前這個大版本的每一版，新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點（**粗體** 標重點詞）。
  *  升大版本時：把這裡整理成一行一版搬進 ERAS 上一代的 t，這裡清空重新開始 */
 const CHANGELOG=[
+  {v:'4.6',d:'2026-10-29',t:['總覽的**廠區篩選**改成三欄（亞洲 / 歐洲 / 美洲）：點地區名稱＝整個地區，點廠區＝單一廠區','廠區一律依**代號的字母與數字**排序；海外廠區補上地區名稱（墨西哥 MX、德國 GM、保加利亞 BG、上海 SH、龍潭 LT）','段別卡片收合時更精簡，黃燈會寫出原因（能力未達標 / 客戶未 commit）']},
   {v:'4.5',d:'2026-10-29',t:['檢測項目分清楚：**要檢＝實心綠點 ●**，**不需檢、但軟體有這個功能＝空心圈 ○**','能力矩陣開「**快速編輯**」可以直接點檢測項目格子切換 需要 / 不需要（產線編輯 →「檢測項目」也可以改）','總覽依段別：CT / PBI / FD 從線別名稱自動分 1、2（例 2B-CT1-1# → CT1）']},
   {v:'4.4',d:'2026-10-29',t:['產線可以標成**外購設備**（產線編輯 → 建線資料 →「設備來源」）：不套用本廠軟體版本推算，改在「檢測項目」逐項選**可檢 / 不可檢**','能力矩陣的外購產線標「外購」，篩選可以只看外購或本廠；「快速編輯」可以直接點格子切換外購設備的檢測項目']},
   {v:'4.3',d:'2026-10-29',t:['**綠燈條件改成：檢測能力達標 + 客戶已 commit**，兩個都要；產線編輯 →「檢測項目」最上面可以勾「✓ 已 commit」，滑鼠停在燈號上會說明為什麼是黃燈','主檔設定的**產品設定改成矩陣**（檢測項目依類別分欄、依段別製程順序排列），**軟體版本依主版本分組**，點一下可跳到對應的技術能力欄']},

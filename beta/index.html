@@ -954,7 +954,7 @@ option.rg-o{font-weight:700;color:var(--text);} .sg-s.ok{color:var(--green);font
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.5.4', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.5.5', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1101,7 +1101,9 @@ function saveLocal(){ saveJSON(LS.db,DB); saveJSON(LS.dirty,DIRTY); }
 const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 const live=c=>DB[c].filter(x=>!x.deleted);
 const byId=(c,id)=>DB[c].find(x=>x.id===id);
-function liveSorted(c){ return live(c).sort((a,b)=>(a.order??999)-(b.order??999)||String(a.name||a.id).localeCompare(String(b.name||b.id),'zh-Hant')); }
+/** 廠區一律依代號的字母與數字排序（BG-E31 → GM-E21 → KS-L6K → … → XM-S19，Johnny 2026-10-29），不看 order */
+const siteCmp=(a,b)=>String(a||'').localeCompare(String(b||''),'en',{numeric:true,sensitivity:'base'});
+function liveSorted(c){ if(c==='sites') return live(c).sort((a,b)=>siteCmp(a.id,b.id)); return live(c).sort((a,b)=>(a.order??999)-(b.order??999)||String(a.name||a.id).localeCompare(String(b.name||b.id),'zh-Hant')); }
 function nextOrder(c){ return Math.max(0,...live(c).map(x=>x.order||0))+1; }
 function dirtyCount(){ return COLLS.reduce((n,c)=>n+Object.keys(DIRTY[c]).length,0); }
 const hasDemo=()=>DB.lines.some(l=>l.demo&&!l.deleted)||DB.products.some(p=>p.demo&&!p.deleted);
@@ -1300,8 +1302,7 @@ function kpiLatest(l){ const k=l.kpi||{}; const ds=Object.keys(k).sort(); return
 function kpiTarget(l,k){ const t=(l.kpiT||{})[k]; return t===undefined||t===''?KPI_DEF.find(x=>x.k===k).def:+t; }
 function kpiBad(l,k,v){ if(v===undefined||v===''||v===null) return false; const d=KPI_DEF.find(x=>x.k===k), t=kpiTarget(l,k); return d.better==='low'?+v>t:+v<t; }
 function sortLines(ls){
-  const so=id=>(byId('sites',id)||{}).order??999;
-  return ls.sort((a,b)=>so(a.site)-so(b.site)||prodName(a.product).localeCompare(prodName(b.product),'zh-Hant')||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true}));
+  return ls.sort((a,b)=>siteCmp(a.site,b.site)||prodName(a.product).localeCompare(prodName(b.product),'zh-Hant')||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true}));
 }
 function siteStats(sid){
   const ls=sortLines(liveLines().filter(l=>l.site===sid)); const cnt={P:0,D:0,C:0,A:0};
@@ -1483,11 +1484,11 @@ function segBlock(L,b,mains,cols){
 }
 /** 展開面板：可切換子段別（全部 / CT1 / CT2）；依子段別 → 廠區 → 樓層 / 區域分組（可收合），組內有問題的排前面（卡關 / 逾期 / 缺口 → 黃燈 → 綠燈），每組先顯示 SEG_KMAX 台 */
 function segPanel(g,b){
-  const f=b.sf, so=id=>(byId('sites',id)||{}).order??999, fa=l=>lineFloor(l);   // 沒填樓層 / 區域的排在該廠區最後
+  const f=b.sf, fa=l=>lineFloor(l);   // 沒填樓層 / 區域的排在該廠區最後
   const cur=g.subs.includes(b.sub)?b.sub:'', grpSub=g.subs.length>1&&!cur, grpSite=!f.site||f.site.startsWith('rg:'), grpFloor=!f.floor, grp=grpSub||grpSite||grpFloor;
   const sl=x=>x===g.k?g.k+' 未分 1 / 2':x;
   const pr=l=>l.blocked||isOverdue(l)||lineGaps(l)?0:lineLight(l)==='y'?1:2;
-  const ls=g.ls.filter(l=>!cur||lineSeg(l)===cur).sort((a,b)=>(grpSub?segRank(lineSeg(a))-segRank(lineSeg(b)):0)||so(a.site)-so(b.site)||(fa(a)?0:1)-(fa(b)?0:1)||fa(a).localeCompare(fa(b),'zh-Hant',{numeric:true}));
+  const ls=g.ls.filter(l=>!cur||lineSeg(l)===cur).sort((a,b)=>(grpSub?segRank(lineSeg(a))-segRank(lineSeg(b)):0)||siteCmp(a.site,b.site)||(fa(a)?0:1)-(fa(b)?0:1)||fa(a).localeCompare(fa(b),'zh-Hant',{numeric:true}));
   const sub=[]; for(const l of ls){ const key=[grpSub?lineSeg(l):'',grpSite?l.site:'',grpFloor?fa(l):''].join('|'); let t=sub[sub.length-1]; if(!t||t.key!==key) sub.push(t={key,ls:[]}); t.ls.push(l); }
   const kid=l=>{ const p=lineProg(l), nx=nextOf(l), od=isOverdue(l), gp=lineGaps(l), lc=lineLight(l);
     return `<div class="sgk ${lc}" onclick="openLine('${l.id}')" title="${esc(l.site+' · '+lineLabel(l))}（點一下開啟）">
@@ -2304,10 +2305,10 @@ function renderMaster(){
   el.innerHTML=`
   <div class="sec-t">主檔設定<small>全部門共用的定義。架構是 <b>軟體版本 → 技術能力 → 檢測項目</b>；產品設定是 <b>產品別 → 型態 → 檢測項目</b>（自動得到建議版本）。產品建議版本與矩陣上的檢測能力都由這裡自動推算。修改會同步給所有人。</small><span class="mc-all"><button class="btn sm" id="mc-allbtn" onclick="mcAllToggle()">▾ 全部收合</button></span></div>
   <div class="mgrid">
-    <div class="card mcard" id="m-sites"><h3>🏭 廠區<small>地區相同的廠區在總覽中放在一起；廠區負責人會自動帶到該廠區的產線（產線可另外指定）</small><button class="btn sm" onclick="mAddSite()">＋ 新增廠區</button></h3>
+    <div class="card mcard" id="m-sites"><h3>🏭 廠區<small>依代號的字母與數字排序；地區相同的廠區在總覽中放在一起；廠區負責人會自動帶到該廠區的產線（產線可另外指定）</small><button class="btn sm" onclick="mAddSite()">＋ 新增廠區</button></h3>
       <datalist id="dl-people">${people().map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
       <table class="mt"><tr><th>代碼</th><th>名稱</th><th>地區</th><th>廠區負責人</th><th></th></tr>
-      ${liveSorted('sites').map(s=>`<tr><td style="white-space:nowrap"><b>${esc(s.id)}</b></td><td>${inp('sites',s.id,'name',s.name)}</td><td>${inp('sites',s.id,'region',s.region,'例：廈門 XM')}</td><td><input class="in" list="dl-people" value="${esc(s.owner||'')}" placeholder="姓名" onchange="mSet('sites','${s.id}','owner',this.value)"></td><td class="ac">${mv('sites',s.id)}</td></tr>`).join('')}</table></div>
+      ${liveSorted('sites').map(s=>`<tr><td style="white-space:nowrap"><b>${esc(s.id)}</b></td><td>${inp('sites',s.id,'name',s.name)}</td><td>${inp('sites',s.id,'region',s.region,'例：廈門 XM')}</td><td><input class="in" list="dl-people" value="${esc(s.owner||'')}" placeholder="姓名" onchange="mSet('sites','${s.id}','owner',this.value)"></td><td></td></tr>`).join('')}</table></div>
 
     <div class="card mcard" id="m-hws"><h3>📷 相機（硬體）${GI('hw')}<small>畫檢設備上用的相機型號</small><button class="btn sm" onclick="mAdd('hws',{name:'新相機'})">＋ 新增</button></h3>
       <table class="mt"><tr><th>型號</th><th style="width:60px">使用中</th><th></th></tr>

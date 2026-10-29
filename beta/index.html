@@ -953,7 +953,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.4', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.4.1', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1144,7 +1144,10 @@ const SEG_MAIN=[{k:'CT',sub:['CT1','CT2']},{k:'PBI',sub:['PBI1','PBI2']},{k:'SKD
 const SEG_HINT=SEG_MAIN.flatMap(m=>m.sub||[m.k]);
 const segSplit=s=>{ const t=String(s||'').trim(), m=t.match(/^(.*?)(\d*)$/), i=SEG_MAIN.findIndex(x=>x.k.toLowerCase()===m[1].toLowerCase()); return {main:i<0?t:SEG_MAIN[i].k,n:+m[2]||0,i}; };
 const segMain=s=>segSplit(s).main;
-const lineSeg=l=>((byId('products',l.product)||{}).seg||'').trim();
+/** 產品設定只填主段別（CT / PBI / FD，沒分 1、2）時，從線別名稱找子段別（2B-CT1-1# → CT1、2B-CT2-9#1 → CT2）；找不到就維持主段別（總覽歸「未分」） */
+const segFromName=(name,subs)=>{ for(const tok of String(name||'').toUpperCase().split(/[-_\s]+/)) for(const s of subs){ const u=s.toUpperCase(); if(tok.startsWith(u)&&!/\d/.test(tok.charAt(u.length))) return s; } return ''; };
+const lineSeg=l=>{ const s=((byId('products',l.product)||{}).seg||'').trim(), x=segSplit(s), sub=x.i>=0&&!x.n&&SEG_MAIN[x.i].sub;
+  return (sub&&segFromName(l.line,sub))||s; };
 const segRank=s=>{ const x=segSplit(s); return x.i<0?9999:x.i*100+(x.n||(SEG_MAIN[x.i].sub?99:0)); };   // 有分 1、2 的段別，只填主段別（沒編號）的排在最後
 const segList=()=>[...new Set(live('products').map(p=>(p.seg||'').trim()).filter(Boolean))].sort((a,b)=>segRank(a)-segRank(b)||a.localeCompare(b));
 /** 樓層 / 區域（lines.floor，v3.15）：沒填時由線別名稱推測（F7-PBI-10#-3 → F7、1C-CT2-13#-1 → 1C），只用來顯示，存檔時才帶入 */

@@ -953,7 +953,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.5.2', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.5.3', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1456,7 +1456,7 @@ function segSection(L,regions){
   const mains=[...SEG_MAIN.filter(m=>!m.opt||has.has(m.k)).map(m=>m.k),...[...has].filter(k=>!SEG_MAIN.some(m=>m.k===k)).sort()];
   return hint+bs.map((b,i)=>`<div class="ovb ${bs.length>1?'multi':''}" data-b="${i}">${ovBlockBar(L,regions,b,i,bs.length)}${segBlock(L,b,mains,mains.length+(none?1:0))}</div>`).join('');
 }
-/** 一個比較組的段別卡片（v4.3）：主段別一張卡，CT / PBI / FD 卡片裡再列 1、2 的小計；這組沒有機台的段別淡色、不能展開；展開的段別在那一排下方出現整排寬的面板 */
+/** 一個比較組的段別卡片（v4.3）：主段別一張卡，展開時卡片裡才列 1、2 的小計與已量產 / 導入中（平常只看台數、燈號、說明列，Johnny 2026-10-29）；這組沒有機台的段別淡色、不能展開；展開的段別在那一排下方出現整排寬的面板 */
 function segBlock(L,b,mains,cols){
   const f=b.sf, ls=L.filter(l=>ovMatch(l,f));
   const groups=mains.map(k=>{ const d=SEG_MAIN.find(m=>m.k===k)||{}, gl=ls.filter(l=>segMain(lineSeg(l))===k);
@@ -1468,13 +1468,12 @@ function segBlock(L,b,mains,cols){
     const say=[s.gap?`${s.gap} 台有缺口`:'',s.blocked?`${s.blocked} 台卡關`:'',s.overdue?`${s.overdue} 台逾期`:''].filter(Boolean), yw=[s.cap?`${s.cap} 台能力未達標`:'',s.cust?`${s.cust} 台客戶未 commit`:''].filter(Boolean);   // 黃燈的其他原因
     const sub=g.subs.length?`<div class="sg-sub">${g.subs.map(x=>{ const t=segStats(g.ls.filter(l=>lineSeg(l)===x));
       return `<div class="${t.n?'':'zero'}"><span class="sc">${x===g.k?'未分':esc(x)}</span><span><b>${t.n}</b> 台</span><span class="lt g"><i></i>${t.g}</span><span class="lt y"><i></i>${t.y}</span></div>`; }).join('')}</div>`:'';
-    if(!s.n) return `<div class="card sgc zero ${g.k?'':'nos'}"><div class="sg-h"><span class="code">${esc(nm)}</span><span class="sg-n"><b>0</b>台</span></div>${sub}<div class="sg-s"><span class="muted">${g.k?'這個篩選沒有 '+esc(g.k)+' 段的機台':'沒有未分段的機台'}</span></div></div>`;
+    if(!s.n) return `<div class="card sgc zero ${g.k?'':'nos'}"><div class="sg-h"><span class="code">${esc(nm)}</span><span class="sg-n"><b>0</b>台</span></div><div class="sg-s"><span class="muted">${g.k?'這個篩選沒有 '+esc(g.k)+' 段的機台':'沒有未分段的機台'}</span></div></div>`;
     return `<div class="card sgc ${on?'on':''} ${g.k?'':'nos'}" data-seg="${esc(g.k)}" onclick="ovSegTg(this)" title="${on?'收合':'點一下展開 '+esc(nm)+' 的各台機台'}">
       <div class="sg-h"><span class="code">${esc(nm)}</span>${g.k?'':GI('noseg')}<span class="sg-n"><b>${s.n}</b>台</span></div>
       <div class="sg-lt"><span class="lt g" title="綠燈 ${s.g} 台"><i></i><b>${s.g}</b></span><span class="lt y" title="黃燈 ${s.y} 台"><i></i><b>${s.y}</b></span>${GI('light')}</div>
       <div class="sg-bar">${s.g?`<i class="g" style="flex:${s.g}"></i>`:''}${s.y?`<i class="y" style="flex:${s.y}"></i>`:''}</div>
-      ${sub}
-      <div class="sg-m"><span>已量產<b>${s.mass}</b></span><span>導入中<b>${s.intro}</b></span></div>
+      ${on?`${sub}<div class="sg-m"><span>已量產<b>${s.mass}</b></span><span>導入中<b>${s.intro}</b></span></div>`:''}
       <div class="sg-s ${say.length?'bad':s.y?'warn':'ok'}" title="${s.cap?'能力未達標：有開發中、主檔未設定演算法，或產品別 × 型態還沒設定需求項目；':''}${s.cust?'客戶未 commit：產線編輯 →「檢測項目」勾「✓ 已 commit」':''}">${say.length?'⚠ '+[...say,...yw].join('、'):s.y?'● 黃燈 '+s.y+' 台：'+yw.join('、'):'✓ 全部綠燈，沒有缺口、卡關或逾期'}</div>
       <div class="sg-x">${on?'▴ 收合':'▾ 展開 '+s.n+' 台'}</div>
     </div>${on?segPanel(g,b):''}`; }).join('');

@@ -983,7 +983,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.8.1', APP_BUILD='2026-10-31', APP_BETA=false, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.8.2', APP_BUILD='2026-10-31', APP_BETA=false, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1180,15 +1180,18 @@ const SEG_HINT=SEG_MAIN.flatMap(segNames);
 const segLb=k=>(SEG_MAIN.find(m=>m.k===k)||{}).lb||k;
 const segSplit=s=>{ const t=String(s||'').trim(), m=t.match(/^(.*?)(\d*)$/), i=SEG_MAIN.findIndex(x=>[x.k,...(x.al||[])].some(k=>k.toLowerCase()===m[1].toLowerCase())); return {main:i<0?t:SEG_MAIN[i].k,n:+m[2]||0,i}; };
 const segMain=s=>segSplit(s).main;
+/** 段別統一寫法：主檔的段別大小寫、前導 0 不一致時（ct1、CT01）當成同一個（CT1）；主檔以外的段別原樣 */
+const segCanon=s=>{ const t=String(s||'').trim(), x=segSplit(t); if(x.i<0) return t; const m=SEG_MAIN[x.i], base=t.match(/^(.*?)(\d*)$/)[1].toLowerCase(), nm=[m.k,...(m.al||[])].find(k=>k.toLowerCase()===base)||m.k; return nm+(x.n||''); };
 /** 產品設定只填主段別（CT / PBI / FD，沒分 1、2）時，從線別名稱找子段別（2B-CT1-1# → CT1、2B-CT2-9#1 → CT2）；找不到就維持主段別（總覽歸「未分」） */
 const segFromName=(name,subs)=>{ for(const tok of String(name||'').toUpperCase().split(/[-_\s]+/)) for(const s of subs){ const u=s.toUpperCase(); if(tok.startsWith(u)&&!/\d/.test(tok.charAt(u.length))) return s; } return ''; };
-const lineSeg=l=>{ const s=((byId('products',l.product)||{}).seg||'').trim(), x=segSplit(s), sub=x.i>=0&&!x.n&&SEG_MAIN[x.i].sub;
+const lineSeg=l=>{ const s=segCanon((byId('products',l.product)||{}).seg), x=segSplit(s), sub=x.i>=0&&!x.n&&SEG_MAIN[x.i].sub;
   return (sub&&segFromName(l.line,sub))||s; };
 const segRank=s=>{ const x=segSplit(s); return x.i<0?9999:x.i*100+(x.n||(SEG_MAIN[x.i].sub?99:0)); };   // 有分 1、2 的段別，只填主段別（沒編號）的排在最後
 const segList=()=>[...new Set(live('products').map(p=>(p.seg||'').trim()).filter(Boolean))].sort((a,b)=>segRank(a)-segRank(b)||a.localeCompare(b));
 /** 樓層 / 區域（lines.floor，v3.15）：沒填時由線別名稱推測（F7-PBI-10#-3 → F7、1C-CT2-13#-1 → 1C），只用來顯示，存檔時才帶入 */
-const floorGuess=n=>{ const m=String(n||'').trim().match(/^(\d[A-Za-z]|[A-Za-z]\d)(?=[-_])/); return m?m[1].toUpperCase():''; };
+const floorGuess=n=>{ const m=String(n||'').trim().match(/^(\d[A-Za-z]|[A-Za-z]\d{1,2})(?=[-_])/); return m?m[1].toUpperCase():''; };   // F7、1C、F10
 const lineFloor=l=>String(l.floor||'').trim()||floorGuess(l.line);
+const NOFL='∅';   // 篩選用：樓層 / 區域沒填（不用「-」，避免和真的填「-」的混在一起）
 const liveLines=()=>live('lines').filter(l=>{ const s=byId('sites',l.site); return s&&!s.deleted; });
 function stepsSorted(){ return live('steps').sort((a,b)=>STG_IDX[a.stage]-STG_IDX[b.stage]||(a.order||0)-(b.order||0)); }
 /** 這條線適用的 PDCA 關卡：主檔全部關卡 − 這條線排除的（lines.stepsOff，v3.9） */
@@ -1220,8 +1223,10 @@ function reqOf(pids,forms){ const s=new Set(); (pids||[]).forEach(p=>{ const fr=
 /** 這條線有哪些「產品別 × 型態」組合在主檔還沒設定 */
 function unsetCombos(pids,forms){ const out=[]; (pids||[]).forEach(p=>{ const fr=((byId('products',p)||{}).fr)||{}; (forms||[]).forEach(f=>{ if(!fr[f]) out.push(`${prodName(p)} × ${formName(f)}`); }); }); return out; }
 /** 需求檢測項目：自動（產品別 × 型態）為預設，產線可手動加入（reqAdd）或排除（reqOff）。手動選了目前版本做不到的項目 → 直接顯示為缺口，提醒要升版 */
-const reqAuto=l=>reqOf(lineProds(l),l.forms);
-const reqItems=l=>{ const a=reqAuto(l), add=(l&&l.reqAdd)||[], off=(l&&l.reqOff)||[]; return [...a.filter(i=>!off.includes(i)),...add.filter(i=>!a.includes(i)&&byId('items',i))]; };
+/** 這條線的型態，排除主檔已刪除的（刪除型態時仍有產線引用，不該讓燈號永遠黃） */
+const lineForms=l=>((l&&l.forms)||[]).filter(f=>{ const x=byId('forms',f); return x&&!x.deleted; });
+const reqAuto=l=>reqOf(lineProds(l),lineForms(l));
+const reqItems=l=>{ const a=reqAuto(l), add=(l&&l.reqAdd)||[], off=(l&&l.reqOff)||[]; return [...a.filter(i=>!off.includes(i)),...add.filter(i=>{ const x=byId('items',i); return !a.includes(i)&&x&&!x.deleted; })]; };
 const reqSrc=(l,iid)=>{ const a=reqAuto(l).includes(iid); return ((l.reqAdd||[]).includes(iid)&&!a)?'add':((l.reqOff||[]).includes(iid)&&a)?'off':a?'auto':''; };
 const isReq=(l,iid)=>reqItems(l).includes(iid);
 /** 檢測項目在某條線的能力：依「此線的軟體版本 → 該版本的技術能力進度 → 此線有沒有關掉」推算 */
@@ -1235,7 +1240,7 @@ const isMeasItem=i=>/量測|量化/.test((i&&i.cat)||'');
 const isExt=l=>!!l&&l.ext==='y';
 function itemCap(l,iid){
   if(isExt(l)){ const v=(l.extCap||{})[iid]; return v==='ok'?{st:'ok',why:'外購設備：可檢'}:v==='no'?{st:'gap',why:'外購設備：不可檢'}:{st:'unk',why:'外購設備：尚未填這項能不能檢'}; }
-  const its=itemTechs(byId('items',iid)), pre=formPre(l.forms), ts=[...its,...pre.filter(t=>!its.includes(t))], pid=(l.sw||{}).plat;
+  const its=itemTechs(byId('items',iid)), pre=formPre(lineForms(l)), ts=[...its,...pre.filter(t=>!its.includes(t))], pid=(l.sw||{}).plat;
   if(!its.length) return {st:'unk',why:'主檔尚未設定這個項目需要哪些演算法'};
   if(!pid||!platName(pid)) return {st:'gap',why:'這條線尚未選擇軟體版本類別'};
   const R={ok:0,off:1,dev:2,gap:3}; let worst='ok'; const why=[];
@@ -1249,7 +1254,7 @@ function itemCap(l,iid){
 function itemSt(l,iid){ const c=itemCap(l,iid).st; return isReq(l,iid)?(c==='off'?'gap':c):(c==='ok'||c==='off'?'av':'na'); }
 const lineGaps=l=>reqItems(l).filter(i=>itemSt(l,i)==='gap').length;
 /** 檢測能力達標：需求檢測項目全部「已具備」（v4.5.1 起版本有但這台沒開也算缺口）；有缺口 / 開發中 / 未設定演算法，或「產品別 × 型態」主檔還沒設定、沒有需求項目（待新增需求）都不算 */
-function lineCapOk(l){ const r=reqItems(l); if(!r.length||unsetCombos(lineProds(l),l.forms).length) return false; return r.every(i=>itemSt(l,i)==='ok'); }
+function lineCapOk(l){ const r=reqItems(l); if(!r.length||unsetCombos(lineProds(l),lineForms(l)).length) return false; return r.every(i=>itemSt(l,i)==='ok'); }
 /** 燈號（v4.3）：綠＝檢測能力達標 + 客戶已 commit 我們的能力（lines.cust='y'）；其他都是黃 */
 const lineLight=l=>lineCapOk(l)&&l.cust==='y'?'g':'y';
 const lightWhy=l=>lineLight(l)==='g'?'綠燈：檢測能力達標，客戶已 commit':'黃燈：'+[lineCapOk(l)?'':'檢測能力未達標（有未滿足或待新增的需求）',l.cust==='y'?'':'客戶尚未 commit'].filter(Boolean).join('、');
@@ -1257,13 +1262,13 @@ function needTechs(iids,forms){ const s=new Set(); iids.forEach(id=>itemTechs(by
 /** 比對每個軟體版本：需要的技術能力是否已釋出、是否支援這些型態 */
 function platFit(iids,forms){
   const need=needTechs(iids,forms), RK={ok:0,dev:1,no:2,shape:3};
-  return liveSorted('plats').map(p=>{ const pf=p.forms||shapeForms(p.shape), shapeOk=(forms||[]).every(f=>pf.includes(f)), miss=[], dev=[];
+  return liveSorted('plats').map((p,idx)=>{ const pf=p.forms||shapeForms(p.shape), shapeOk=(forms||[]).every(f=>pf.includes(f)), miss=[], dev=[];
     need.forEach(t=>{ const s=techPlat(t,p.id); if(s==='dev') dev.push(t); else if(s!=='ok') miss.push(t); });
     const lvl=!shapeOk?'shape':miss.length?'no':dev.length?'dev':'ok';
-    return {p,lvl,miss,dev,shapeOk,rk:RK[lvl]}; })
-    .sort((a,b)=>a.rk-b.rk||a.dev.length-b.dev.length||a.miss.length-b.miss.length||(a.p.order||0)-(b.p.order||0));
+    return {p,lvl,miss,dev,shapeOk,rk:RK[lvl],idx}; })
+    .sort((a,b)=>a.rk-b.rk||a.dev.length-b.dev.length||a.miss.length-b.miss.length||a.idx-b.idx);   // 同等級依 liveSorted（主版本 → 主檔順序）
 }
-const lineFit=l=>platFit(reqItems(l),l.forms||[]);
+const lineFit=l=>platFit(reqItems(l),lineForms(l));
 /** 版本簡稱：主檔「軟體版本」有填就用；沒填自動濃縮（去掉「畫檢」、Win10→W10、矩形版→矩、異形版→異、曲面異形版→曲、(排Q)→Q） */
 function platShortAuto(n){ n=String(n||'').trim(); const s=n.replace(/^畫檢\s*/,'').replace(/\s*[（(]\s*排\s*([^)）]+)[)）]/g,'$1').replace(/win\s*(\d+)/ig,'W$1').replace(/[-_]\s*(?=W\d)/,' ').replace(/曲面異形版?/g,'曲').replace(/矩形版?/g,'矩').replace(/異形版?/g,'異').replace(/\s+/g,' ').trim(); return s||n; }
 const platShort=p=>((p&&p.short)||'').trim()||platShortAuto(p&&p.name);
@@ -1335,7 +1340,7 @@ function kpiLatest(l){ const k=l.kpi||{}; const ds=Object.keys(k).sort(); return
 function kpiTarget(l,k){ const t=(l.kpiT||{})[k]; return t===undefined||t===''?KPI_DEF.find(x=>x.k===k).def:+t; }
 function kpiBad(l,k,v){ if(v===undefined||v===''||v===null) return false; const d=KPI_DEF.find(x=>x.k===k), t=kpiTarget(l,k); return d.better==='low'?+v>t:+v<t; }
 function sortLines(ls){
-  const fl=l=>lineFloor(l), rk=new Map(prodsSorted().map((p,i)=>[p.id,i])), pr=l=>rk.has(l.product)?rk.get(l.product):9999;   // 產品別依 prodsSorted；同產品別再依樓層 / 區域（沒填的排最後），能力矩陣依這個順序分組收折
+  const fl=l=>lineFloor(l), ps=prodsSorted(), rk=new Map(ps.map(p=>[p.id,ps.findIndex(q=>prodFull(q)===prodFull(p))])), pr=l=>rk.has(l.product)?rk.get(l.product):9999;   // 產品別依 prodsSorted（名稱相同的兩筆排名相同，樓層分組才不會拆開）；同產品別再依樓層 / 區域（沒填的排最後），能力矩陣依這個順序分組收折
   return ls.sort((a,b)=>siteCmp(a.site,b.site)||pr(a)-pr(b)||prodsLabel(a).localeCompare(prodsLabel(b),'zh-Hant')||(fl(a)?0:1)-(fl(b)?0:1)||fl(a).localeCompare(fl(b),'zh-Hant',{numeric:true})||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true}));
 }
 function siteStats(sid){
@@ -1375,7 +1380,7 @@ function renderOverview(){
   for(const l of L){ const p=lineProg(l); cnt[p.stage]++; pct+=p.pct; const g=lineGaps(l); gapCells+=g; if(g) gapLines++; if(isOverdue(l)) overdue++; if(l.blocked) blocked++; if(isStale(l)) stale++; }
   const avg=L.length?Math.round(pct/L.length):0;
   const regions=[]; for(const s of sites){ let r=regions.find(x=>x.name===(s.region||'其他')); if(!r) regions.push(r={name:s.region||'其他',sites:[]}); r.sites.push(s); }
-  const demoBanner=hasDemo()?`<div class="banner"><span>🧪 目前有 <b>5 條示範例</b>${GI('demo')}（虛構產線，標示「示範例」，用來看平台效果）。${DB.lines.some(l=>l.demo&&l.demoGen&&!l.deleted)?'示範例已發布到雲端，全部門都看得到；正式開始填寫前請清除。':'正式使用前請清除；本機示範例不會上傳雲端。'}</span><button class="btn sm" onclick="clearDemo()">清除示範例</button></div>`:'';
+  const demoBanner=hasDemo()?`<div class="banner"><span>🧪 目前有 <b>${DB.lines.filter(l=>l.demo&&!l.deleted).length} 條示範例</b>${GI('demo')}（虛構產線，標示「示範例」，用來看平台效果）。${DB.lines.some(l=>l.demo&&l.demoGen&&!l.deleted)?'示範例已發布到雲端，全部門都看得到；正式開始填寫前請清除。':'正式使用前請清除；本機示範例不會上傳雲端。'}</span><button class="btn sm" onclick="clearDemo()">清除示範例</button></div>`:'';
   const nameBanner=!USER.name?`<div class="banner"><span>👤 請先設定你的名字，變更紀錄才知道是誰更新的。</span><button class="btn sm" onclick="openUser()">設定</button></div>`:'';
   const dg=dupGroups(), dupBanner=dg.length?`<div class="banner bad"><span>⚠ 發現 <b>${dg.length} 組重複的產線</b>${GI('dup')}（${esc(dg.map(g=>g[0].site+' '+g[0].line).join('、'))}），可能是兩個人同時新增了同一條線。</span><button class="btn sm" onclick="openDup()">處理</button></div>`:'';
   el.innerHTML=`<div class="ov-top${window.scrollY>4?' stuck':''}"><div class="card ov-strip">
@@ -1446,7 +1451,7 @@ const prodFams=()=>[...new Set(prodsSorted().map(p=>(p.name||'').trim()).filter(
 function ovMatch(l,f,skipFloor){
   if(f.site){ if(f.site.startsWith('rg:')){ if(((byId('sites',l.site)||{}).region||'其他')!==f.site.slice(3)) return false; } else if(l.site!==f.site) return false; }
   if(f.fam&&!lineProds(l).some(p=>((byId('products',p)||{}).name||'').trim()===f.fam)) return false;
-  if(!skipFloor&&f.floor&&(lineFloor(l)||'-')!==f.floor) return false;
+  if(!skipFloor&&f.floor&&(lineFloor(l)||NOFL)!==f.floor) return false;
   return true;
 }
 function ovViewBar(L,regions){
@@ -1457,15 +1462,15 @@ function ovViewBar(L,regions){
 }
 /** 一個比較組的篩選列：廠區（可選整個地區）、產品別、樓層 / 區域 */
 function ovBlockBar(L,regions,b,i,n){
-  const f=b.sf, fl=[...new Set(L.filter(l=>ovMatch(l,f,true)).map(l=>lineFloor(l)||'-'))].sort((a,b)=>a==='-'?1:b==='-'?-1:a.localeCompare(b,'zh-Hant',{numeric:true}));
+  const f=b.sf, fl=[...new Set(L.filter(l=>ovMatch(l,f,true)).map(l=>lineFloor(l)||NOFL))].sort((a,b)=>a===NOFL?1:b===NOFL?-1:a.localeCompare(b,'zh-Hant',{numeric:true}));
   const sel=(k,lb,opts)=>`<label class="ovf"><span>${lb}</span><select class="in ${f[k]?'act':''}" onchange="ovSetF(${i},'${k}',this.value)"><option value="">全部</option>${opts}</select></label>`;
   // 廠區：自訂下拉，依洲分三欄（亞洲 / 歐洲 / 美洲，不標州名）；地區名稱（粗體）點了＝整個地區，廠區列在地區下面（Johnny 2026-10-29）
   const siteLb=!f.site?'全部':f.site.startsWith('rg:')?f.site.slice(3):f.site, cols=[0,1,2].map(c=>regions.filter(r=>siteCont(r.sites[0].id)===c)).filter(x=>x.length);
-  const pick=(v,t,c)=>`<button class="${c} ${f.site===v?'on':''}" onclick="ovSetF(${i},'site','${esc(v)}')">${esc(t)}</button>`;
+  const pick=(v,t,c)=>`<button class="${c} ${f.site===v?'on':''}" data-v="${esc(v)}" onclick="ovSetF(${i},'site',this.dataset.v)">${esc(t)}</button>`;   // 值用 data-v 傳，地區名稱有引號也不會壞
   const siteDD=`<div class="ovf"><span>廠區</span><div class="dd ovsd"><button class="in dd-b ${f.site?'act':''}" onclick="ovSdTg(event,this)" title="選廠區或整個地區">${esc(siteLb)} ▾</button>
     <div class="dd-m ovsd-m">${pick('','全部','ovsd-all')}<div class="ovsd-c">${cols.map(col=>`<div class="ovsd-col">${col.map(r=>`<div class="ovsd-g">${pick('rg:'+r.name,r.name,'ovsd-r')}${r.sites.map(x=>pick(x.id,x.id,'ovsd-s')).join('')}</div>`).join('')}</div>`).join('')}</div></div></div></div>`;
   const famO=prodFams().map(x=>`<option value="${esc(x)}" ${f.fam===x?'selected':''}>${esc(x)}</option>`).join('');
-  const flO=fl.map(x=>`<option value="${esc(x)}" ${f.floor===x?'selected':''}>${x==='-'?'（未填）':esc(x)}</option>`).join('');
+  const flO=fl.map(x=>`<option value="${esc(x)}" ${f.floor===x?'selected':''}>${x===NOFL?'（未填）':esc(x)}</option>`).join('');
   const m=L.filter(l=>ovMatch(l,f)).length, any=f.site||f.fam||f.floor;
   return `<div class="ovb-h">${n>1?`<span class="ovb-no">${i+1}</span>`:''}${siteDD}${sel('fam','產品別',famO)}${sel('floor','樓層 / 區域',flO)}
     <span class="ovf-n">${any?`篩選後 <b>${m}</b> 台`:`全部 <b>${m}</b> 台`}</span>${any?`<button class="btn sm" onclick="ovBSet(${i},b=>{b.sf={}})">清除篩選</button>`:''}${n>1?`<button class="ovb-x" onclick="ovBDel(${i})" title="移除這組">✕</button>`:''}</div>`;
@@ -1534,14 +1539,14 @@ function segPanel(g,b){
   const sl=x=>x===g.k?g.k+' 未分 1 / 2':x;
   const pr=l=>l.blocked||isOverdue(l)||lineGaps(l)?0:lineLight(l)==='y'?1:2;
   const ls=g.ls.filter(l=>!cur||lineSeg(l)===cur).sort((a,b)=>(grpSub?segRank(lineSeg(a))-segRank(lineSeg(b)):0)||siteCmp(a.site,b.site)||(fa(a)?0:1)-(fa(b)?0:1)||fa(a).localeCompare(fa(b),'zh-Hant',{numeric:true}));
-  const sub=[]; for(const l of ls){ const key=[grpSub?lineSeg(l):'',grpSite?l.site:'',grpFloor?fa(l):''].join('|'); let t=sub[sub.length-1]; if(!t||t.key!==key) sub.push(t={key,ls:[]}); t.ls.push(l); }
+  const sub=[]; for(const l of ls){ const key=[grpSub?lineSeg(l):'',grpSite?l.site:'',grpFloor?fa(l):''].join('\u0001'); let t=sub[sub.length-1]; if(!t||t.key!==key) sub.push(t={key,ls:[]}); t.ls.push(l); }
   const kid=l=>{ const p=lineProg(l), nx=nextOf(l), od=isOverdue(l), gp=lineGaps(l), lc=lineLight(l);
     return `<div class="sgk ${lc}" onclick="openLine('${l.id}')" title="${esc(l.site+' · '+lineLabel(l))}（點一下開啟）">
       <div class="k1"><span class="lt ${lc}" title="${esc(lightWhy(l))}"><i></i></span><b>${esc(l.line||'?')}</b><span class="kp">${esc(prodsLabel(l))}</span></div>
       <div class="k2">${pdMini(l,true)}<span class="kt">${p.complete?'✓ 全部完成':esc(nx?nx.text:'')}</span>${nx&&nx.due?`<span class="kd ${od?'od':''}">${md(nx.due)}</span>`:''}</div>
       ${isMass(l)||gp||l.blocked||od||isExt(l)?`<div class="k3">${isExt(l)?'<span class="tag blu">外購</span>':''}${isMass(l)?'<span class="tag grn">已量產</span>':''}${gp?`<span class="tag red">缺口 ${gp}</span>`:''}${l.blocked?'<span class="tag red">卡關</span>':''}${od?'<span class="tag amb">逾期</span>':''}</div>`:''}
     </div>`; };
-  const body=sub.map(t=>{ const k=g.k+'|'+t.key, off=grp&&b.fc.includes(k), all=b.all.includes(k), s=segStats(t.ls), [sg,st,fl]=t.key.split('|');
+  const body=sub.map(t=>{ const k=g.k+'|'+t.key, off=grp&&b.fc.includes(k), all=b.all.includes(k), s=segStats(t.ls), [sg,st,fl]=t.key.split('\u0001');
     const kl=t.ls.slice().sort((a,b)=>pr(a)-pr(b)||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true})), show=all?kl:kl.slice(0,SEG_KMAX);
     const say=[s.gap?`<span class="tag red">缺口 ${s.gap}</span>`:'',s.blocked?`<span class="tag red">卡關 ${s.blocked}</span>`:'',s.overdue?`<span class="tag amb">逾期 ${s.overdue}</span>`:''].join('');
     const h=grp?`<div class="sgg ${off?'off':''}" data-k="${esc(k)}" onclick="ovSegFc(this)" title="${off?'展開':'收合'}這一區"><span class="car">▾</span><b>${[grpSub?esc(sl(sg)):'',grpSite?esc(st):'',grpFloor?(fl?esc(fl):'未填樓層'):''].filter(Boolean).join(' · ')}</b><span>${s.n} 台</span><span class="lt g"><i></i><b>${s.g}</b></span><span class="lt y"><i></i><b>${s.y}</b></span>${say}</div>`:'';
@@ -1640,7 +1645,7 @@ function filteredLines(){
     if(f.product&&!lineProds(l).includes(f.product)) return false;
     if(f.form&&!(l.forms||[]).includes(f.form)) return false;
     if(f.hw&&l.hw!==f.hw) return false;
-    if(f.floor&&(lineFloor(l)||'-')!==f.floor) return false;
+    if(f.floor&&(lineFloor(l)||NOFL)!==f.floor) return false;
     if(f.plat&&(l.sw||{}).plat!==f.plat) return false;
     if(f.src&&(f.src==='ext')!==isExt(l)) return false;
     if(f.cust&&(f.cust==='y')!==(l.cust==='y')) return false;
@@ -1660,15 +1665,15 @@ function renderMatrix(){
   const focusQ=document.activeElement&&document.activeElement.id==='mq';
   const ow=$('#pg-matrix .mwrap'), osx=ow?ow.scrollLeft:0, osy=ow?ow.scrollTop:0;   // 重畫後維持表格捲動位置（例如按星號、快速編輯）
   const box=bg=>`<b style="display:inline-block;width:12px;height:12px;${bg};border:1px solid #cddcf3;border-radius:3px;vertical-align:-1px"></b>`;
-  const opt=(k,label,arr)=>`<select class="in" onchange="setMF({${k}:this.value})"><option value="">${label}</option>${arr.map(x=>`<option value="${x.id}" ${f[k]===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`;
+  const opt=(k,label,arr)=>`<select class="in" onchange="setMF({${k}:this.value})"><option value="">${label}</option>${arr.map(x=>`<option value="${esc(x.id)}" ${f[k]===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`;
   const STG=v=>v==='blocked'?'⚠ 卡關中':(STAGES.find(s=>s.k===v)?v+' '+STAGES.find(s=>s.k===v).name:v);
-  const act=[['product','產品別',v=>byId('products',v)?prodName(v):''],['form','型態',v=>(byId('forms',v)||{}).name],['stage','階段',STG],['plat','軟體版本',v=>platName(v)],['hw','相機',v=>hwName(v)],['floor','樓層 / 區域',v=>v==='-'?'（未填樓層）':v],['src','設備來源',v=>v==='ext'?'外購設備':'本廠軟體'],['cust','客戶 commit',v=>v==='y'?'客戶已 commit':'客戶未 commit']].filter(([k])=>f[k]);
+  const act=[['product','產品別',v=>byId('products',v)?prodName(v):''],['form','型態',v=>(byId('forms',v)||{}).name],['stage','階段',STG],['plat','軟體版本',v=>platName(v)],['hw','相機',v=>hwName(v)],['floor','樓層 / 區域',v=>v===NOFL?'（未填樓層）':v],['src','設備來源',v=>v==='ext'?'外購設備':'本廠軟體'],['cust','客戶 commit',v=>v==='y'?'客戶已 commit':'客戶未 commit']].filter(([k])=>f[k]);
   const view=f.watchOnly?'watch':f.gapOnly?'gap':'all';
   el.innerHTML=`
   <div class="mx-top"><div class="mbar">
     <div class="dd ${MXDD==='sd'?'on':''}" id="mx-sd"><button class="in dd-b ${f.sites.length?'act':''}" onclick="mxDD(event,'sd')" title="選擇要看的廠區（可複選）">廠區：${!f.sites.length?'全部':f.sites.length<=2?esc(f.sites.join('、')):f.sites.length+' 個'} ▾</button>
-      <div class="dd-m">${regs.map(r=>`<div class="dd-g"><button class="lkb" onclick="setMF({sites:'${r.sites.map(s=>s.id).join(',')}'.split(',')})" title="只看這個地區">${esc(r.name)}</button>
-        ${r.sites.map(s=>`<label class="ck"><input type="checkbox" ${f.sites.includes(s.id)?'checked':''} onchange="toggleSiteF('${s.id}')">${esc(s.id)}</label>`).join('')}</div>`).join('')}
+      <div class="dd-m">${regs.map(r=>`<div class="dd-g"><button class="lkb" data-v="${esc(JSON.stringify(r.sites.map(s=>s.id)))}" onclick="setMF({sites:JSON.parse(this.dataset.v)})" title="只看這個地區">${esc(r.name)}</button>
+        ${r.sites.map(s=>`<label class="ck"><input type="checkbox" ${f.sites.includes(s.id)?'checked':''} data-v="${esc(s.id)}" onchange="toggleSiteF(this.dataset.v)">${esc(s.id)}</label>`).join('')}</div>`).join('')}
         <div class="dd-f"><button class="btn sm" onclick="setMF({sites:[]})">全部廠區</button></div></div></div>
     <div class="dd ${MXDD==='fd'?'on':''}" id="mx-fd"><button class="in dd-b ${act.length?'act':''}" onclick="mxDD(event,'fd')" title="依產品別、型態、階段、軟體版本、相機、樓層 / 區域、客戶 commit 篩選">篩選${act.length?` (${act.length})`:''} ▾</button>
       <div class="dd-m fd-m">
@@ -1677,7 +1682,7 @@ function renderMatrix(){
         <label class="fd-r"><span>階段</span><select class="in" onchange="setMF({stage:this.value})"><option value="">全部</option>${STAGES.map(s=>`<option value="${s.k}" ${f.stage===s.k?'selected':''}>${s.k} ${s.name}</option>`).join('')}<option value="blocked" ${f.stage==='blocked'?'selected':''}>⚠ 卡關中</option></select></label>
         <label class="fd-r"><span>軟體版本</span>${opt('plat','全部',liveSorted('plats').map(p=>({id:p.id,name:platShort(p)})))}</label>
         <label class="fd-r"><span>相機</span>${opt('hw','全部',liveSorted('hws'))}</label>
-        <label class="fd-r"><span>樓層 / 區域</span>${opt('floor','全部',[...new Set(liveLines().filter(l=>!f.sites.length||f.sites.includes(l.site)).map(l=>lineFloor(l)||'-'))].sort((a,b)=>(a==='-')-(b==='-')||a.localeCompare(b,'zh-Hant',{numeric:true})).map(x=>({id:x,name:x==='-'?'（未填）':x})))}</label>
+        <label class="fd-r"><span>樓層 / 區域</span>${opt('floor','全部',[...new Set(liveLines().filter(l=>!f.sites.length||f.sites.includes(l.site)).map(l=>lineFloor(l)||NOFL))].sort((a,b)=>(a===NOFL)-(b===NOFL)||a.localeCompare(b,'zh-Hant',{numeric:true})).map(x=>({id:x,name:x===NOFL?'（未填）':x})))}</label>
         <label class="fd-r"><span>設備來源</span>${opt('src','全部',[{id:'own',name:'本廠軟體'},{id:'ext',name:'外購設備'}])}</label>
         <label class="fd-r"><span>客戶 commit</span>${opt('cust','全部',[{id:'y',name:'✓ 已 commit'},{id:'n',name:'未 commit'}])}</label>
         <label class="ck fd-ck"><input type="checkbox" ${f.allItems?'checked':''} onchange="setMF({allItems:this.checked})">顯示全部檢測項目<span class="muted">（預設只顯示這些線有用到的）</span></label>
@@ -1686,8 +1691,8 @@ function renderMatrix(){
     <input class="in" id="mq" placeholder="🔍 搜尋線別 / 相機 / 版本…" title="可搜尋線別、產品、相機、版本、負責人、下一步" value="${esc(f.q)}" oninput="UI.mf.q=this.value;saveUI();renderMatrix()">
     <span class="seg vw">${[['all','全部','顯示全部產線'],['watch',`★ 關注 ${watchCount()}`,'只看你標記 ★ 的產線'],['gap','有缺口','只看有檢測能力缺口的產線']].map(([k,t,tt])=>`<button class="${view===k?'on':''}" title="${tt}" onclick="setMF({watchOnly:${k==='watch'},gapOnly:${k==='gap'}})">${t}</button>`).join('')}</span>
     <span class="mleg-in" title="同一套符號用在檢測項目、技術能力、光學調整（點 ⓘ 看細節）">${GI('legend')}<span class="s"><b class="s-ok">●</b>完成</span><span class="s"><b class="s-dev">◐</b>進行中</span><span class="s"><b class="s-off">○</b>未開</span><span class="s"><b class="s-gap">✕</b>缺口</span><span class="s" title="檢測項目：不需要檢，但軟體有這個功能"><b class="s-av">○</b>不需檢</span><span class="s"><b class="s-na">·</b>不需</span><span class="s">${box('background:repeating-linear-gradient(135deg,#f4f6f9 0 3px,#e3e8ef 3px 6px)')}未釋出</span><span class="s">${box('background:var(--req)')}需求</span><span class="s n">${ls.length} 條線</span></span>
-    <span style="margin-left:auto;display:flex;gap:6px">
-      ${ls.length?(()=>{ const ks=[...new Set(ls.map(l=>l.site+'|'+prodsLabel(l)))], open=ks.some(k=>!(UI.mxc||{})[k]); return `<button class="btn" onclick="mxGrpAll(${open})" title="${open?'所有產品別收合，只看每組的台數與缺口':'展開全部產品別與樓層'}">${open?'▾ 全部收合':'▸ 全部展開'}</button>`; })():''}
+    <span style="margin-left:auto;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:100%">
+      ${ls.length?(()=>{ const ks=[...new Set(ls.map(l=>JSON.stringify([l.site,prodsLabel(l)])))], open=ks.some(k=>!(UI.mxc||{})[k]); return `<button class="btn" onclick="mxGrpAll(${open})" title="${open?'所有產品別收合，只看每組的台數與缺口':'展開全部產品別與樓層'}">${open?'▾ 全部收合':'▸ 全部展開'}</button>`; })():''}
       <button class="btn ${f.edit?'on':''}" id="mx-edit" onclick="setMF({edit:!UI.mf.edit})" title="開啟後點檢測項目格子切換 需要 / 不需要；點技術能力格子切換開 / 關；點光學調整格子打開面板填寫">✎ ${f.edit?'編輯中':'快速編輯'}</button>
       <button class="btn" onclick="exportCSV()" title="把目前篩選的結果下載成 CSV（可用 Excel 開）">⬇ 下載</button>
       <button class="btn pri" id="mx-add" onclick="newLine()" title="新增產線">＋ 新增</button>
@@ -1730,7 +1735,7 @@ function matrixTable(ls,items,techs){
   for(const l of ls){
     if(l.site!==curSite){ curSite=l.site; lastProd=null; curQ=curF=null; const s=byId('sites',l.site)||{}; const st=siteStats(l.site); const n=ls.filter(x=>x.site===l.site).length;
       h+=`<tr class="gp"><td colspan="${NC}"><span class="in-g">${esc(l.site)}<span>${esc(s.region||'')} · 顯示 ${n} / ${st.ls.length} 條線 · 平均完成度 ${st.pct}%${s.owner?' · 負責 '+esc(s.owner):''}</span></span></td></tr>`; }
-    const pl=prodsLabel(l), fl=lineFloor(l)||'', kq=l.site+'|'+pl, kf=kq+'|'+fl;
+    const pl=prodsLabel(l), fl=lineFloor(l)||'', kq=JSON.stringify([l.site,pl]), kf=JSON.stringify([l.site,pl,fl]);   // 名稱裡有 | 也不會撞
     if(kq!==curQ){ curQ=kq; curF=null; lastProd=null; h+=gRow('gq',kq,pl,'',ls.filter(x=>x.site===l.site&&prodsLabel(x)===pl)); }
     if(C[kq]) continue;
     if(kf!==curF){ curF=kf; h+=gRow('gf',kf,fl||'未填樓層 / 區域','',ls.filter(x=>x.site===l.site&&prodsLabel(x)===pl&&(lineFloor(x)||'')===fl)); }
@@ -1742,7 +1747,7 @@ function matrixTable(ls,items,techs){
       <td class="stk c-ln"><div class="ln-n">${watchBtn(l.id)}${esc(l.line||'?')} ${l.blocked?'<span class="tag red" title="'+esc(l.blockReason||'')+'">卡關</span>':''}${dupIds.has(l.id)?'<span class="tag red" title="同廠區、同線別、產品別重疊的產線有多筆，到總覽處理">重複</span>':''}${l.demo?'<span class="tag amb">示範例</span>':''}${isExt(l)?`<span class="tag blu" title="外購設備${l.vendor?'（'+esc(l.vendor)+'）':''}：檢測能力逐項手動填，不套用本廠軟體版本">外購</span>`:''}</div><div class="ln-s" title="${esc(l.vendor||'')}">${esc(lineSub(l))||'&nbsp;'}</div></td>
       ${items.map(i=>{ const v=itemSt(l,i.id), c=itemCap(l,i.id); return `<td class="s s-${v} ${isReq(l,i.id)?'req':''}" data-t="i" data-k="${i.id}" title="${esc(i.name)}：${IST[v].t}${v==='av'?'（軟體有這個功能）':''}${isReq(l,i.id)?(reqSrc(l,i.id)==='add'?'（需求項目・手動加入）':'（需求項目）'):reqSrc(l,i.id)==='off'?'（手動排除）':''}${c.why&&v!=='na'?'\n'+esc(c.why):''}">${IST[v].sym}</td>`; }).join('')}
       <td class="s c-cu ${l.cust==='y'?'cu-y':'cu-n'}" data-t="c" title="${l.cust==='y'?'客戶已 commit':'客戶尚未 commit'}${UI.mf.edit?'（點一下切換）':''}">${l.cust==='y'?'✓':'—'}</td>
-      ${ext?`<td class="swc"><div class="sw" title="外購設備不套用本廠軟體版本">外購</div><div class="dim">${esc(l.vendor||'—')}</div></td>`:`<td class="swc"><div class="sw" style="color:${swOff?'var(--amber)':'inherit'}" title="${swOff?esc(`「${platShort(fit.p)}」${fit.lvl==='dev'?'仍在開發：'+fit.dev.map(t=>t.name).join('、'):fit.lvl==='shape'?'不支援此型態':'不支援：'+fit.miss.map(t=>t.name).join('、')}`):''}">${esc(sw.plat?platShort(byId('plats',sw.plat)):'未設定')}</div><div class="dim" title="${esc(platName(sw.plat)||'')}">${esc(sw.ver||'—')}</div></td>`}
+      ${ext?`<td class="swc"><div class="sw" title="外購設備不套用本廠軟體版本">外購</div><div class="dim">${esc(l.vendor||'—')}</div></td>`:`<td class="swc"><div class="sw" style="color:${swOff?'var(--amber)':'inherit'}" title="${swOff?esc(`「${platShort(fit.p)}」${fit.lvl==='dev'?'仍在開發：'+fit.dev.map(t=>t.name).join('、'):fit.lvl==='shape'?'不支援此型態':'不支援：'+fit.miss.map(t=>t.name).join('、')}`):''}">${esc(platName(sw.plat)?platShort(byId('plats',sw.plat)):'未設定')}</div><div class="dim" title="${esc(platName(sw.plat)||'')}">${esc(sw.ver||'—')}</div></td>`}
       ${TC?(()=>{ const rel=techs.filter(t=>techPlat(t,sw.plat)==='ok'), on=rel.filter(t=>lineTech(l,t.id)==='on'), off=rel.filter(t=>lineTech(l,t.id)!=='on');
         return ext?'<td class="t-sum" title="外購設備不套用本廠技術能力">—</td>':`<td class="t-sum" title="${sw.plat?`已釋出 ${rel.length} 項，開啟 ${on.length} 項${off.length?'\n未開啟：'+esc(off.map(t=>t.name).join('、')):''}`:'尚未選擇軟體版本'}">${sw.plat?`<b>${on.length}</b><span>/${rel.length}</span>${off.length?`<i class="s-off">○${off.length}</i>`:''}`:'—'}</td>`; })():''}
       ${TC?'':techs.map(t=>{ const ps=techPlat(t,sw.plat), v=lineTech(l,t.id);
@@ -1760,7 +1765,7 @@ function matrixTable(ls,items,techs){
   return h+'</tbody></table>';
 }
 /** 能力矩陣分組收折（key＝廠區|產品別 或 廠區|產品別|樓層） */
-function mxGrpAll(off){ UI.mxc={}; if(off) filteredLines().forEach(l=>{ UI.mxc[l.site+'|'+prodsLabel(l)]=true; }); saveUI(); renderMatrix(); }   // 一鍵收合（產品別層）/ 展開（兩層全部打開）
+function mxGrpAll(off){ UI.mxc={}; if(off) filteredLines().forEach(l=>{ UI.mxc[JSON.stringify([l.site,prodsLabel(l)])]=true; }); saveUI(); renderMatrix(); }   // 一鍵收合（產品別層）/ 展開（兩層全部打開）
 function mxGrp(k){ UI.mxc=UI.mxc||{}; if(UI.mxc[k]) delete UI.mxc[k]; else UI.mxc[k]=true; saveUI(); renderMatrix(); }
 /** 快速編輯：點「客戶 commit」格子切換 已 / 未 commit */
 function toggleCust(lid){ const l=byId('lines',lid); if(!l) return; const n=clone(l); if(n.cust==='y') delete n.cust; else n.cust='y'; commit('lines',n,`${l.site} · ${lineLabel(l)}：${n.cust==='y'?'客戶已 commit':'客戶 commit 改回未 commit'}`); }
@@ -1812,7 +1817,11 @@ async function closeDrawer(force){
   ED=null; $('#drawer').classList.remove('on'); $('#dw-ov').classList.remove('on');
 }
 function edGet(p){ return p.split('.').reduce((o,k)=>o==null?undefined:o[k],ED.w); }
-function edSet(p,v){ const ks=p.split('.'); let o=ED.w; for(let i=0;i<ks.length-1;i++){ if(!isObj(o[ks[i]])) o[ks[i]]={}; o=o[ks[i]]; } const k=ks[ks.length-1]; if(v===''||v===undefined||v===null||v===false) delete o[k]; else o[k]=v; }
+function edSet(p,v){ const ks=p.split('.'), ch=[ED.w]; let o=ED.w; for(let i=0;i<ks.length-1;i++){ if(!isObj(o[ks[i]])) o[ks[i]]={}; o=o[ks[i]]; ch.push(o); } const k=ks[ks.length-1];
+  if(v===''||v===undefined||v===null||v===false){ delete o[k];   // 清空後上層物件也變空 → 一併拿掉（改了又改回時，和原本一樣算「沒修改」）
+    for(let i=ks.length-2;i>=0;i--){ if(isObj(ch[i][ks[i]])&&!Object.keys(ch[i][ks[i]]).length&&!(ED.orig&&isObj(edOrig(ks.slice(0,i+1))))) delete ch[i][ks[i]]; else break; } }
+  else o[k]=v; }
+const edOrig=ks=>ks.reduce((o,k)=>o==null?undefined:o[k],ED.orig);
 function newLine(site){
   const sid=site||(UI.mf.sites.length===1?UI.mf.sites[0]:'')||USER.site||(liveSorted('sites')[0]||{}).id||'';
   const p0=UI.mf.product||'';
@@ -1873,7 +1882,7 @@ function renderDrawer(){
 
     <details class="ds" data-sec="setup" ${ED.open.setup?'open':''}><summary><h4>建線資料 <small>建線時填一次</small><span class="r muted sumtxt">${esc(setupSum)||'尚未填寫'}</span></h4></summary>
       <div class="fg c4 ln1" style="margin-top:6px">
-        <div class="f"><label>廠區 *</label><select class="in" data-p="site">${liveSorted('sites').map(s=>`<option value="${s.id}" ${w.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</select></div>
+        <div class="f"><label>廠區 *</label><select class="in" data-p="site">${liveSorted('sites').map(s=>`<option value="${esc(s.id)}" ${w.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</select></div>
         <div class="f"><label>樓層・線別 *${GI('floor')}</label><div class="lnf"><input class="in lnf-f" data-p="floor" list="dl-floor" value="${esc(w.floor||'')}" placeholder="${esc(floorGuess(w.line)||'樓層')}" title="樓層 / 區域${floorGuess(w.line)?'（沒填時用線別開頭 '+esc(floorGuess(w.line))+'，存檔時帶入）':'（例：F7、1C、3D）'}"><input class="in" data-p="line" value="${esc(edGet('line')??'')}" placeholder="例：L1 / CT2"></div></div>
         <div class="f"><label>負責人</label><input class="in" data-p="owner" list="dl-owner" value="${esc(w.owner||'')}" placeholder="${so?'沿用：'+esc(so):'姓名'}"></div>
         <div class="f"><label>線體負責人${GI('fabowner')}</label><input class="in" data-p="fabOwner" list="dl-owner" value="${esc(w.fabOwner||'')}" placeholder="FAB Owner 姓名"></div>
@@ -2021,7 +2030,7 @@ function diffMsg(a,b){
   if(sAdd.length||sDel.length) out.push('PDCA 關卡'+(sAdd.length?' 不適用：'+sAdd.map(snm).join('、'):'')+(sDel.length?' 恢復：'+sDel.map(snm).join('、'):''));
   if((a.nextNote||'')!==(b.nextNote||'')&&b.nextNote) out.push(`下一步：${b.nextNote}`);
   if(!eq(a.kpi||{},b.kpi||{})||!eq(a.kpiT||{},b.kpiT||{})) out.push('KPI');
-  if(a.site!==b.site||a.product!==b.product||a.line!==b.line||a.vendor!==b.vendor||a.owner!==b.owner||(a.fabOwner||'')!==(b.fabOwner||'')) out.push('基本資訊');
+  if(a.site!==b.site||a.product!==b.product||(a.line||'')!==(b.line||'')||(a.vendor||'')!==(b.vendor||'')||(a.owner||'')!==(b.owner||'')||(a.fabOwner||'')!==(b.fabOwner||'')) out.push('基本資訊');
   if((a.floor||'')!==(b.floor||'')) out.push(`樓層 / 區域 → ${b.floor||'—'}`);
   if((a.ext||'')!==(b.ext||'')) out.push(b.ext==='y'?'設備來源 → 外購設備':'設備來源 → 本廠軟體');
   if(!eq(a.extCap||{},b.extCap||{})){ const ks=[...new Set([...Object.keys(a.extCap||{}),...Object.keys(b.extCap||{})])].filter(k=>((a.extCap||{})[k]||'')!==((b.extCap||{})[k]||''));
@@ -2030,10 +2039,10 @@ function diffMsg(a,b){
   if((a.note||'')!==(b.note||'')) out.push('備註');
   return out.join('；')||'更新';
 }
-function saveLine(){
+async function saveLine(){
   const w=ED.w;
   if(!w.site||!w.product||!String(w.line||'').trim()){ toast('請填寫 廠區、產品別、線別','err'); return; }
-  if(ED.isNew&&liveLines().some(l=>l.site===w.site&&l.product===w.product&&String(l.line).trim()===String(w.line).trim())){ toast('同廠區、同產品已有相同線別','err'); return; }
+  if(liveLines().some(l=>l.id!==w.id&&l.site===w.site&&l.product===w.product&&String(l.line).trim()===String(w.line).trim())){ toast('同廠區、同產品已有相同線別','err'); return; }   // 新增與編輯都檢查（排除自己）
   // 這次新選「完成」或改過的項目，沒填齊完成日 + 參考值不能存；v3.0 留下、這次沒動的舊資料不擋（只提醒），避免卡住其他欄位的日常更新
   const opTouched=o=>!(opSt(ED.orig,o.k)==='pend'&&eq(opVal(ED.orig,o.k),opVal(w,o.k)));
   const opBad=OPTICS.filter(o=>opSt(w,o.k)==='pend'&&opTouched(o)), opOld=OPTICS.filter(o=>opSt(w,o.k)==='pend'&&!opTouched(o));
@@ -2042,8 +2051,10 @@ function saveLine(){
   if(eq(ED.orig,w)){ closeDrawer(true); return; }
   if(!String(w.floor||'').trim()&&floorGuess(w.line)) w.floor=floorGuess(w.line);   // 樓層 / 區域沒填：帶入由線別名稱推測的值（有其他修改、按儲存時才寫入）
   const cur=byId('lines',w.id);
+  if(cur&&cur.deleted&&!ED.isNew){ if(!(await confirmBox(`這條線已被 ${cur.updatedBy||'其他同仁'} 刪除。\n要還原並套用你的修改嗎？`,'還原並儲存'))) return; }
   // 只把「我改動的欄位」套用到最新版本上，保留其他人在這段期間的修改
   const next=cur&&!ED.isNew?merge3(ED.orig,w,cur,'',[]):clone(w);
+  if(cur&&cur.deleted) delete next.deleted;
   const msg=ED.isNew?`新增產線 ${lineLabel(next)}`:`${lineLabel(next)}：${diffMsg(ED.orig,w)}`;
   ED=null; $('#drawer').classList.remove('on'); $('#dw-ov').classList.remove('on');
   commit('lines',next,msg);
@@ -2121,7 +2132,7 @@ function renderGuide(){
       </div>
       <div class="gstep"><b>2</b>產線條件</div>
       <div class="card gcard">
-        <div class="grow"><label>導入廠區</label><select class="in" data-g="site" style="width:120px;text-align:left"><option value="">—</option>${liveSorted('sites').map(s=>`<option value="${s.id}" ${g.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</select></div>
+        <div class="grow"><label>導入廠區</label><select class="in" data-g="site" style="width:120px;text-align:left"><option value="">—</option>${liveSorted('sites').map(s=>`<option value="${esc(s.id)}" ${g.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</select></div>
         <div class="grow"><label>目標量產日</label><input class="in" data-g="target" type="date" style="width:140px;text-align:left" value="${esc(g.target||'')}"><span class="u"></span></div>
         <div class="grow"><label>參考範圍${GI('onlyA')}</label><span class="seg"><button class="${g.onlyA?'':'on v-na'}" data-gonly="0">全部產線</button><button class="${g.onlyA?'on v-ok':''}" data-gonly="1">只看已量產</button></span></div>
       </div>
@@ -2151,7 +2162,7 @@ function renderGuideOut(){
   const metric=(l,v,u,h,warn)=>`<div class="metric"><div class="l">${l}</div><div class="v" style="${warn?'color:var(--warn)':''}">${v}${u?` <small>${u}</small>`:''}</div>${h?`<div class="h">${h}</div>`:''}</div>`;
   const VB={ok:['v-ok','建議方案','可直接導入'],cond:['v-cond','有條件可行','需等待功能釋出'],no:['v-no','需新開發','目前版本無法完整支援'],empty:['v-na','尚未設定','請先在左側選擇產品別或檢測項目']}[R.verdict];
   let verdict=`<div class="vhead"><span class="vbadge ${VB[0]}">${VB[1]}</span>${GI('verdict')}<b class="vtitle">${VB[2]}</b>
-    <span class="muted" style="font-size:12px">${esc(R.prod?R.prod.name:'未指定產品別')}（${esc(formLabel(R.forms))}）${g.site?' → '+esc(g.site):''} · 目標量產 ${esc(S.golive)}</span></div>`;
+    <span class="muted" style="font-size:12px">${esc(R.prod?prodFull(R.prod):'未指定產品別')}（${esc(formLabel(R.forms))}）${g.site?' → '+esc(g.site):''} · 目標量產 ${esc(S.golive)}</span></div>`;
   if(R.verdict==='empty') verdict+=`<div class="vtext">選擇產品別與型態（或直接點選檢測項目）後，平台會依「檢測項目 → 需要的技術能力 → 各版本開發進度」推算建議版本，並比對全部門 ${liveLines().length} 條產線。</div>`;
   else {
     const txt=[];
@@ -2169,7 +2180,7 @@ function renderGuideOut(){
       :`<div class="vref"><span class="tag red">部門內沒有可參考的產線</span><span class="muted" style="font-size:12px">${g.onlyA?'（目前只看已量產，可切換為「全部產線」）':''}</span></div>`;
   }
   const derived=[
-    metric('需求檢測項目',R.items.length,'項',R.prod?`${esc(R.prod.name)} × ${esc(formLabel(R.forms))}`:'手動選擇'),
+    metric('需求檢測項目',R.items.length,'項',R.prod?`${esc(prodFull(R.prod))} × ${esc(formLabel(R.forms))}`:'手動選擇'),
     metric('需要技術能力',R.need.length,'項',esc(R.need.map(t=>t.name).join('、')).slice(0,60)),
     metric('可用軟體版本',R.okFits.length,'個',R.okFits.length?esc(R.okFits.map(x=>platShort(x.p)).join('、')):'沒有版本能完整支援',!R.okFits.length&&R.verdict!=='empty'),
     (()=>{ const o=g.opt||{}; return metric('光學架構'+GI('optcalc'),o.cam?esc(hwName(o.cam)):'未評估',o.cam&&o.n?`× ${esc(o.n)} 台`:'',o.cam?esc([o.pitch?'Pitch '+o.pitch:'',o.wd?'WD '+o.wd+' mm':'',o.note||''].filter(Boolean).join('・')||'AOI Calculator 評估'):'到左側 ③ 用 AOI Calculator 評估',!o.cam&&R.verdict!=='empty'); })()];
@@ -2265,7 +2276,8 @@ function guideCreateLine(){
   if(st[0]) plan[st[0].id]=addDays(S.Ps<todayStr()?todayStr():S.Ps,14);
   if(kstep('install')) plan[kstep('install').id]=S.Ds; if(kstep('sat')) plan[kstep('sat').id]=addDays(S.golive,-7); if(kstep('golive')) plan[kstep('golive').id]=S.golive;
   const OP=g.opt||{};
-  const l={id:uid('L'),site:g.site,product:g.product,products:[g.product],line:'',forms:R.forms.slice(),hw:OP.cam||'',vendor:'',owner:(byId('sites',g.site)||{}).owner?'':(USER.name||''),techs:{},done:{},plan,
+  const auto=reqOf([g.product],R.forms), its=R.items.map(i=>i.id||i), rAdd=its.filter(i=>!auto.includes(i)), rOff=auto.filter(i=>!its.includes(i));   // 指引裡手動加減的項目 → reqAdd / reqOff
+  const l={id:uid('L'),site:g.site,product:g.product,products:[g.product],line:'',forms:R.forms.slice(),...(rAdd.length?{reqAdd:rAdd}:{}),...(rOff.length?{reqOff:rOff}:{}),hw:OP.cam||'',vendor:'',owner:(byId('sites',g.site)||{}).owner?'':(USER.name||''),techs:{},done:{},plan,
     sw:B&&B.lvl!=='shape'?{plat:B.p.id}:{},kpi:{},kpiT:{},
     note:`由導入指引建立（${todayStr()}）\n評估結論：${{ok:'可直接導入',cond:'有條件可行',no:'需新開發'}[R.verdict]||''}`+(B?`\n建議版本：${platShort(B.p)}`:'')+
       (top?`\n參考產線：${top.l.site} ${lineLabel(top.l)}`:'')+(B&&B.dev.length?`\n開發中：${B.dev.map(t=>t.name).join('、')}`:'')+(B&&B.miss.length?`\n不支援：${B.miss.map(t=>t.name).join('、')}`:'')+
@@ -2308,10 +2320,16 @@ function pfToggle(k){ UI.pf=UI.pf||{}; UI.pf[k]=!UI.pf[k]; if(!UI.pf[k]) delete 
 function pbAll(off){ UI.pf={}; if(off) $$('#m-prod .pfam').forEach(b=>{ UI.pf[b.dataset.k]=true; }); saveUI(); $$('#m-prod .pfam').forEach(b=>b.classList.toggle('pf-off',!!off)); pbLabel(); stickySoon(); }
 function peToggle(pid){ UI.pe=UI.pe||{}; UI.pe[pid]=!UI.pe[pid]; if(!UI.pe[pid]) delete UI.pe[pid]; saveUI(); renderMaster(); }
 /** 產品別改名：同一個產品別的每個段別一起改 */
-function mFamRename(old,v){ v=String(v||'').trim(); if(!v||v===old) return; if((UI.pf||{})[old]){ delete UI.pf[old]; UI.pf[v]=true; saveUI(); }
+function mFamRename(old,v){ v=String(v||'').trim(); if(!v||v===old){ renderMaster(); return; }
+  const fam=n=>live('products').filter(p=>((p.name||'').trim()||'(未命名)')===n), segs=x=>(x.seg||'').trim().toLowerCase(), clash=fam(old).filter(p=>fam(v).some(q=>segs(q)===segs(p)));
+  if(clash.length){ toast(`「${v}」已經有 ${clash.map(p=>(p.seg||'').trim()||'未設定段別').join('、')} 段別，改名會出現重複的產品設定；請先改段別或換個名稱`,'err',7000); renderMaster(); return; }
+  if((UI.pf||{})[old]){ delete UI.pf[old]; UI.pf[v]=true; saveUI(); }
   live('products').filter(p=>((p.name||'').trim()||'(未命名)')===old).forEach(p=>mSet('products',p.id,'name',v)); }
 /** 型態的檢測項目整組從另一個「段別 × 型態」複製過來（src＝產品設定 id|型態 id） */
-function mCopyCombo(pid,fid,src){ if(!src) return; const [sp,sf]=src.split('|'), q=byId('products',sp), p=byId('products',pid); if(!q||!p) return;
+async function mCopyCombo(pid,fid,src){ if(!src) return; const [sp,sf]=src.split('|'), q=byId('products',sp), p=byId('products',pid); if(!q||!p) return;
+  const cur=((p.fr||{})[fid]||[]), nw=((q.fr||{})[sf]||[]), nm=i=>(byId('items',i)||{}).name||i, rm=cur.filter(i=>!nw.includes(i)), ad=nw.filter(i=>!cur.includes(i));
+  if(!rm.length&&!ad.length){ toast('勾選的項目已經一樣'); renderMaster(); return; }
+  if(cur.length&&!(await confirmBox(`「${prodFull(p)} × ${formName(fid)}」改成和「${prodFull(q)} × ${formName(sf)}」相同？${ad.length?'\n加入：'+ad.map(nm).join('、'):''}${rm.length?'\n移除：'+rm.map(nm).join('、'):''}`,'複製'))){ renderMaster(); return; }
   const n=clone(p); n.fr=n.fr||{}; n.fr[fid]=((q.fr||{})[sf]||[]).slice(); commit('products',n,`「${prodFull(p)} × ${formName(fid)}」檢測項目改成和「${prodFull(q)} × ${formName(sf)}」相同`); }
 /** 檢測項目名稱當欄位標題：括號內的說明放到第二行小字，例：點缺陷（亮/暗點） */
 const itHead=n=>{ n=String(n||''); const m=n.match(/^(.*?)\s*[（(](.+)[)）]$/); return m?`${esc(m[1])}<small>${esc(m[2])}</small>`:esc(n); };
@@ -2331,8 +2349,12 @@ const PROD_FAM=['NB','DT','TV','Set','FIDM'];
 const famRank=n=>{ const i=PROD_FAM.findIndex(x=>x.toLowerCase()===String(n||'').trim().toLowerCase()); return i<0?99:i; };
 const famCmp=(a,b)=>famRank(a)-famRank(b)||String(a||'').localeCompare(String(b||''),'en',{numeric:true,sensitivity:'base'});
 const prodsSorted=()=>liveSorted('products').sort((a,b)=>famCmp(a.name,b.name)||prodSegKey(a)-prodSegKey(b)||((a.seg||'').trim()).localeCompare((b.seg||'').trim()));
-function mSegPick(pid,el){ if(el.value==='__other'){ const p=byId('products',pid); el.value=(p&&p.seg||'').trim(); mSegOther(pid); return; } mSet('products',pid,'seg',el.value); }
-async function mSegOther(pid){ const p=byId('products',pid); const v=String(await promptBox('其他段別','段別名稱（例：CT3、Module）',p.seg||'')||'').trim(); if(v) mSet('products',pid,'seg',v); }
+/** 同一個產品別裡已經有這個段別了嗎（不分大小寫；空白＝未設定不算） */
+const segDup=(pid,v)=>{ const p=byId('products',pid), k=String(v||'').trim().toLowerCase(); return !!k&&!!p&&live('products').some(q=>q.id!==pid&&(q.name||'').trim()===(p.name||'').trim()&&(q.seg||'').trim().toLowerCase()===k); };
+function mSegPick(pid,el){ const p=byId('products',pid); if(el.value==='__other'){ el.value=(p&&p.seg||'').trim(); mSegOther(pid); return; }
+  if(segDup(pid,el.value)){ toast(`${(p.name||'').trim()} 已經有「${el.value}」段別了`,'err'); el.value=(p.seg||'').trim(); return; } mSet('products',pid,'seg',el.value); }
+async function mSegOther(pid){ const p=byId('products',pid); const v=segCanon(String(await promptBox('其他段別','段別名稱（例：CT3、Module）',p.seg||'')||'').trim()); if(!v) return;
+  if(segDup(pid,v)){ toast(`${(p.name||'').trim()} 已經有「${v}」段別了`,'err'); return; } mSet('products',pid,'seg',v); }
 /** 產品設定（v4.7，Johnny 2026-10-30）：產品別 → 段別 → 型態。
  *  段別平常顯示每個型態「要檢哪些項目」（依類別、只列有勾的；同段別各型態不一樣的項目標橘色）與建議版本；按「編輯檢測項目」才出現這個段別的勾選表 */
 const itShort=n=>String(n||'').replace(/\s*[（(].*?[)）]\s*$/,'');
@@ -2486,10 +2508,13 @@ ${esc(tip)}" onclick="mJumpTech('${i.id}','${p.id}')">${IPS[s][0]}</button></td>
 function mSet(c,id,f,v){ const o=byId(c,id); if(!o) return; const n=clone(o); n[f]=v.trim(); if(eq(n,o)) return;
   commit(c,n,`主檔「${{sites:'廠區',products:'產品',items:'檢測項目',techs:'技術能力',plats:'軟體版本',forms:'型態',hws:'相機',steps:'PDCA 關卡'}[c]}」${c==='products'?prodFull(o):o.name||o.id} 的 ${{name:'名稱',short:'簡稱',latest:'最新版本號',region:'地區',owner:'負責人',shape:'形狀',cat:'類別',note:'說明',seg:'段別'}[f]||f} → ${f==='shape'?((PSHAPES.find(x=>x.k===v)||{}).t||v):c==='techs'&&f==='cat'?((TCATS.find(x=>x.k===v)||{}).t||v):v.trim()}`); }
 function mAdd(c,o){ const n=Object.assign({id:uid(c[0]),order:c==='steps'?Math.max(0,...live('steps').filter(s=>s.stage===o.stage).map(s=>s.order||0))+1:nextOrder(c)},o);
-  commit(c,n,`主檔新增：${o.name}`); setTimeout(()=>{ const ins=$$(`#pg-master input`).filter(x=>x.value===o.name); if(ins.length){ const i=ins[ins.length-1]; i.focus(); i.select(); } },30); }
+  commit(c,n,`主檔新增：${o.name}`);
+  setTimeout(()=>{ if(c==='products'){ const sel=$(`#pb-${n.id} .sgsel`); if(sel){ sel.scrollIntoView({block:'center'}); sel.focus(); } return; }   // 產品設定新增段別：游標放到新段別的下拉，不放在產品別名稱（避免一打字就整個產品別改名）
+    const ins=$$(`#pg-master input`).filter(x=>x.value===o.name); if(ins.length){ const i=ins[ins.length-1]; i.focus(); i.select(); } },30); }
 async function mAddSite(){
   const code=await promptBox('新增廠區','廠區代碼（例：XM-S21、SZ-S08；建立後不可修改）','');
-  if(!code) return; const id=code.trim().toUpperCase();
+  const id=String(code||'').trim().toUpperCase(); if(!id) return;
+  if(!/^[A-Z0-9][A-Z0-9-]*$/.test(id)){ toast('廠區代碼只能用英文字母、數字和「-」（例：XM-S21）','err'); return; }
   if(byId('sites',id)&&!byId('sites',id).deleted){ toast('已有此廠區代碼','err'); return; }
   const region=(liveSorted('sites').find(s=>s.id.split('-')[0]===id.split('-')[0])||{}).region||id.split('-')[0];
   commit('sites',{id,name:id.split('-').slice(1).join('-')||id,region,owner:'',focus:'',next:'',order:nextOrder('sites')},`新增廠區 ${id}`);
@@ -2497,15 +2522,17 @@ async function mAddSite(){
 function mMove(c,id,dir){
   // 跟畫面的排列方式一致：PDCA 關卡在同一階段內移動；技術能力在同一分類內移動；產品設定在同一段別內移動（畫面是先分組）
   const pseg=x=>(x.seg||'').trim();
-  let arr=c==='steps'?stepsSorted().filter(s=>s.stage===byId('steps',id).stage):c==='techs'?techsSorted().filter(t=>tcat(t)===tcat(byId('techs',id))):c==='products'?prodsSorted().filter(p=>pseg(p)===pseg(byId('products',id))):liveSorted(c);
+  const me=byId(c,id), pg=c==='plats'?(platGroups(liveSorted('plats')).find(g=>g.ps.some(x=>x.id===id))||{ps:[]}).ps:null;
+  let arr=c==='steps'?stepsSorted().filter(s=>s.stage===me.stage):c==='techs'?techsSorted().filter(t=>tcat(t)===tcat(me)):c==='products'?prodsSorted().filter(p=>pseg(p)===pseg(me)&&(p.name||'').trim()===(me.name||'').trim()):pg||liveSorted(c);
   const i=arr.findIndex(x=>x.id===id), j=i+dir;
-  if(j<0||j>=arr.length){ if(c==='techs'||c==='steps'||c==='products') toast(`已經是這個${{techs:'分類',steps:'階段',products:'段別'}[c]}的${dir<0?'第一':'最後一'}項${c==='techs'?'；要換分類請改「分類」欄':c==='products'?'；產品設定依段別的製程順序排列':''}`); return; }
+  if(j<0||j>=arr.length){ if(c==='techs'||c==='steps'||c==='products'||c==='plats') toast(`已經是這個${{techs:'分類',steps:'階段',products:'段別',plats:'版本分組'}[c]}的${dir<0?'第一':'最後一'}項${c==='techs'?'；要換分類請改「分類」欄':c==='plats'?'（軟體版本先依主版本、作業系統分組）':''}`); return; }
+  if(c==='plats'){ const ord=[arr[i].order||0,arr[j].order||0]; [arr[i],arr[j]].forEach((x,k)=>{ const n=clone(x); n.order=ord[1-k]===ord[k]?ord[k]+(k?dir:-dir)*0.5:ord[1-k]; commit(c,n,null); }); return; }   // 只交換這兩筆，其他組不動
   [arr[i],arr[j]]=[arr[j],arr[i]];
   arr.forEach((x,k)=>{ if(x.order!==k+1){ const n=clone(x); n.order=k+1; commit(c,n,null); } });
 }
 async function mDel(c,id){
   const o=byId(c,id); const L=liveLines();
-  const used={sites:L.filter(l=>l.site===id).length,products:L.filter(l=>lineProds(l).includes(id)).length,items:live('products').filter(p=>Object.values(p.fr||{}).some(a=>a.includes(id))).length,techs:L.filter(l=>lineTech(l,id)).length+live('items').filter(i=>(i.techs||[]).includes(id)).length,plats:L.filter(l=>(l.sw||{}).plat===id).length,forms:L.filter(l=>(l.forms||[]).includes(id)).length,hws:L.filter(l=>l.hw===id).length,steps:L.filter(l=>(l.done||{})[id]).length}[c];
+  const used={sites:L.filter(l=>l.site===id).length,products:L.filter(l=>lineProds(l).includes(id)).length,items:live('products').filter(p=>Object.values(p.fr||{}).some(a=>a.includes(id))).length+L.filter(l=>(l.reqAdd||[]).includes(id)).length,techs:L.filter(l=>lineTech(l,id)).length+live('items').filter(i=>(i.techs||[]).includes(id)).length,plats:L.filter(l=>(l.sw||{}).plat===id).length,forms:L.filter(l=>(l.forms||[]).includes(id)).length,hws:L.filter(l=>l.hw===id).length,steps:L.filter(l=>(l.done||{})[id]).length}[c];
   if(c==='sites'&&used){ toast(`廠區 ${id} 仍有 ${used} 條產線，請先移除或移轉`,'err'); return; }
   if(c==='products'&&used){ toast(`仍有 ${used} 條產線使用此產品，無法刪除`,'err'); return; }
   if(c==='plats'&&used){ toast(`仍有 ${used} 條產線使用此版本，請先改成其他版本`,'err'); return; }
@@ -2766,10 +2793,10 @@ function merge3(b,l,r,path,cf){
     for(const k of new Set([...Object.keys(l),...Object.keys(r)])){ const v=merge3(bb[k],l[k],r[k],path?path+'.'+k:k,cf); if(v!==undefined) out[k]=v; }
     return out; }
   // 清單類欄位（勾選的演算法、檢測項目、型態、產品別…）逐項合併：我加的加上去、我取消的拿掉，其他人的勾選保留
-  const prim=a=>Array.isArray(a)&&a.every(x=>x===null||typeof x!=='object');
-  if(prim(l)&&prim(r)&&(b===undefined||b===null||prim(b))){
-    const B=new Set(b||[]), L=new Set(l), add=l.filter(x=>!B.has(x)), del=new Set([...B].filter(x=>!L.has(x)));
-    const out=r.filter(x=>!del.has(x)); add.forEach(x=>{ if(!out.includes(x)) out.push(x); }); return out; }
+  const prim=a=>Array.isArray(a)&&a.every(x=>x===null||typeof x!=='object'), pn=a=>a==null||prim(a);   // 清單清空時程式會整個刪掉欄位（例 watch、reqAdd）→ 當成空清單
+  if(pn(l)&&pn(r)&&pn(b)&&(prim(l)||prim(r)||prim(b))){
+    const B=new Set(b||[]), L=new Set(l||[]), add=(l||[]).filter(x=>!B.has(x)), del=new Set([...B].filter(x=>!L.has(x)));
+    const out=(r||[]).filter(x=>!del.has(x)); add.forEach(x=>{ if(!out.includes(x)) out.push(x); }); return out.length||Array.isArray(l)?out:undefined; }
   if(!/(^|\.)(updatedAt|updatedBy)$/.test(path)) cf.push(path);
   return clone(l); // 同一欄位兩人都改 → 後儲存者為準（並提示）
 }
@@ -2777,12 +2804,14 @@ function merge3(b,l,r,path,cf){
 function mergeRemote(remote){
   const conflicts=[];
   for(const c of COLLS){
+    if(remote&&!Array.isArray(remote[c])) continue;   // 雲端文件少了這個集合（舊版或檔案異常）→ 保留本機，不當成空的
     const rMap=new Map(((remote&&remote[c])||[]).map(x=>[x.id,x])), lMap=new Map(DB[c].map(x=>[x.id,x])), out=[];
     const ids=[...rMap.keys(),...[...lMap.keys()].filter(k=>!rMap.has(k))];
     for(const id of ids){
       const r=rMap.get(id), l=lMap.get(id);
       if(has(DIRTY[c],id)&&l!==undefined){
         if(r===undefined){ out.push(l); continue; }
+        if(DIRTY[c][id]===null){ out.push(clone(r)); delete DIRTY[c][id]; continue; }   // 本機預設種子（新建）但雲端已有同 id → 以雲端為準，不讓預設值蓋掉同仁維護的主檔
         const cf=[], m=merge3(DIRTY[c][id]??undefined,l,r,'',cf);
         if(cf.length) conflicts.push({c,id,by:r.updatedBy,name:c==='lines'?r.site+' '+lineLabel(r):(r.name||r.id),fields:cf});
         out.push(m); DIRTY[c][id]=clone(r);
@@ -2846,15 +2875,16 @@ function pushNow(opts){
   opts=opts||{}; clearTimeout(PUSH_T); PUSH_T=null; PUSH_FIRST=0; if(!ghReady()){ setSync('off'); return Promise.resolve(); }
   return withLock(async()=>{
     try{
+      const cfAll=[];
       for(let attempt=0;attempt<5;attempt++){
         setSync('sync','上傳中…');
         const {sha,doc,missing}=await ghGet();
         if(missing){ if(!opts.init){ setSync('ok','雲端尚無資料檔'); offerInit(); return; }
           for(const c of COLLS) for(const x of DB[c]) if(!x.demo&&!has(DIRTY[c],x.id)) DIRTY[c][x.id]=null; }
         if(!missing&&sha===GH_SHA&&!dirtyCount()&&!opts.force){ setSync('ok','已是最新'); return; }
-        const remoteNew=!missing&&sha!==GH_SHA, cf=mergeRemote(doc); migrateV2();
+        const remoteNew=!missing&&sha!==GH_SHA, cf=cfAll.concat(mergeRemote(doc)); migrateV2(); cfAll.length=0; cfAll.push(...cf);   // 409 重試時，前幾輪的衝突提示也要保留
         const out=buildDoc(false), snap={};
-        for(const c of COLLS){ snap[c]={}; for(const id of Object.keys(DIRTY[c])){ const x=out[c].find(y=>y.id===id); if(x) snap[c][id]=clone(x); } }
+        for(const c of COLLS){ snap[c]={}; for(const id of Object.keys(DIRTY[c])){ const x=out[c].find(y=>y.id===id); if(x) snap[c][id]=clone(x); else delete DIRTY[c][id]; } }   // 不會上傳的（本機示範、刪除超過 90 天）不留在待上傳，否則永遠清不掉、一直重傳
         if(!dirtyCount()&&!missing&&!opts.force){ GH_SHA=sha; localStorage.setItem(LS.sha,sha); saveLocal(); setSync('ok'); reportConflicts(cf); renderAll(); return; }
         const lastT=localStorage.getItem(LS.lastPush)||'';
         const mine=DB.log.filter(e=>e.t>=lastT&&e.by===(USER.name||'未具名')).map(e=>(e.site?`[${e.site}] `:'')+e.msg);
@@ -2903,7 +2933,7 @@ function openUser(){
   openModal(`<div class="md-h"><b>👤 使用者設定</b><button class="x" onclick="closeModal()">✕</button></div>
   <div class="md-d">名字會記錄在每一筆變更上，讓各廠區知道是誰更新的。只存在這台電腦。</div>
   <div class="md-f"><label>你的名字（建議：中文名 + 英文名）</label><input class="in" id="u-name" value="${esc(USER.name)}" placeholder="例：楊OO Johnny"></div>
-  <div class="md-f"><label>主要負責廠區（新增產線時預設帶入）</label><select class="in" id="u-site"><option value="">— 不指定 —</option>${liveSorted('sites').map(s=>`<option value="${s.id}" ${USER.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</select></div>
+  <div class="md-f"><label>主要負責廠區（新增產線時預設帶入）</label><select class="in" id="u-site"><option value="">— 不指定 —</option>${liveSorted('sites').map(s=>`<option value="${esc(s.id)}" ${USER.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</select></div>
   <div class="md-b"><span class="r"><button class="btn pri" onclick="saveUser()">儲存</button></span></div>`);
 }
 function saveUser(){ const n=$('#u-name').value.trim(); if(!n){ toast('請輸入名字','err'); return; } USER={name:n,site:$('#u-site').value}; saveJSON(LS.user,USER); closeModal(); watchMigrate(); renderAll(); toast('已儲存'); }
@@ -3046,7 +3076,7 @@ const VERS=[
 ];
 const verHref=x=>(APP_BETA?'../':'')+x.dir||'./';
 function verMenuInit(){
-  const cur=VERS.find(x=>!!x.beta===APP_BETA), other=VERS.find(x=>x!==cur);
+  const cur=VERS.find(x=>!!x.beta===APP_BETA)||{v:APP_VER,code:APP_CODE,beta:APP_BETA,d:''}, other=VERS.find(x=>x!==cur);   // VERS 沒對上（例：開 Beta 卻忘了補那筆）也不要整頁壞掉
   const solo=VERS.length<2;   // 沒有其他版本可切換時，版本號只顯示、不能點（工作規範 §2.2）；版本更新紀錄在右下角 i →「關於本平台」
   $('#verBtn').innerHTML=`v${APP_VER}${APP_BETA?' Beta':''}${solo?'':'<i aria-hidden="true">▾</i>'}`; $('#verBtn').title=solo?`v${APP_VER} ${cur.code}（更新於 ${APP_BUILD}）`:`切換版本 / 版本更新紀錄（更新於 ${APP_BUILD}）`;
   $('#verBtn').classList.toggle('solo',solo); if(solo){ $('#verBtn').onclick=null; return; }

@@ -979,7 +979,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.7.2', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.7.3', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1679,6 +1679,7 @@ function renderMatrix(){
     <span class="seg vw">${[['all','全部','顯示全部產線'],['watch',`★ 關注 ${watchCount()}`,'只看你標記 ★ 的產線'],['gap','有缺口','只看有檢測能力缺口的產線']].map(([k,t,tt])=>`<button class="${view===k?'on':''}" title="${tt}" onclick="setMF({watchOnly:${k==='watch'},gapOnly:${k==='gap'}})">${t}</button>`).join('')}</span>
     <span class="mleg-in" title="同一套符號用在檢測項目、技術能力、光學調整（點 ⓘ 看細節）">${GI('legend')}<span class="s"><b class="s-ok">●</b>完成</span><span class="s"><b class="s-dev">◐</b>進行中</span><span class="s"><b class="s-off">○</b>未開</span><span class="s"><b class="s-gap">✕</b>缺口</span><span class="s" title="檢測項目：不需要檢，但軟體有這個功能"><b class="s-av">○</b>不需檢</span><span class="s"><b class="s-na">·</b>不需</span><span class="s">${box('background:repeating-linear-gradient(135deg,#f4f6f9 0 3px,#e3e8ef 3px 6px)')}未釋出</span><span class="s">${box('background:var(--req)')}需求</span><span class="s n">${ls.length} 條線</span></span>
     <span style="margin-left:auto;display:flex;gap:6px">
+      ${ls.length?(()=>{ const ks=[...new Set(ls.map(l=>l.site+'|'+prodsLabel(l)))], open=ks.some(k=>!(UI.mxc||{})[k]); return `<button class="btn" onclick="mxGrpAll(${open})" title="${open?'所有產品別收合，只看每組的台數與缺口':'展開全部產品別與樓層'}">${open?'▾ 全部收合':'▸ 全部展開'}</button>`; })():''}
       <button class="btn ${f.edit?'on':''}" id="mx-edit" onclick="setMF({edit:!UI.mf.edit})" title="開啟後點檢測項目格子切換 需要 / 不需要；點技術能力格子切換開 / 關；點光學調整格子打開面板填寫">✎ ${f.edit?'編輯中':'快速編輯'}</button>
       <button class="btn" onclick="exportCSV()" title="把目前篩選的結果下載成 CSV（可用 Excel 開）">⬇ 下載</button>
       <button class="btn pri" id="mx-add" onclick="newLine()" title="新增產線">＋ 新增</button>
@@ -1749,6 +1750,7 @@ function matrixTable(ls,items,techs){
   return h+'</tbody></table>';
 }
 /** 能力矩陣分組收折（key＝廠區|產品別 或 廠區|產品別|樓層） */
+function mxGrpAll(off){ UI.mxc={}; if(off) filteredLines().forEach(l=>{ UI.mxc[l.site+'|'+prodsLabel(l)]=true; }); saveUI(); renderMatrix(); }   // 一鍵收合（產品別層）/ 展開（兩層全部打開）
 function mxGrp(k){ UI.mxc=UI.mxc||{}; if(UI.mxc[k]) delete UI.mxc[k]; else UI.mxc[k]=true; saveUI(); renderMatrix(); }
 function onMatrixClick(e){
   const tr=e.target.closest('tr.ln'); if(!tr) return;

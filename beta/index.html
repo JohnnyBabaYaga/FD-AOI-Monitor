@@ -266,6 +266,8 @@ table.mx.edit td.s:hover{outline:2px solid var(--accent);outline-offset:-2px;}
 .ds h4 .r{margin-left:auto;font-weight:600;}
 .fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;}
 .fg.c3{grid-template-columns:repeat(3,minmax(0,1fr));}
+.lnf{display:flex;gap:4px;} .lnf .in{min-width:0;flex:1;} .lnf .in.lnf-f{flex:0 0 46px;width:46px;padding:0 4px;text-align:center;font-weight:700;}
+@media (min-width:761px){ .fg.c4.ln1{grid-template-columns:minmax(0,.85fr) minmax(0,1.5fr) minmax(0,.95fr) minmax(0,.95fr);} }
 .f label{display:block;font-size:10px;font-weight:700;color:var(--sub);margin-bottom:3px;}
 .f .in{width:100%;}
 .f.full{grid-column:1/-1;}
@@ -969,7 +971,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.7', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.7.1', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1835,9 +1837,9 @@ function renderDrawer(){
       </div></details>
 
     <details class="ds" data-sec="setup" ${ED.open.setup?'open':''}><summary><h4>建線資料 <small>建線時填一次</small><span class="r muted sumtxt">${esc(setupSum)||'尚未填寫'}</span></h4></summary>
-      <div class="fg c4" style="margin-top:6px">
+      <div class="fg c4 ln1" style="margin-top:6px">
         <div class="f"><label>廠區 *</label><select class="in" data-p="site">${liveSorted('sites').map(s=>`<option value="${s.id}" ${w.site===s.id?'selected':''}>${esc(s.id)}</option>`).join('')}</select></div>
-        ${fld('線別 *','line','例：L1 / CT2')}
+        <div class="f"><label>樓層・線別 *${GI('floor')}</label><div class="lnf"><input class="in lnf-f" data-p="floor" list="dl-floor" value="${esc(w.floor||'')}" placeholder="${esc(floorGuess(w.line)||'樓層')}" title="樓層 / 區域${floorGuess(w.line)?'（沒填時用線別開頭 '+esc(floorGuess(w.line))+'，存檔時帶入）':'（例：F7、1C、3D）'}"><input class="in" data-p="line" value="${esc(edGet('line')??'')}" placeholder="例：L1 / CT2"></div></div>
         <div class="f"><label>負責人</label><input class="in" data-p="owner" list="dl-owner" value="${esc(w.owner||'')}" placeholder="${so?'沿用：'+esc(so):'姓名'}"></div>
         <div class="f"><label>線體負責人${GI('fabowner')}</label><input class="in" data-p="fabOwner" list="dl-owner" value="${esc(w.fabOwner||'')}" placeholder="FAB Owner 姓名"></div>
       </div>
@@ -1851,8 +1853,7 @@ function renderDrawer(){
       <div class="sub-t">型態（可複選）${GI('forms')}</div>
       <div class="reqs">${liveSorted('forms').map(f=>`<button class="chip ${(w.forms||[]).includes(f.id)?'on':''}" data-form="${f.id}">${esc(f.name)}</button>`).join('')}</div>
       ${unset.length?`<div class="warnline">⚠ 主檔還沒設定「${esc(unset.join('、'))}」的檢測項目，請到「主檔設定 → 產品設定」加入這個型態</div>`:''}
-      <div class="fg c3" style="margin-top:10px">
-        <div class="f"><label>樓層 / 區域${GI('floor')}</label><input class="in" data-p="floor" list="dl-floor" value="${esc(w.floor||'')}" placeholder="${floorGuess(w.line)?'推測：'+esc(floorGuess(w.line))+'（存檔時帶入）':'例：F7、1C、3D'}"></div>
+      <div class="fg" style="margin-top:10px">
         <datalist id="dl-floor">${[...new Set(liveLines().filter(l=>l.site===w.site).map(lineFloor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant',{numeric:true})).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
         ${fld('設備廠商（選填）','vendor','')}
         <div class="f"><label>相機（硬體）${GI('hw')}</label><select class="in" data-p="hw"><option value="">— 選擇 —</option>${liveSorted('hws').map(h=>`<option value="${h.id}" ${w.hw===h.id?'selected':''}>${esc(h.name)}</option>`).join('')}</select></div>
@@ -3078,7 +3079,7 @@ const GL={
   noseg:['未分段','這些機台選的產品別在「主檔設定 → 產品設定」還沒有填段別。到主檔幫該產品別選段別，或在產線改選有段別的產品別。'],
   ext:['外購設備','向外部廠商購買的 AOI 設備，不是用本廠的畫檢軟體。<br>標成<b>外購設備</b>後，這條線<b>不套用軟體版本 → 技術能力的推算</b>，改成在「檢測項目」逐項選<b>可檢 / 不可檢</b>（能力矩陣「快速編輯」也可以直接點格子切換）。<br>燈號規則相同：需求項目都可檢 + 客戶已 commit 才是綠燈。能力矩陣的篩選可以只看外購或本廠。'],
   light:['綠燈 / 黃燈','<b style="color:#36b37e">綠燈</b>＝<b>檢測能力達標</b> + <b>客戶已 commit</b> 我們的能力，兩個都要。<br>檢測能力達標：這台的需求檢測項目全部做得到（全部已具備；版本支援但這台沒開啟的算缺口）。<br>客戶 commit：在產線編輯 →「檢測項目」勾選「✓ 已 commit」。<br><b style="color:#d99400">黃燈</b>：其中一個還沒做到——有未滿足的項目（缺口、開發中、主檔還沒設定演算法）、有<b>待新增需求</b>（「產品別 × 型態」主檔還沒設定、或還沒有需求檢測項目），或客戶還沒 commit。'],
-  floor:['樓層 / 區域','機台所在的樓層或區域，例如 F1、F7、1C、3D。總覽「依段別」可以用它篩選。<br>沒填時會從線別名稱推測（F7-PBI-10#-3 → F7），存檔時自動帶入，推測錯了直接改掉就好。'],
+  floor:['樓層 / 區域','機台所在的樓層或區域，例如 F1、F7、1C、3D，填在「線別」左邊的小格。總覽「依段別」可以用它篩選。<br>沒填時會從線別名稱開頭推測（F7-PBI-10#-3 → F7），存檔時自動帶入，推測錯了直接改掉就好。'],
   req:['需求檢測項目','這條線的「產品別 × 型態」組合在主檔「產品設定」勾選的檢測項目（多個組合取聯集）。矩陣用淡藍底標示，沒具備的就算缺口。'],
   quick:['例行更新（PDCA）','右上角「<b>PDCA 關卡 ▾</b>」勾選這條線要追蹤哪些時間點；沒勾的不顯示，也不算進完成度與時程。<br>每週例行只要做三件事：<b>完成的關卡打勾</b>、<b>更新預計日</b>、<b>有沒有卡關</b>。<br>狀態沒有變化時，按面板最下面的「<b>✓ 無變動</b>」，會重設「待更新」提醒。'],
   batch:['批次升版','勾選多條線，一次套用同一個版本類別與版本號，不用一條一條改。'],

@@ -755,11 +755,8 @@ tr.pr-bad td.pf-n b{color:#b8391f;}
 .sgx{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px 6px;border-radius:8px;}
 .sgx.need{background:color-mix(in srgb,var(--warn) 6%,#fff);outline:1px dashed color-mix(in srgb,var(--warn) 45%,transparent);}
 .sgx-l{font-size:11px;font-weight:700;color:var(--sub);display:inline-flex;align-items:center;gap:3px;}
-.sgx-g{display:inline-flex;}
-.sgb{height:24px;padding:0 8px;border:1px solid var(--border2);background:#fff;color:var(--sub);font-size:11px;font-weight:700;cursor:pointer;margin-left:-1px;}
-.sgx-g .sgb:first-child{border-radius:6px 0 0 6px;margin-left:0;} .sgx-g .sgb:last-child{border-radius:0 6px 6px 0;} .sgx-g .sgb:only-child,.sgb.more{border-radius:6px;}
-.sgb:hover{color:var(--accent);border-color:var(--accent);position:relative;z-index:1;}
-.sgb.on{background:var(--accent-deep);border-color:var(--accent-deep);color:#fff;position:relative;z-index:1;}
+.sgx .in.sgsel{width:auto;min-width:96px;height:28px;font-weight:700;color:var(--accent-deep);cursor:pointer;}
+.sgx.need .in.sgsel{color:var(--sub);font-weight:400;}
 .mt-scroll>.mt.pv-t{min-width:1160px;} .mt.pv-t{table-layout:fixed;}
 .mt.pv-t tr.vg-h td{padding:12px 4px 4px;border-bottom:1px solid var(--border);}
 .mt.pv-t tbody:first-of-type tr.vg-h td{padding-top:4px;}
@@ -965,7 +962,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.6.3', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.6.4', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -2272,13 +2269,13 @@ const platHeadShort=p=>{ const s=platShort(p), m=s.match(/^(.*?)\s*([一-鿿].*)
 function itemGroups(items){ const gs=[]; items.forEach(i=>{ const k=(i.cat||'').trim()||'未分類'; let g=gs.find(x=>x.k===k); if(!g) gs.push(g={k,its:[]}); g.its.push(i); });
   const u=gs.findIndex(g=>g.k==='未分類'); if(u>=0) gs.push(gs.splice(u,1)[0]); return gs; }
 /** 段別按鈕：依製程順序分組（CT1 CT2 ｜ PBI1 PBI2 ｜ SKD …），點已選的那個 = 清除 */
-function segPills(p){ const cur=(p.seg||'').trim(), hint=new Set(SEG_HINT), extra=segList().filter(x=>!hint.has(x));
-  const b=x=>`<button class="sgb ${cur===x?'on':''}" title="${cur===x?'點一下清除段別':'段別設為 '+esc(x)}" onclick="mSetSeg('${p.id}','${esc(x)}')">${esc(x)}</button>`;
-  return `<span class="sgx ${cur?'':'need'}" title="段別：同一個產品別在不同段別各自一筆，顯示成「產品別-段別」"><span class="sgx-l">段別${GI('seg')}</span>${SEG_MAIN.map(m=>`<span class="sgx-g">${segNames(m).map(b).join('')}</span>`).join('')}${extra.length?`<span class="sgx-g">${extra.map(b).join('')}</span>`:''}<button class="sgb more" title="其他段別（自行輸入）" onclick="mSegOther('${p.id}')">…</button>${cur?'':'<span class="tag red">未設定</span>'}</span>`; }
+function segPills(p){ const cur=(p.seg||'').trim(), hint=new Set(SEG_HINT), extra=segList().filter(x=>!hint.has(x)), all=[...SEG_HINT,...extra];   // 下拉選單（Johnny 2026-10-30：整排按鈕看不清楚這筆是哪個段別）
+  const o=x=>`<option value="${esc(x)}" ${cur===x?'selected':''}>${esc(x)}</option>`;
+  return `<span class="sgx ${cur?'':'need'}" title="段別：同一個產品別在不同段別各自一筆，顯示成「產品別-段別」"><span class="sgx-l">段別${GI('seg')}</span><select class="in sgsel" onclick="event.stopPropagation()" onchange="mSegPick('${p.id}',this)"><option value="" ${cur?'':'selected'}>未設定</option>${all.map(o).join('')}${cur&&!all.includes(cur)?o(cur):''}<option value="__other">其他（自行輸入）…</option></select>${cur?'':'<span class="tag red">未設定</span>'}</span>`; }
 /** 產品設定的排列：先依段別的製程順序（CT1 → CT2 → PBI1 … → EOL，主檔外的段別接在後面、沒填段別的放最後），同一段別內依 ↑↓ 的順序 */
 const prodSegKey=p=>{ const s=(p.seg||'').trim(); return s?segRank(s):99999; };
 const prodsSorted=()=>liveSorted('products').sort((a,b)=>prodSegKey(a)-prodSegKey(b)||((a.seg||'').trim()).localeCompare((b.seg||'').trim()));
-function mSetSeg(pid,v){ const p=byId('products',pid); if(!p) return; mSet('products',pid,'seg',(p.seg||'').trim()===v?'':v); }
+function mSegPick(pid,el){ if(el.value==='__other'){ const p=byId('products',pid); el.value=(p&&p.seg||'').trim(); mSegOther(pid); return; } mSet('products',pid,'seg',el.value); }
 async function mSegOther(pid){ const p=byId('products',pid); const v=String(await promptBox('其他段別','段別名稱（例：CT3、Module）',p.seg||'')||'').trim(); if(v) mSet('products',pid,'seg',v); }
 /** 產品設定矩陣：一張表，所有產品別共用同一組欄位（檢測項目依類別分組），每個產品別一段（tbody，可收合）；右側是各版本能否完整支援這個「產品別 × 型態」 */
 function prodMatrix(prods,items,forms,plats,L,mv){
@@ -3040,8 +3037,8 @@ const GL={
   legend:['圖例','三個欄群用同一套符號（篩選列上的是簡稱）：<br><b>●</b> 可以用 / 完成（檢測項目已具備、技術已開啟、光學已完成）<br><b>◐</b> 進行中 / 待補（開發中、光學待補日期或參考值）<br><b>○</b> 未開 / 未確認（版本有但這條線沒開、光學未確認）<br><b>✕</b> 缺口（需要但做不到）　<b style="color:#36b37e">○</b> 檢測項目不需檢、但軟體有這個功能　<b>·</b> 不需要 / 不適用　<b>?</b> 主檔還沒設定對應技術<br>格子上停一下會顯示詳細原因。技術能力預設收合成「開啟數 / 已釋出數」，點表頭展開。'],
   optcalc:['光學架構（AOI Calculator）','相機、鏡頭、工作距離、台數這類<b>光學計算</b>統一在 AOI Calculator 做（「畫檢評估」模式），這裡不重複計算，避免兩邊數字不一致。<br>評估完把<b>相機、台數、取樣 Pitch、WD</b> 填回 ③，報告會列出來；按「依此建立產線」時相機會自動帶入，其餘寫進備註。<br>取樣 Pitch 建議 ≥ 3。'],
   tcat:['技術能力分類','<b>前處理</b>：取像後、演算法前的影像處理（對位、校正、Moiré 抑制），由<b>型態</b>決定需要哪些。<br><b>演算法・量測</b>：算數值（亮度、色度、Mura 指標）。<b>演算法・檢測</b>：找缺陷（點線、Mura、異物）。檢測項目只連演算法。<br><b>判定 / 整合</b>：演算法之後（ADC、判等、資料輸出、MES、Recipe 工具），當成版本能力與產線開關來看。'],
-  prodset:['產品設定','<b>產品別 → 型態 → 檢測項目</b>：所有產品別共用一張表：每個「產品別 × 型態」一列，在檢測項目的格子點 ✓ 勾選要檢的項目（項目依類別分欄），右邊每個版本一欄自動算出能否完整支援（● 可 ◐ 開發中 — 不支援）。<br>產線選了產品別與型態後，需求檢測項目就是這些組合的聯集。<br>每一筆在標題列點選<b>段別</b>（CT1 / CT2 / PBI1 / PBI2 / SKD / BIM / FD1 / FD2 / Set / EOL，沒填會標紅），顯示成「產品別-段別」，例如 FIDM + CT → FIDM-CT；總覽「依段別」就是用這個分卡片。'],
-  seg:['段別','產品設定每一筆的段別（CT1 / CT2 / PBI1 / PBI2 / SKD / BIM / FD1 / FD2 / Set / EOL，點按鈕選、再點一次清除），同一個產品別在不同段別要檢的項目不一樣，所以各自一筆。<br>產線的段別由它選的產品別帶出；總覽「依段別」每個段別一張卡片。按「…」可以自己輸入新的段別。'],
+  prodset:['產品設定','<b>產品別 → 型態 → 檢測項目</b>：所有產品別共用一張表：每個「產品別 × 型態」一列，在檢測項目的格子點 ✓ 勾選要檢的項目（項目依類別分欄），右邊每個版本一欄自動算出能否完整支援（● 可 ◐ 開發中 — 不支援）。<br>產線選了產品別與型態後，需求檢測項目就是這些組合的聯集。<br>每一筆在標題列的下拉選單選<b>段別</b>（CT1 / CT2 / PBI1 / PBI2 / SKD / BIM / FD1 / FD2 / Set / EOL，沒填會標紅），顯示成「產品別-段別」，例如 FIDM + CT → FIDM-CT；總覽「依段別」就是用這個分卡片。'],
+  seg:['段別','產品設定每一筆的段別（CT1 / CT2 / PBI1 / PBI2 / SKD / BIM / FD1 / FD2 / Set / EOL，在下拉選單選；選「未設定」清除），同一個產品別在不同段別要檢的項目不一樣，所以各自一筆。<br>產線的段別由它選的產品別帶出；總覽「依段別」每個段別一張卡片。下拉選單最下面「其他（自行輸入）…」可以自己輸入新的段別。'],
   noseg:['未分段','這些機台選的產品別在「主檔設定 → 產品設定」還沒有填段別。到主檔幫該產品別選段別，或在產線改選有段別的產品別。'],
   ext:['外購設備','向外部廠商購買的 AOI 設備，不是用本廠的畫檢軟體。<br>標成<b>外購設備</b>後，這條線<b>不套用軟體版本 → 技術能力的推算</b>，改成在「檢測項目」逐項選<b>可檢 / 不可檢</b>（能力矩陣「快速編輯」也可以直接點格子切換）。<br>燈號規則相同：需求項目都可檢 + 客戶已 commit 才是綠燈。能力矩陣的篩選可以只看外購或本廠。'],
   light:['綠燈 / 黃燈','<b style="color:#36b37e">綠燈</b>＝<b>檢測能力達標</b> + <b>客戶已 commit</b> 我們的能力，兩個都要。<br>檢測能力達標：這台的需求檢測項目全部做得到（全部已具備；版本支援但這台沒開啟的算缺口）。<br>客戶 commit：在產線編輯 →「檢測項目」勾選「✓ 已 commit」。<br><b style="color:#d99400">黃燈</b>：其中一個還沒做到——有未滿足的項目（缺口、開發中、主檔還沒設定演算法）、有<b>待新增需求</b>（「產品別 × 型態」主檔還沒設定、或還沒有需求檢測項目），或客戶還沒 commit。'],

@@ -217,6 +217,14 @@ table.mx{border-collapse:separate;border-spacing:0;font-size:12px;background:#ff
 .mx tr.gp td{background:linear-gradient(90deg,#e8f0fc,#f4f7fb);font-weight:800;color:var(--accent-deep);padding:7px 10px;border-bottom:1px solid #d8e3f3;}
 .mx tr.gp td .in-g{position:sticky;left:10px;display:inline-flex;gap:10px;align-items:center;}
 .mx tr.gp td .in-g span{font-weight:600;color:var(--sub);font-size:11px;}
+.mx tr.gq td,.mx tr.gf td{padding:5px 10px;border-bottom:1px solid #e3e9f1;background:#f8fafd;}
+.mx tr.gf td{background:#fff;padding:3px 10px 3px 30px;}
+.mx tr.gq td .in-g,.mx tr.gf td .in-g{position:sticky;left:10px;display:inline-flex;gap:8px;align-items:center;cursor:pointer;font-weight:800;color:var(--text);font-size:12.5px;}
+.mx tr.gf td .in-g{left:30px;font-size:12px;color:var(--accent-deep);}
+.mx tr.gq td .in-g>span,.mx tr.gf td .in-g>span{font-weight:500;color:var(--sub);font-size:11px;}
+.mx .mg-tg{font-style:normal;font-size:10px;color:var(--sub);transition:transform .15s;} .mx tr.off .mg-tg{transform:rotate(-90deg);}
+.mx .mg-gap{color:#b8391f;font-weight:700;}
+.mx tr.gq:hover td,.mx tr.gf:hover td{background:#eef3fb;}
 .mx td.s{text-align:center;font-size:13px;font-weight:700;padding:5px 2px;width:30px;}
 .mx td.s.req{background:var(--req);}
 .mx tbody tr.ln:hover td.s.req{background:#dfe9fb;}
@@ -971,7 +979,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.7.1', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.7.2', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1321,7 +1329,8 @@ function kpiLatest(l){ const k=l.kpi||{}; const ds=Object.keys(k).sort(); return
 function kpiTarget(l,k){ const t=(l.kpiT||{})[k]; return t===undefined||t===''?KPI_DEF.find(x=>x.k===k).def:+t; }
 function kpiBad(l,k,v){ if(v===undefined||v===''||v===null) return false; const d=KPI_DEF.find(x=>x.k===k), t=kpiTarget(l,k); return d.better==='low'?+v>t:+v<t; }
 function sortLines(ls){
-  return ls.sort((a,b)=>siteCmp(a.site,b.site)||prodName(a.product).localeCompare(prodName(b.product),'zh-Hant')||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true}));
+  const fl=l=>lineFloor(l);   // 同產品別再依樓層 / 區域（沒填的排最後），能力矩陣依這個順序分組收折
+  return ls.sort((a,b)=>siteCmp(a.site,b.site)||prodsLabel(a).localeCompare(prodsLabel(b),'zh-Hant')||(fl(a)?0:1)-(fl(b)?0:1)||fl(a).localeCompare(fl(b),'zh-Hant',{numeric:true})||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true}));
 }
 function siteStats(sid){
   const ls=sortLines(liveLines().filter(l=>l.site===sid)); const cnt={P:0,D:0,C:0,A:0};
@@ -1625,6 +1634,7 @@ function filteredLines(){
     if(f.product&&!lineProds(l).includes(f.product)) return false;
     if(f.form&&!(l.forms||[]).includes(f.form)) return false;
     if(f.hw&&l.hw!==f.hw) return false;
+    if(f.floor&&(lineFloor(l)||'-')!==f.floor) return false;
     if(f.plat&&(l.sw||{}).plat!==f.plat) return false;
     if(f.src&&(f.src==='ext')!==isExt(l)) return false;
     if(f.stage){ if(f.stage==='blocked'){ if(!l.blocked) return false; } else if(lineProg(l).stage!==f.stage) return false; }
@@ -1645,7 +1655,7 @@ function renderMatrix(){
   const box=bg=>`<b style="display:inline-block;width:12px;height:12px;${bg};border:1px solid #cddcf3;border-radius:3px;vertical-align:-1px"></b>`;
   const opt=(k,label,arr)=>`<select class="in" onchange="setMF({${k}:this.value})"><option value="">${label}</option>${arr.map(x=>`<option value="${x.id}" ${f[k]===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`;
   const STG=v=>v==='blocked'?'⚠ 卡關中':(STAGES.find(s=>s.k===v)?v+' '+STAGES.find(s=>s.k===v).name:v);
-  const act=[['product','產品別',v=>byId('products',v)?prodName(v):''],['form','型態',v=>(byId('forms',v)||{}).name],['stage','階段',STG],['plat','軟體版本',v=>platName(v)],['hw','相機',v=>hwName(v)],['src','設備來源',v=>v==='ext'?'外購設備':'本廠軟體']].filter(([k])=>f[k]);
+  const act=[['product','產品別',v=>byId('products',v)?prodName(v):''],['form','型態',v=>(byId('forms',v)||{}).name],['stage','階段',STG],['plat','軟體版本',v=>platName(v)],['hw','相機',v=>hwName(v)],['floor','樓層 / 區域',v=>v==='-'?'（未填樓層）':v],['src','設備來源',v=>v==='ext'?'外購設備':'本廠軟體']].filter(([k])=>f[k]);
   const view=f.watchOnly?'watch':f.gapOnly?'gap':'all';
   el.innerHTML=`
   <div class="mx-top"><div class="mbar">
@@ -1653,16 +1663,17 @@ function renderMatrix(){
       <div class="dd-m">${regs.map(r=>`<div class="dd-g"><button class="lkb" onclick="setMF({sites:'${r.sites.map(s=>s.id).join(',')}'.split(',')})" title="只看這個地區">${esc(r.name)}</button>
         ${r.sites.map(s=>`<label class="ck"><input type="checkbox" ${f.sites.includes(s.id)?'checked':''} onchange="toggleSiteF('${s.id}')">${esc(s.id)}</label>`).join('')}</div>`).join('')}
         <div class="dd-f"><button class="btn sm" onclick="setMF({sites:[]})">全部廠區</button></div></div></div>
-    <div class="dd ${MXDD==='fd'?'on':''}" id="mx-fd"><button class="in dd-b ${act.length?'act':''}" onclick="mxDD(event,'fd')" title="依產品別、型態、階段、軟體版本、相機篩選">篩選${act.length?` (${act.length})`:''} ▾</button>
+    <div class="dd ${MXDD==='fd'?'on':''}" id="mx-fd"><button class="in dd-b ${act.length?'act':''}" onclick="mxDD(event,'fd')" title="依產品別、型態、階段、軟體版本、相機、樓層 / 區域篩選">篩選${act.length?` (${act.length})`:''} ▾</button>
       <div class="dd-m fd-m">
         <label class="fd-r"><span>產品別</span>${opt('product','全部',prods.map(p=>({id:p.id,name:prodFull(p)})))}</label>
         <label class="fd-r"><span>型態</span>${opt('form','全部',liveSorted('forms'))}</label>
         <label class="fd-r"><span>階段</span><select class="in" onchange="setMF({stage:this.value})"><option value="">全部</option>${STAGES.map(s=>`<option value="${s.k}" ${f.stage===s.k?'selected':''}>${s.k} ${s.name}</option>`).join('')}<option value="blocked" ${f.stage==='blocked'?'selected':''}>⚠ 卡關中</option></select></label>
         <label class="fd-r"><span>軟體版本</span>${opt('plat','全部',liveSorted('plats').map(p=>({id:p.id,name:platShort(p)})))}</label>
         <label class="fd-r"><span>相機</span>${opt('hw','全部',liveSorted('hws'))}</label>
+        <label class="fd-r"><span>樓層 / 區域</span>${opt('floor','全部',[...new Set(liveLines().filter(l=>!f.sites.length||f.sites.includes(l.site)).map(l=>lineFloor(l)||'-'))].sort((a,b)=>(a==='-')-(b==='-')||a.localeCompare(b,'zh-Hant',{numeric:true})).map(x=>({id:x,name:x==='-'?'（未填）':x})))}</label>
         <label class="fd-r"><span>設備來源</span>${opt('src','全部',[{id:'own',name:'本廠軟體'},{id:'ext',name:'外購設備'}])}</label>
         <label class="ck fd-ck"><input type="checkbox" ${f.allItems?'checked':''} onchange="setMF({allItems:this.checked})">顯示全部檢測項目<span class="muted">（預設只顯示這些線有用到的）</span></label>
-        <div class="dd-f"><button class="btn sm" onclick="setMF({product:'',form:'',stage:'',plat:'',hw:'',src:''})">清除篩選</button></div></div></div>
+        <div class="dd-f"><button class="btn sm" onclick="setMF({product:'',form:'',stage:'',plat:'',hw:'',floor:'',src:''})">清除篩選</button></div></div></div>
     ${act.map(([k,t,fn])=>`<button class="fchip" onclick="setMF({${k}:''})" title="${t}：${esc(fn(f[k])||'')}（點一下取消）">${esc(fn(f[k])||f[k])} ✕</button>`).join('')}
     <input class="in" id="mq" placeholder="🔍 搜尋線別 / 相機 / 版本…" title="可搜尋線別、產品、相機、版本、負責人、下一步" value="${esc(f.q)}" oninput="UI.mf.q=this.value;saveUI();renderMatrix()">
     <span class="seg vw">${[['all','全部','顯示全部產線'],['watch',`★ 關注 ${watchCount()}`,'只看你標記 ★ 的產線'],['gap','有缺口','只看有檢測能力缺口的產線']].map(([k,t,tt])=>`<button class="${view===k?'on':''}" title="${tt}" onclick="setMF({watchOnly:${k==='watch'},gapOnly:${k==='gap'}})">${t}</button>`).join('')}</span>
@@ -1702,10 +1713,18 @@ function matrixTable(ls,items,techs){
     ${OPTICS.map(o=>`<th class="vt g-op" title="${esc(o.t)}"><div>${esc(o.t)}</div></th>`).join('')}
     <th class="g-pd" style="text-align:left">階段</th><th class="g-pd" style="text-align:left">目前關卡</th>
   </tr></thead><tbody>`;
-  let curSite=null, lastProd=null; const dupIds=new Set(dupGroups().flat().map(x=>x.id));
+  let curSite=null, lastProd=null, curQ=null, curF=null; const dupIds=new Set(dupGroups().flat().map(x=>x.id)), C=UI.mxc||{};
+  // 廠區底下兩層收折（v4.7.2，Johnny 2026-10-30）：產品別-段別 → 樓層 / 區域；收合狀態存本機 UI.mxc
+  const gRow=(cls,key,lab,sub,gl)=>{ const gp=gl.filter(x=>lineGaps(x)).length, off=!!C[key];
+    return `<tr class="${cls} ${off?'off':''}"><td colspan="${NC}"><span class="in-g" data-g="${esc(key)}" onclick="mxGrp(this.dataset.g)" title="${off?'展開':'收合'}"><i class="mg-tg">▾</i>${esc(lab)}<span>${gl.length} 條線${gp?` · <b class="mg-gap">缺口 ${gp}</b>`:''}${sub?' · '+sub:''}</span></span></td></tr>`; };
   for(const l of ls){
-    if(l.site!==curSite){ curSite=l.site; lastProd=null; const s=byId('sites',l.site)||{}; const st=siteStats(l.site); const n=ls.filter(x=>x.site===l.site).length;
+    if(l.site!==curSite){ curSite=l.site; lastProd=null; curQ=curF=null; const s=byId('sites',l.site)||{}; const st=siteStats(l.site); const n=ls.filter(x=>x.site===l.site).length;
       h+=`<tr class="gp"><td colspan="${NC}"><span class="in-g">${esc(l.site)}<span>${esc(s.region||'')} · 顯示 ${n} / ${st.ls.length} 條線 · 平均完成度 ${st.pct}%${s.owner?' · 負責 '+esc(s.owner):''}</span></span></td></tr>`; }
+    const pl=prodsLabel(l), fl=lineFloor(l)||'', kq=l.site+'|'+pl, kf=kq+'|'+fl;
+    if(kq!==curQ){ curQ=kq; curF=null; lastProd=null; h+=gRow('gq',kq,pl,'',ls.filter(x=>x.site===l.site&&prodsLabel(x)===pl)); }
+    if(C[kq]) continue;
+    if(kf!==curF){ curF=kf; h+=gRow('gf',kf,fl||'未填樓層 / 區域','',ls.filter(x=>x.site===l.site&&prodsLabel(x)===pl&&(lineFloor(x)||'')===fl)); }
+    if(C[kf]) continue;
     const p=lineProg(l), sw=l.sw||{}, k=kpiLatest(l), nx=nextOf(l);
     const ext=isExt(l), fit=sw.plat&&!ext?lineFit(l).find(x=>x.p.id===sw.plat):null, swOff=!!(fit&&fit.lvl!=='ok');
     h+=`<tr class="ln ${isWatch(l.id)?'watch':''}" data-l="${l.id}">
@@ -1729,6 +1748,8 @@ function matrixTable(ls,items,techs){
   }
   return h+'</tbody></table>';
 }
+/** 能力矩陣分組收折（key＝廠區|產品別 或 廠區|產品別|樓層） */
+function mxGrp(k){ UI.mxc=UI.mxc||{}; if(UI.mxc[k]) delete UI.mxc[k]; else UI.mxc[k]=true; saveUI(); renderMatrix(); }
 function onMatrixClick(e){
   const tr=e.target.closest('tr.ln'); if(!tr) return;
   const wb=e.target.closest('[data-watch]'); if(wb){ toggleWatch(wb.dataset.watch); return; }
@@ -1763,7 +1784,7 @@ function cycleTech(lid,tid){
 }
 function setMF(o){ Object.assign(UI.mf,o); saveUI(); renderMatrix(); }
 function toggleSiteF(id){ const s=UI.mf.sites; const i=s.indexOf(id); if(i>=0) s.splice(i,1); else s.push(id); saveUI(); renderMatrix(); }
-function gotoMatrix(o){ UI.mf=Object.assign({sites:[],product:'',form:'',stage:'',plat:'',hw:'',src:'',q:'',gapOnly:false,allItems:UI.mf.allItems,edit:false},o||{}); showPage('matrix'); }
+function gotoMatrix(o){ UI.mf=Object.assign({sites:[],product:'',form:'',stage:'',plat:'',hw:'',floor:'',src:'',q:'',gapOnly:false,allItems:UI.mf.allItems,edit:false},o||{}); showPage('matrix'); }
 function saveUI(){ saveJSON(LS.ui,UI); }
 
 // ═══════════════════════════════════════════

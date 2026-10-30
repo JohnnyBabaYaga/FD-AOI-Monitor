@@ -224,6 +224,9 @@ table.mx{border-collapse:separate;border-spacing:0;font-size:12px;background:#ff
 .mx tr.gq td .in-g>span,.mx tr.gf td .in-g>span{font-weight:500;color:var(--sub);font-size:11px;}
 .mx .mg-tg{font-style:normal;font-size:10px;color:var(--sub);transition:transform .15s;} .mx tr.off .mg-tg{transform:rotate(-90deg);}
 .mx .mg-gap{color:#b8391f;font-weight:700;}
+.mx .mg-cu{color:var(--sub);} .mx .mg-cu.all{color:var(--green);font-weight:700;}
+.mx td.c-cu{text-align:center;font-weight:800;border-left:1px solid #e3e9f1;} .mx td.cu-y{color:var(--green);} .mx td.cu-n{color:#c3cbd6;}
+.mx th.c-cu{font-size:11px;line-height:1.3;white-space:nowrap;border-left:1px solid #e3e9f1;}
 .mx tr.gq:hover td,.mx tr.gf:hover td{background:#eef3fb;}
 .mx td.s{text-align:center;font-size:13px;font-weight:700;padding:5px 2px;width:30px;}
 .mx td.s.req{background:var(--req);}
@@ -979,7 +982,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.7.3', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.8', APP_BETA=true, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1128,7 +1131,9 @@ const live=c=>DB[c].filter(x=>!x.deleted);
 const byId=(c,id)=>DB[c].find(x=>x.id===id);
 /** 廠區一律依代號的字母與數字排序（BG-E31 → GM-E21 → KS-L6K → … → XM-S19，Johnny 2026-10-29），不看 order */
 const siteCmp=(a,b)=>String(a||'').localeCompare(String(b||''),'en',{numeric:true,sensitivity:'base'});
-function liveSorted(c){ if(c==='sites') return live(c).sort((a,b)=>siteCmp(a.id,b.id)); return live(c).sort((a,b)=>(a.order??999)-(b.order??999)||String(a.name||a.id).localeCompare(String(b.name||b.id),'zh-Hant')); }
+function liveSorted(c){ if(c==='sites') return live(c).sort((a,b)=>siteCmp(a.id,b.id));
+  if(c==='plats'){ const mj=p=>{ const m=String(platShort(p)).match(/\d+(\.\d+)?/); return m?+m[0]:999; }; return live(c).sort((a,b)=>Math.floor(mj(a))-Math.floor(mj(b))||(a.order??999)-(b.order??999)); }   // 軟體版本先依主版本（1.x → 2.0），同主版本再依主檔順序（Johnny 2026-10-30：2.0 要排最後）
+  return live(c).sort((a,b)=>(a.order??999)-(b.order??999)||String(a.name||a.id).localeCompare(String(b.name||b.id),'zh-Hant')); }
 function nextOrder(c){ return Math.max(0,...live(c).map(x=>x.order||0))+1; }
 function dirtyCount(){ return COLLS.reduce((n,c)=>n+Object.keys(DIRTY[c]).length,0); }
 const hasDemo=()=>DB.lines.some(l=>l.demo&&!l.deleted)||DB.products.some(p=>p.demo&&!p.deleted);
@@ -1329,8 +1334,8 @@ function kpiLatest(l){ const k=l.kpi||{}; const ds=Object.keys(k).sort(); return
 function kpiTarget(l,k){ const t=(l.kpiT||{})[k]; return t===undefined||t===''?KPI_DEF.find(x=>x.k===k).def:+t; }
 function kpiBad(l,k,v){ if(v===undefined||v===''||v===null) return false; const d=KPI_DEF.find(x=>x.k===k), t=kpiTarget(l,k); return d.better==='low'?+v>t:+v<t; }
 function sortLines(ls){
-  const fl=l=>lineFloor(l);   // 同產品別再依樓層 / 區域（沒填的排最後），能力矩陣依這個順序分組收折
-  return ls.sort((a,b)=>siteCmp(a.site,b.site)||prodsLabel(a).localeCompare(prodsLabel(b),'zh-Hant')||(fl(a)?0:1)-(fl(b)?0:1)||fl(a).localeCompare(fl(b),'zh-Hant',{numeric:true})||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true}));
+  const fl=l=>lineFloor(l), rk=new Map(prodsSorted().map((p,i)=>[p.id,i])), pr=l=>rk.has(l.product)?rk.get(l.product):9999;   // 產品別依 prodsSorted；同產品別再依樓層 / 區域（沒填的排最後），能力矩陣依這個順序分組收折
+  return ls.sort((a,b)=>siteCmp(a.site,b.site)||pr(a)-pr(b)||prodsLabel(a).localeCompare(prodsLabel(b),'zh-Hant')||(fl(a)?0:1)-(fl(b)?0:1)||fl(a).localeCompare(fl(b),'zh-Hant',{numeric:true})||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true}));
 }
 function siteStats(sid){
   const ls=sortLines(liveLines().filter(l=>l.site===sid)); const cnt={P:0,D:0,C:0,A:0};
@@ -1436,7 +1441,7 @@ function ovBSet(i,fn){ const bs=ovBlocks(); if(!bs[i]) return; fn(bs[i]); ovSet(
 function ovSetF(i,k,v){ ovBSet(+i,b=>{ b.sf[k]=v; if(k!=='floor') b.sf.floor=''; }); }
 function ovBAdd(){ const bs=ovBlocks(); if(bs.length>=OV_BMAX) return; bs.push({sf:{},open:[],all:[]}); ovSet({blocks:bs}); }
 function ovBDel(i){ const bs=ovBlocks(); if(bs.length<2) return; bs.splice(+i,1); ovSet({blocks:bs}); }
-const prodFams=()=>[...new Set(liveSorted('products').map(p=>(p.name||'').trim()).filter(Boolean))];
+const prodFams=()=>[...new Set(prodsSorted().map(p=>(p.name||'').trim()).filter(Boolean))];
 function ovMatch(l,f,skipFloor){
   if(f.site){ if(f.site.startsWith('rg:')){ if(((byId('sites',l.site)||{}).region||'其他')!==f.site.slice(3)) return false; } else if(l.site!==f.site) return false; }
   if(f.fam&&!lineProds(l).some(p=>((byId('products',p)||{}).name||'').trim()===f.fam)) return false;
@@ -1637,6 +1642,7 @@ function filteredLines(){
     if(f.floor&&(lineFloor(l)||'-')!==f.floor) return false;
     if(f.plat&&(l.sw||{}).plat!==f.plat) return false;
     if(f.src&&(f.src==='ext')!==isExt(l)) return false;
+    if(f.cust&&(f.cust==='y')!==(l.cust==='y')) return false;
     if(f.stage){ if(f.stage==='blocked'){ if(!l.blocked) return false; } else if(lineProg(l).stage!==f.stage) return false; }
     if(f.gapOnly&&!lineGaps(l)) return false;
     if(f.watchOnly&&!isWatch(l.id)) return false;
@@ -1648,14 +1654,14 @@ function renderMatrix(){
   const f=UI.mf, el=$('#pg-matrix'), ls=filteredLines();
   const items=liveSorted('items').filter(i=>f.allItems||ls.some(l=>itemSt(l,i.id)!=='na'));
   const techs=techsSorted();
-  const sites=liveSorted('sites'), prods=liveSorted('products'), regs=[];
+  const sites=liveSorted('sites'), prods=prodsSorted(), regs=[];
   for(const s of sites){ let r=regs.find(x=>x.name===(s.region||'其他')); if(!r) regs.push(r={name:s.region||'其他',sites:[]}); r.sites.push(s); }
   const focusQ=document.activeElement&&document.activeElement.id==='mq';
   const ow=$('#pg-matrix .mwrap'), osx=ow?ow.scrollLeft:0, osy=ow?ow.scrollTop:0;   // 重畫後維持表格捲動位置（例如按星號、快速編輯）
   const box=bg=>`<b style="display:inline-block;width:12px;height:12px;${bg};border:1px solid #cddcf3;border-radius:3px;vertical-align:-1px"></b>`;
   const opt=(k,label,arr)=>`<select class="in" onchange="setMF({${k}:this.value})"><option value="">${label}</option>${arr.map(x=>`<option value="${x.id}" ${f[k]===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`;
   const STG=v=>v==='blocked'?'⚠ 卡關中':(STAGES.find(s=>s.k===v)?v+' '+STAGES.find(s=>s.k===v).name:v);
-  const act=[['product','產品別',v=>byId('products',v)?prodName(v):''],['form','型態',v=>(byId('forms',v)||{}).name],['stage','階段',STG],['plat','軟體版本',v=>platName(v)],['hw','相機',v=>hwName(v)],['floor','樓層 / 區域',v=>v==='-'?'（未填樓層）':v],['src','設備來源',v=>v==='ext'?'外購設備':'本廠軟體']].filter(([k])=>f[k]);
+  const act=[['product','產品別',v=>byId('products',v)?prodName(v):''],['form','型態',v=>(byId('forms',v)||{}).name],['stage','階段',STG],['plat','軟體版本',v=>platName(v)],['hw','相機',v=>hwName(v)],['floor','樓層 / 區域',v=>v==='-'?'（未填樓層）':v],['src','設備來源',v=>v==='ext'?'外購設備':'本廠軟體'],['cust','客戶 commit',v=>v==='y'?'客戶已 commit':'客戶未 commit']].filter(([k])=>f[k]);
   const view=f.watchOnly?'watch':f.gapOnly?'gap':'all';
   el.innerHTML=`
   <div class="mx-top"><div class="mbar">
@@ -1663,7 +1669,7 @@ function renderMatrix(){
       <div class="dd-m">${regs.map(r=>`<div class="dd-g"><button class="lkb" onclick="setMF({sites:'${r.sites.map(s=>s.id).join(',')}'.split(',')})" title="只看這個地區">${esc(r.name)}</button>
         ${r.sites.map(s=>`<label class="ck"><input type="checkbox" ${f.sites.includes(s.id)?'checked':''} onchange="toggleSiteF('${s.id}')">${esc(s.id)}</label>`).join('')}</div>`).join('')}
         <div class="dd-f"><button class="btn sm" onclick="setMF({sites:[]})">全部廠區</button></div></div></div>
-    <div class="dd ${MXDD==='fd'?'on':''}" id="mx-fd"><button class="in dd-b ${act.length?'act':''}" onclick="mxDD(event,'fd')" title="依產品別、型態、階段、軟體版本、相機、樓層 / 區域篩選">篩選${act.length?` (${act.length})`:''} ▾</button>
+    <div class="dd ${MXDD==='fd'?'on':''}" id="mx-fd"><button class="in dd-b ${act.length?'act':''}" onclick="mxDD(event,'fd')" title="依產品別、型態、階段、軟體版本、相機、樓層 / 區域、客戶 commit 篩選">篩選${act.length?` (${act.length})`:''} ▾</button>
       <div class="dd-m fd-m">
         <label class="fd-r"><span>產品別</span>${opt('product','全部',prods.map(p=>({id:p.id,name:prodFull(p)})))}</label>
         <label class="fd-r"><span>型態</span>${opt('form','全部',liveSorted('forms'))}</label>
@@ -1672,8 +1678,9 @@ function renderMatrix(){
         <label class="fd-r"><span>相機</span>${opt('hw','全部',liveSorted('hws'))}</label>
         <label class="fd-r"><span>樓層 / 區域</span>${opt('floor','全部',[...new Set(liveLines().filter(l=>!f.sites.length||f.sites.includes(l.site)).map(l=>lineFloor(l)||'-'))].sort((a,b)=>(a==='-')-(b==='-')||a.localeCompare(b,'zh-Hant',{numeric:true})).map(x=>({id:x,name:x==='-'?'（未填）':x})))}</label>
         <label class="fd-r"><span>設備來源</span>${opt('src','全部',[{id:'own',name:'本廠軟體'},{id:'ext',name:'外購設備'}])}</label>
+        <label class="fd-r"><span>客戶 commit</span>${opt('cust','全部',[{id:'y',name:'✓ 已 commit'},{id:'n',name:'未 commit'}])}</label>
         <label class="ck fd-ck"><input type="checkbox" ${f.allItems?'checked':''} onchange="setMF({allItems:this.checked})">顯示全部檢測項目<span class="muted">（預設只顯示這些線有用到的）</span></label>
-        <div class="dd-f"><button class="btn sm" onclick="setMF({product:'',form:'',stage:'',plat:'',hw:'',floor:'',src:''})">清除篩選</button></div></div></div>
+        <div class="dd-f"><button class="btn sm" onclick="setMF({product:'',form:'',stage:'',plat:'',hw:'',floor:'',src:'',cust:''})">清除篩選</button></div></div></div>
     ${act.map(([k,t,fn])=>`<button class="fchip" onclick="setMF({${k}:''})" title="${t}：${esc(fn(f[k])||'')}（點一下取消）">${esc(fn(f[k])||f[k])} ✕</button>`).join('')}
     <input class="in" id="mq" placeholder="🔍 搜尋線別 / 相機 / 版本…" title="可搜尋線別、產品、相機、版本、負責人、下一步" value="${esc(f.q)}" oninput="UI.mf.q=this.value;saveUI();renderMatrix()">
     <span class="seg vw">${[['all','全部','顯示全部產線'],['watch',`★ 關注 ${watchCount()}`,'只看你標記 ★ 的產線'],['gap','有缺口','只看有檢測能力缺口的產線']].map(([k,t,tt])=>`<button class="${view===k?'on':''}" title="${tt}" onclick="setMF({watchOnly:${k==='watch'},gapOnly:${k==='gap'}})">${t}</button>`).join('')}</span>
@@ -1685,7 +1692,7 @@ function renderMatrix(){
       <button class="btn pri" id="mx-add" onclick="newLine()" title="新增產線">＋ 新增</button>
     </span>
   </div>
-  ${f.edit?'<div class="mleg"><span class="s" style="color:var(--accent-deep);font-weight:700">✎ 快速編輯中：點檢測項目格子切換 需要 / 不需要；點技術能力格子切換 開 / 關；點光學調整格子打開面板填寫；外購設備的檢測項目點格子切換 可檢 / 不可檢 / 未填。再按一次「編輯中」結束。</span></div>':''}</div>
+  ${f.edit?'<div class="mleg"><span class="s" style="color:var(--accent-deep);font-weight:700">✎ 快速編輯中：點檢測項目格子切換 需要 / 不需要；點技術能力格子切換 開 / 關；點光學調整格子打開面板填寫；點客戶 commit 格子切換 已 / 未 commit；外購設備的檢測項目點格子切換 可檢 / 不可檢 / 未填。再按一次「編輯中」結束。</span></div>':''}</div>
   <div class="card mwrap">${ls.length?matrixTable(ls,items,techs):`<div class="empty" style="padding:30px;text-align:center">${f.watchOnly&&!watchCount()?'還沒有特別關注的產線：在線別旁點 ☆ 就能加入（先切回「全部」看所有產線）':'沒有符合條件的產線'}</div>`}</div>`;
   if(focusQ){ const q=$('#mq'); q.focus(); q.setSelectionRange(q.value.length,q.value.length); }
   const mw=$('#pg-matrix .mwrap'); if(mw){ mw.scrollLeft=osx; mw.scrollTop=osy; } mxFit();
@@ -1699,10 +1706,11 @@ document.addEventListener('click',e=>{ if(ED&&ED.stepDD&&!e.target.closest('#dw-
 document.addEventListener('click',e=>{ if(MXDD&&!e.target.closest('.dd')){ MXDD=''; $$('#pg-matrix .dd.on').forEach(d=>d.classList.remove('on')); } });
 function matrixTable(ls,items,techs){
   const TC=!UI.mf.techOpen&&!UI.mf.edit;   // 技術能力收合成一欄摘要
-  const NC=2+items.length+1+(TC?1:techs.length)+OPTICS.length+2+1+1+1;
+  const NC=2+items.length+1+1+(TC?1:techs.length)+OPTICS.length+2+1+1+1;
   let h=`<table class="mx ${UI.mf.edit?'edit':''}"><thead><tr class="h1">
     <th class="stk c-pr" rowspan="2" style="vertical-align:bottom;text-align:left">產品別</th><th class="stk c-ln" rowspan="2" style="vertical-align:bottom;text-align:left">線別<div class="dim" style="font-weight:500">型態 · 相機${GI('hw')}</div></th>
     ${items.length?`<th class="g-it" colspan="${items.length}">檢測項目${GI('itemst')}</th>`:''}
+    <th class="c-cu" rowspan="2" style="vertical-align:bottom" title="客戶是否已 commit 我們的檢測能力（能力達標 + 客戶已 commit 才是綠燈）">客戶<br>commit${GI('light')}</th>
     <th rowspan="2" style="vertical-align:bottom;text-align:left">軟體版本${GI('sw')}</th>
     ${TC?`<th class="g-te t-sum-h" rowspan="2" onclick="setMF({techOpen:true})" title="點一下展開技術能力（${techs.length} 項）">技術能力${GI('tech')}<div class="t-tg">▸ 展開</div></th>`:TCATS.map((g,gi)=>{ const n=techs.filter(t=>tcat(t)===g.k).length; const first=!techs.some(t=>TCAT_IDX[tcat(t)]<gi); return n?`<th class="g-te tc-${g.k}" colspan="${n}">${first&&!UI.mf.edit?`<button class="t-tgb" onclick="setMF({techOpen:false})" title="收合技術能力">◂</button>`:''}${g.k==='meas'||g.k==='det'?'演算法・':''}${g.t}${first?GI('tech'):''}</th>`:''; }).join('')}
     <th class="g-op" colspan="${OPTICS.length}">光學調整${GI('optic')}</th>
@@ -1716,7 +1724,7 @@ function matrixTable(ls,items,techs){
   </tr></thead><tbody>`;
   let curSite=null, lastProd=null, curQ=null, curF=null; const dupIds=new Set(dupGroups().flat().map(x=>x.id)), C=UI.mxc||{};
   // 廠區底下兩層收折（v4.7.2，Johnny 2026-10-30）：產品別-段別 → 樓層 / 區域；收合狀態存本機 UI.mxc
-  const gRow=(cls,key,lab,sub,gl)=>{ const gp=gl.filter(x=>lineGaps(x)).length, off=!!C[key];
+  const gRow=(cls,key,lab,sub,gl)=>{ const gp=gl.filter(x=>lineGaps(x)).length, off=!!C[key], cu=gl.filter(x=>x.cust==='y').length; sub=`<span class="mg-cu ${cu===gl.length?'all':''}">客戶 commit ${cu} / ${gl.length}</span>`;
     return `<tr class="${cls} ${off?'off':''}"><td colspan="${NC}"><span class="in-g" data-g="${esc(key)}" onclick="mxGrp(this.dataset.g)" title="${off?'展開':'收合'}"><i class="mg-tg">▾</i>${esc(lab)}<span>${gl.length} 條線${gp?` · <b class="mg-gap">缺口 ${gp}</b>`:''}${sub?' · '+sub:''}</span></span></td></tr>`; };
   for(const l of ls){
     if(l.site!==curSite){ curSite=l.site; lastProd=null; curQ=curF=null; const s=byId('sites',l.site)||{}; const st=siteStats(l.site); const n=ls.filter(x=>x.site===l.site).length;
@@ -1732,6 +1740,7 @@ function matrixTable(ls,items,techs){
       <td class="stk c-pr">${prodsLabel(l)!==lastProd?`<b>${esc(prodsLabel(l))}</b>`:''}</td>
       <td class="stk c-ln"><div class="ln-n">${watchBtn(l.id)}${esc(l.line||'?')} ${l.blocked?'<span class="tag red" title="'+esc(l.blockReason||'')+'">卡關</span>':''}${dupIds.has(l.id)?'<span class="tag red" title="同廠區、同線別、產品別重疊的產線有多筆，到總覽處理">重複</span>':''}${l.demo?'<span class="tag amb">示範例</span>':''}${isExt(l)?`<span class="tag blu" title="外購設備${l.vendor?'（'+esc(l.vendor)+'）':''}：檢測能力逐項手動填，不套用本廠軟體版本">外購</span>`:''}</div><div class="ln-s" title="${esc(l.vendor||'')}">${esc(lineSub(l))||'&nbsp;'}</div></td>
       ${items.map(i=>{ const v=itemSt(l,i.id), c=itemCap(l,i.id); return `<td class="s s-${v} ${isReq(l,i.id)?'req':''}" data-t="i" data-k="${i.id}" title="${esc(i.name)}：${IST[v].t}${v==='av'?'（軟體有這個功能）':''}${isReq(l,i.id)?(reqSrc(l,i.id)==='add'?'（需求項目・手動加入）':'（需求項目）'):reqSrc(l,i.id)==='off'?'（手動排除）':''}${c.why&&v!=='na'?'\n'+esc(c.why):''}">${IST[v].sym}</td>`; }).join('')}
+      <td class="s c-cu ${l.cust==='y'?'cu-y':'cu-n'}" data-t="c" title="${l.cust==='y'?'客戶已 commit':'客戶尚未 commit'}${UI.mf.edit?'（點一下切換）':''}">${l.cust==='y'?'✓':'—'}</td>
       ${ext?`<td class="swc"><div class="sw" title="外購設備不套用本廠軟體版本">外購</div><div class="dim">${esc(l.vendor||'—')}</div></td>`:`<td class="swc"><div class="sw" style="color:${swOff?'var(--amber)':'inherit'}" title="${swOff?esc(`「${platShort(fit.p)}」${fit.lvl==='dev'?'仍在開發：'+fit.dev.map(t=>t.name).join('、'):fit.lvl==='shape'?'不支援此型態':'不支援：'+fit.miss.map(t=>t.name).join('、')}`):''}">${esc(sw.plat?platShort(byId('plats',sw.plat)):'未設定')}</div><div class="dim" title="${esc(platName(sw.plat)||'')}">${esc(sw.ver||'—')}</div></td>`}
       ${TC?(()=>{ const rel=techs.filter(t=>techPlat(t,sw.plat)==='ok'), on=rel.filter(t=>lineTech(l,t.id)==='on'), off=rel.filter(t=>lineTech(l,t.id)!=='on');
         return ext?'<td class="t-sum" title="外購設備不套用本廠技術能力">—</td>':`<td class="t-sum" title="${sw.plat?`已釋出 ${rel.length} 項，開啟 ${on.length} 項${off.length?'\n未開啟：'+esc(off.map(t=>t.name).join('、')):''}`:'尚未選擇軟體版本'}">${sw.plat?`<b>${on.length}</b><span>/${rel.length}</span>${off.length?`<i class="s-off">○${off.length}</i>`:''}`:'—'}</td>`; })():''}
@@ -1752,11 +1761,13 @@ function matrixTable(ls,items,techs){
 /** 能力矩陣分組收折（key＝廠區|產品別 或 廠區|產品別|樓層） */
 function mxGrpAll(off){ UI.mxc={}; if(off) filteredLines().forEach(l=>{ UI.mxc[l.site+'|'+prodsLabel(l)]=true; }); saveUI(); renderMatrix(); }   // 一鍵收合（產品別層）/ 展開（兩層全部打開）
 function mxGrp(k){ UI.mxc=UI.mxc||{}; if(UI.mxc[k]) delete UI.mxc[k]; else UI.mxc[k]=true; saveUI(); renderMatrix(); }
+/** 快速編輯：點「客戶 commit」格子切換 已 / 未 commit */
+function toggleCust(lid){ const l=byId('lines',lid); if(!l) return; const n=clone(l); if(n.cust==='y') delete n.cust; else n.cust='y'; commit('lines',n,`${l.site} · ${lineLabel(l)}：${n.cust==='y'?'客戶已 commit':'客戶 commit 改回未 commit'}`); }
 function onMatrixClick(e){
   const tr=e.target.closest('tr.ln'); if(!tr) return;
   const wb=e.target.closest('[data-watch]'); if(wb){ toggleWatch(wb.dataset.watch); return; }
   const td=e.target.closest('td.s');
-  if(UI.mf.edit&&td){ if(td.dataset.t==='t') cycleTech(tr.dataset.l,td.dataset.k); else if(td.dataset.t==='o') cycleOptic(tr.dataset.l,td.dataset.k); else if(isExt(byId('lines',tr.dataset.l))) cycleExtCap(tr.dataset.l,td.dataset.k); else toggleReq(tr.dataset.l,td.dataset.k); return; }
+  if(UI.mf.edit&&td){ if(td.dataset.t==='c'){ toggleCust(tr.dataset.l); return; } if(td.dataset.t==='t') cycleTech(tr.dataset.l,td.dataset.k); else if(td.dataset.t==='o') cycleOptic(tr.dataset.l,td.dataset.k); else if(isExt(byId('lines',tr.dataset.l))) cycleExtCap(tr.dataset.l,td.dataset.k); else toggleReq(tr.dataset.l,td.dataset.k); return; }
   openLine(tr.dataset.l);
 }
 /** 快速編輯點光學調整格子：完成必須填日期與參考值，所以直接打開面板的「光學調整」區塊 */
@@ -1786,7 +1797,7 @@ function cycleTech(lid,tid){
 }
 function setMF(o){ Object.assign(UI.mf,o); saveUI(); renderMatrix(); }
 function toggleSiteF(id){ const s=UI.mf.sites; const i=s.indexOf(id); if(i>=0) s.splice(i,1); else s.push(id); saveUI(); renderMatrix(); }
-function gotoMatrix(o){ UI.mf=Object.assign({sites:[],product:'',form:'',stage:'',plat:'',hw:'',floor:'',src:'',q:'',gapOnly:false,allItems:UI.mf.allItems,edit:false},o||{}); showPage('matrix'); }
+function gotoMatrix(o){ UI.mf=Object.assign({sites:[],product:'',form:'',stage:'',plat:'',hw:'',floor:'',src:'',cust:'',q:'',gapOnly:false,allItems:UI.mf.allItems,edit:false},o||{}); showPage('matrix'); }
 function saveUI(){ saveJSON(LS.ui,UI); }
 
 // ═══════════════════════════════════════════
@@ -1872,7 +1883,7 @@ function renderDrawer(){
         :`🏭 <b>${esc(w.site)}</b> 廠區負責人：${esc(so)} · 本線另外指定 <b>${esc(w.owner)}</b> <button class="lkb" data-set="owner" data-v="">改回沿用廠區負責人</button>`)
         :`🏭 <b>${esc(w.site)}</b> 尚未設定廠區負責人<span class="muted">（主檔設定 → 廠區；設定後，負責人留空的產線會自動沿用）</span>`}</div>
       <div class="sub-t">產品別 *（可複選）${GI('prodset')}</div>
-      <div class="reqs">${liveSorted('products').map(x=>`<button class="chip ${lineProds(w).includes(x.id)?'on':''}" data-prod="${x.id}">${esc(prodFull(x))}</button>`).join('')}</div>
+      <div class="reqs">${prodsSorted().map(x=>`<button class="chip ${lineProds(w).includes(x.id)?'on':''}" data-prod="${x.id}">${esc(prodFull(x))}</button>`).join('')}</div>
       <div class="sub-t">型態（可複選）${GI('forms')}</div>
       <div class="reqs">${liveSorted('forms').map(f=>`<button class="chip ${(w.forms||[]).includes(f.id)?'on':''}" data-form="${f.id}">${esc(f.name)}</button>`).join('')}</div>
       ${unset.length?`<div class="warnline">⚠ 主檔還沒設定「${esc(unset.join('、'))}」的檢測項目，請到「主檔設定 → 產品設定」加入這個型態</div>`:''}
@@ -2101,7 +2112,7 @@ function renderGuide(){
     <div class="gd-in">
       <div class="gstep"><b>1</b>產品別 → 型態 → 檢測項目</div>
       <div class="card gcard">
-        <div class="grow"><label>產品別</label><select class="in" data-g="product" style="width:170px;text-align:left"><option value="">（不指定，直接選項目）</option>${liveSorted('products').map(p=>`<option value="${p.id}" ${g.product===p.id?'selected':''}>${esc(prodFull(p))}</option>`).join('')}</select></div>
+        <div class="grow"><label>產品別</label><select class="in" data-g="product" style="width:170px;text-align:left"><option value="">（不指定，直接選項目）</option>${prodsSorted().map(p=>`<option value="${p.id}" ${g.product===p.id?'selected':''}>${esc(prodFull(p))}</option>`).join('')}</select></div>
         <div class="ghint" style="margin-top:6px">型態（可複選）${GI('forms')}${prod?' <span class="muted">· 虛線框＝主檔還沒設定這個組合</span>':''}</div>
         <div class="reqs">${liveSorted('forms').map(f=>`<button class="chip ${forms.includes(f.id)?'on':''} ${prod&&!fr[f.id]?'unset':''}" data-gform="${f.id}">${esc(f.name)}</button>`).join('')}</div>
         <div class="ghint" style="margin-top:8px">檢測項目 <span class="muted">（${prod?'已帶入主檔「產品別 × 型態」的設定，可再增減':'點選需要的項目'}）</span></div>
@@ -2314,7 +2325,11 @@ function segPills(p){ const cur=(p.seg||'').trim(), hint=new Set(SEG_HINT), extr
   return `<span class="sgx ${cur?'':'need'}" title="段別：同一個產品別在不同段別各自一筆，顯示成「產品別-段別」"><span class="sgx-l">段別${GI('seg')}</span><select class="in sgsel" onclick="event.stopPropagation()" onchange="mSegPick('${p.id}',this)"><option value="" ${cur?'':'selected'}>未設定</option>${all.map(o).join('')}${cur&&!all.includes(cur)?o(cur):''}<option value="__other">其他（自行輸入）…</option></select>${cur?'':'<span class="tag red">未設定</span>'}</span>`; }
 /** 產品設定的排列：先依段別的製程順序（CT1 → CT2 → PBI1 … → EOL，主檔外的段別接在後面、沒填段別的放最後），同一段別內依 ↑↓ 的順序 */
 const prodSegKey=p=>{ const s=(p.seg||'').trim(), x=segSplit(s); return !s?99999:x.i<0?9999:x.i*100+x.n; };   // 只填主段別（PBI）排在 PBI1、PBI2 前面
-const prodsSorted=()=>liveSorted('products').sort((a,b)=>prodSegKey(a)-prodSegKey(b)||((a.seg||'').trim()).localeCompare((b.seg||'').trim()));
+/** 產品別順序（Johnny 2026-10-30）：NB → DT → TV → Set → FIDM，其他產品別依字母接在後面；同產品別再依段別製程順序 */
+const PROD_FAM=['NB','DT','TV','Set','FIDM'];
+const famRank=n=>{ const i=PROD_FAM.findIndex(x=>x.toLowerCase()===String(n||'').trim().toLowerCase()); return i<0?99:i; };
+const famCmp=(a,b)=>famRank(a)-famRank(b)||String(a||'').localeCompare(String(b||''),'en',{numeric:true,sensitivity:'base'});
+const prodsSorted=()=>liveSorted('products').sort((a,b)=>famCmp(a.name,b.name)||prodSegKey(a)-prodSegKey(b)||((a.seg||'').trim()).localeCompare((b.seg||'').trim()));
 function mSegPick(pid,el){ if(el.value==='__other'){ const p=byId('products',pid); el.value=(p&&p.seg||'').trim(); mSegOther(pid); return; } mSet('products',pid,'seg',el.value); }
 async function mSegOther(pid){ const p=byId('products',pid); const v=String(await promptBox('其他段別','段別名稱（例：CT3、Module）',p.seg||'')||'').trim(); if(v) mSet('products',pid,'seg',v); }
 /** 產品設定（v4.7，Johnny 2026-10-30）：產品別 → 段別 → 型態。
@@ -2328,7 +2343,7 @@ function prodMatrix(prods,items,forms,plats,L){
     return `<td class="pc pv ${cs}"><span class="pfit pf-${x.lvl}" title="${esc(x.p.name)}\n${esc(why)}">${FT[x.lvl][0]}</span></td>`; };
   const nL=p=>L.filter(l=>lineProds(l).includes(p.id)).length, fidsOf=p=>forms.filter(f=>(p.fr||{})[f.id]).map(f=>f.id);
   const fams=[]; prods.forEach(p=>{ const k=(p.name||'').trim()||'(未命名)'; let g=fams.find(x=>x.k===k); if(!g) fams.push(g={k,ps:[]}); g.ps.push(p); });
-  fams.sort((a,b)=>a.k.localeCompare(b.k,'en',{numeric:true,sensitivity:'base'}));   // 產品別依字母排（DT、FIDM、NB、TV）
+  fams.sort((a,b)=>famCmp(a.k,b.k));   // 產品別依 PROD_FAM（NB → DT → TV → Set → FIDM）
   const fk=`this.closest('.pfam').dataset.k`;
   // 段別摘要：每個型態一行
   const sumRow=(p,f,fids)=>{ const a=(p.fr||{})[f]||[], others=fids.filter(x=>x!==f).map(x=>(p.fr||{})[x]||[]);
@@ -2631,11 +2646,11 @@ function download(name,text,type){ const a=document.createElement('a'); a.href=U
 function exportJSON(){ download(`aoi-monitor-backup-${todayStr()}.json`,JSON.stringify(buildDoc(true),null,1),'application/json'); }
 function exportCSV(all){
   const ls=all?sortLines(liveLines()):filteredLines(), items=liveSorted('items'), techs=techsSorted(), st=stepsSorted();
-  const head=['廠區','地區','段別','樓層/區域','產品別','線別','型態','相機','負責人','線體負責人(FAB Owner)','設備廠商','設備來源','PDCA 階段','完成度%','目前關卡','下一步說明','預計日','卡關','卡關原因','軟體版本類別','版本號',
+  const head=['廠區','地區','段別','樓層/區域','產品別','線別','型態','相機','負責人','線體負責人(FAB Owner)','設備廠商','設備來源','PDCA 階段','完成度%','目前關卡','下一步說明','預計日','卡關','卡關原因','客戶 commit','軟體版本類別','版本號',
     ...techs.map(t=>'技術:'+t.name),...items.map(i=>'檢測:'+i.name),...OPTICS.map(o=>'光學:'+o.t),...st.flatMap(s=>[s.name+'(預計)',s.name+'(完成)']),...KPI_DEF.map(d=>`${d.name}(${d.unit})`),'KPI 日期','更新時間','更新者'];
   const rows=ls.map(l=>{ const p=lineProg(l), s=byId('sites',l.site)||{}, k=kpiLatest(l)||{}, nx=nextOf(l)||{};
     return [l.site,s.region,lineSeg(l),lineFloor(l),prodsLabel(l),l.line,formLabel(l.forms),hwName(l.hw),lineOwner(l),l.fabOwner,l.vendor,isExt(l)?'外購':'本廠',
-      p.complete?'完成':p.stage+' '+STAGES[STG_IDX[p.stage]].name,p.pct,p.cur?p.cur.name:'',l.nextNote,nx.due,l.blocked?'Y':'',l.blockReason,platFull((l.sw||{}).plat),(l.sw||{}).ver,
+      p.complete?'完成':p.stage+' '+STAGES[STG_IDX[p.stage]].name,p.pct,p.cur?p.cur.name:'',l.nextNote,nx.due,l.blocked?'Y':'',l.blockReason,l.cust==='y'?'已 commit':'未 commit',platFull((l.sw||{}).plat),(l.sw||{}).ver,
       ...techs.map(t=>({on:'已開啟',off:'未開啟','':'未釋出'})[lineTech(l,t.id)]),...items.map(i=>IST[itemSt(l,i.id)].t),...OPTICS.map(o=>{ const s=opSt(l,o.k), x=opVal(l,o.k); return s==='ok'?`${x.d} / ${x.v}`:({pend:'待補',na:'不適用','':''})[s]; }),...st.flatMap(x=>(l.stepsOff||[]).includes(x.id)?['不適用','不適用']:[(l.plan||{})[x.id],(l.done||{})[x.id]]),
       ...KPI_DEF.map(d=>k[d.k]),k.d,l.updatedAt?new Date(l.updatedAt).toLocaleString('zh-TW',{hour12:false}):'',l.updatedBy]; });
   const csv=[head,...rows].map(r=>r.map(v=>{ v=v==null?'':String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(',')).join('\r\n');
@@ -2955,6 +2970,7 @@ function copyShare(){
 /** 給使用者看的版本更新紀錄（目前這個大版本的每一版，新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點（**粗體** 標重點詞）。
  *  升大版本時：把這裡整理成一行一版搬進 ERAS 上一代的 t，這裡清空重新開始 */
 const CHANGELOG=[
+  {v:'4.8',d:'2026-10-30',t:['能力矩陣新增「**客戶 commit**」欄（✓ 已 commit / — 未）：開「快速編輯」點格子就能切換；篩選可以只看已 / 未 commit；分組列顯示「客戶 commit N / M」','能力矩陣依 **產品別 → 樓層 / 區域** 兩層收合，工具列有「全部收合 / 全部展開」；篩選加「樓層 / 區域」','產品別一律依 **NB → DT → TV → Set → FIDM** 排列；軟體版本 **2.0 排在 1.x 後面**；產線編輯的樓層併進「線別」欄']},
   {v:'4.7',d:'2026-10-30',t:['主檔「**產品設定**」改成 產品別 → 段別 → 型態：產品別可以收合，每個段別直接列出各型態**要檢哪些項目**與建議版本（同段別各型態不一樣的項目標橘色）','要修改按「**✎ 編輯檢測項目**」才出現勾選表；可以「複製自…」另一個段別 / 型態；段別改成下拉選單','總覽：**Set 與 EOL** 合成同一個段別；比較組沒有的段別顯示淡色 0 台小卡']},
   {v:'4.6',d:'2026-10-29',t:['總覽的**廠區篩選**改成三欄（亞洲 / 歐洲 / 美洲）：點地區名稱＝整個地區，點廠區＝單一廠區','廠區一律依**代號的字母與數字**排序；海外廠區補上地區名稱（墨西哥 MX、德國 GM、保加利亞 BG、上海 SH、龍潭 LT）','段別卡片收合時更精簡，黃燈會寫出原因（能力未達標 / 客戶未 commit）']},
   {v:'4.5',d:'2026-10-29',t:['檢測項目分清楚：**要檢＝實心綠點 ●**，**不需檢、但軟體有這個功能＝空心圈 ○**','能力矩陣開「**快速編輯**」可以直接點檢測項目格子切換 需要 / 不需要（產線編輯 →「檢測項目」也可以改）','總覽依段別：CT / PBI / FD 從線別名稱自動分 1、2（例 2B-CT1-1# → CT1）']},

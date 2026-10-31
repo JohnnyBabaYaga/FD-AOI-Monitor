@@ -3012,14 +3012,19 @@ function openCloud(note){
     <span class="r"><button class="btn pri" onclick="saveCloud()">儲存設定</button></span></div>`,true);
 }
 function readCloudForm(){ const v=id=>($('#'+id).value||'').trim(); return {owner:v('g-owner'),repo:v('g-repo'),branch:v('g-branch')||'main',path:v('g-path')||'aoi-monitor-data.json',token:v('g-token'),api:v('g-api'),adminRepo:v('g-adm'),enabled:$('#g-en').checked}; }
+/** 防呆：Repo 欄填成管理員 repo（Johnny 2026-10-31 實際遇到：會跳「建立雲端資料檔」，資料寫到錯的 repo） */
+const ADM_CLASH_MSG='「資料 repo」請填 FD-AOI-Monitor-Data；管理員 repo 不用填在這裡，換權杖就好';
+const admClash=g=>!!g.repo&&g.repo.toLowerCase()===(g.adminRepo||ADMIN_REPO_DEF).toLowerCase();
 function saveCloud(){
-  const n=readCloudForm(), changed=n.owner!==GH.owner||n.repo!==GH.repo||n.path!==GH.path||n.branch!==GH.branch||(n.api||'')!==(GH.api||'');
+  const n=readCloudForm(); if(admClash(n)){ const el=$('#cl-msg'); if(el){ el.style.color='#b8391f'; el.textContent='⚠ '+ADM_CLASH_MSG; } toast(ADM_CLASH_MSG,'err',6000); return; }
+  const changed=n.owner!==GH.owner||n.repo!==GH.repo||n.path!==GH.path||n.branch!==GH.branch||(n.api||'')!==(GH.api||'');
   GH=n; saveJSON(LS.gh,GH); if(changed){ GH_SHA=null; localStorage.removeItem(LS.sha); }
   closeModal(); if(ghReady()) pullNow({force:true,init:true,loud:true}); else setSync('off'); renderAll(); refreshRole();
 }
 async function testCloud(){
   const el=$('#cl-msg'), g=readCloudForm(); const say=(c,t)=>{ el.style.color=c; el.textContent=t; };
   if(!g.owner||!g.repo||!g.token){ say('var(--warn)','⚠ 請先填寫 owner / repo / 權杖'); return; }
+  if(admClash(g)){ say('#b8391f','⚠ '+ADM_CLASH_MSG); return; }
   say('var(--amber)','⟳ 測試中…');
   const base=(g.api||'https://api.github.com').replace(/\/+$/,''), H={'Accept':'application/vnd.github+json','Authorization':'Bearer '+g.token};
   try{

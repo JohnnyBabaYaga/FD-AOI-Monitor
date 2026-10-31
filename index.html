@@ -2491,9 +2491,9 @@ function renderMaster(){
       <table class="mt"><tr><th>代碼</th><th>名稱</th><th>地區</th><th>廠區負責人</th><th></th></tr>
       ${liveSorted('sites').map(s=>`<tr><td style="white-space:nowrap"><b>${esc(s.id)}</b></td><td>${inp('sites',s.id,'name',s.name)}</td><td>${inp('sites',s.id,'region',s.region,'例：廈門 XM')}</td><td><input class="in" list="dl-people" value="${esc(s.owner||'')}" placeholder="姓名" onchange="mSet('sites','${s.id}','owner',this.value)"></td><td></td></tr>`).join('')}</table></div>
 
-    <div class="card mcard" id="m-hws"><h3>📷 相機（硬體）${GI('hw')}<small>畫檢設備使用的相機型號</small><button class="btn sm" onclick="mAdd('hws',{name:'新相機'})">＋ 新增</button></h3>
-      <table class="mt"><tr><th>型號</th><th style="width:60px">使用中</th><th></th></tr>
-      ${liveSorted('hws').map(h=>`<tr><td>${inp('hws',h.id,'name',h.name)}</td><td class="muted" style="font-size:11px">${L.filter(l=>l.hw===h.id).length} 條</td><td class="ac">${mv('hws',h.id)}</td></tr>`).join('')}</table></div>
+    <div class="card mcard" id="m-hws"><h3>📷 硬體管理${GI('hw')}<small>畫檢設備使用的相機：品牌、型號與備註</small><button class="btn sm" onclick="mAdd('hws',{name:'新相機'})">＋ 新增</button></h3>
+      <table class="mt"><tr><th style="width:24%">品牌</th><th style="width:28%">型號</th><th>備註</th><th style="width:60px">使用中</th><th></th></tr>
+      ${liveSorted('hws').map(h=>`<tr><td>${inp('hws',h.id,'brand',h.brand,'＋ 品牌')}</td><td>${inp('hws',h.id,'name',h.name)}</td><td>${inp('hws',h.id,'note',h.note,'＋ 備註')}</td><td class="muted" style="font-size:11px">${L.filter(l=>l.hw===h.id).length} 條</td><td class="ac">${mv('hws',h.id)}</td></tr>`).join('')}</table></div>
 
     <div class="card mcard full" id="m-prod"><h3>📦 產品設定${GI('prodset')}<small>產品別 → 段別 → 型態要檢的項目；修改按「編輯檢測項目」</small><span class="h3r"><button class="btn sm" id="pb-allbtn" onclick="pbAllToggle()">▾ 全部收合</button><button class="btn sm" onclick="mAdd('products',{name:'新產品別',fr:{f01:[]}})">＋ 新增產品別</button></span></h3>
       ${prods.length?prodMatrix(prods,items,forms,plats,L):'<div class="empty">尚無產品別</div>'}
@@ -3230,7 +3230,7 @@ const GL={
   quick:['例行更新（PDCA）','右上角「<b>PDCA 關卡 ▾</b>」勾選這條線要追蹤哪些時間點；沒勾的不顯示，也不算進完成度與時程。<br>每週例行只要做三件事：<b>完成的關卡打勾</b>、<b>更新預計日</b>、<b>有沒有卡關</b>。<br>狀態沒有變化時，按面板最下面的「<b>✓ 無變動</b>」，會重設「待更新」提醒。'],
   batch:['批次升版','勾選多條線，一次套用同一個版本類別與版本號，不用一條一條改。'],
   ms:['里程碑','PDCA 中標「里程碑」的關卡：<b>機台進廠、SAT 驗收、量產上線</b>。勾選完成就是實際日，不用另外填；總覽的「量產上線時程」用的是量產上線這一關。'],
-  hw:['硬體（相機）','這條線畫檢設備用的<b>相機型號</b>（例如 151MP、AIL151-55）。清單在「主檔設定 → 硬體」維護；矩陣可以用「全部硬體」篩選，快速找出用同一款相機的線。'],
+  hw:['硬體（相機）','這條線畫檢設備用的<b>相機型號</b>（例如 151MP、AIL151-55）。清單在「主檔設定 → 硬體管理」維護（品牌、型號、備註）；矩陣可以用「全部硬體」篩選，快速找出用同一款相機的線。'],
   sw:['軟體版本','這條線使用的<b>版本類別</b>與<b>版本號</b>（版本號本身就看得出日期）。版本類別不在這條線（產品別 + 型態）的建議版本內時會標<b style="color:#d99400">黃色</b>，滑鼠移上去可以看缺哪些功能。'],
   kpi:['上線後 KPI','量產後定期記錄過檢率、漏檢率、稼動率，看趨勢有沒有變好。<b style="color:#e0563f">紅色</b>＝沒達到目標（目標每條線可以自己設）。'],
   ok:['過檢率','AOI 判 NG、但人工複判其實是 OK 的比例（誤判）。<b>越低越好</b>，太高會增加複判人力。'],

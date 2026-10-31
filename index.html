@@ -1273,9 +1273,11 @@ function capWhy(l){ const r=reqItems(l), u=unsetCombos(lineProds(l),lineForms(l)
   ['dev','off','unk'].forEach(k=>{ const n=r.filter(i=>itemSt(l,i)===k).map(i=>(byId('items',i)||{}).name||i); if(n.length) out.push(IST[k].t+'：'+n.join('、')); });
   return out.join('；'); }
 function lineCapOk(l){ const r=reqItems(l); if(!r.length||unsetCombos(lineProds(l),lineForms(l)).length) return false; return r.every(i=>itemSt(l,i)==='ok'); }
-/** 燈號（v4.3）：綠＝檢測能力達標 + 客戶已 commit 我們的能力（lines.cust='y'）；其他都是黃 */
-const lineLight=l=>lineCapOk(l)&&l.cust==='y'?'g':'y';
-const lightWhy=l=>lineLight(l)==='g'?'綠燈：檢測能力達標，客戶已 commit':'黃燈：'+[lineCapOk(l)?'':'檢測能力未達標（有未滿足或待新增的需求）',l.cust==='y'?'':'客戶尚未 commit'].filter(Boolean).join('、');
+/** 燈號（v4.3；v4.10 補 KPI）：綠＝軟體能力達標 + 客戶已 commit（lines.cust='y'）+ KPI 達標；其他都是黃 */
+/** KPI 達標（v4.10 補，Johnny 2026-10-31「小卡是給處級以上主管看的」）：最近一筆 KPI 有填的項目全部在目標內，且至少填了一項；沒填 KPI 不算達標 */
+function lineKpiOk(l){ const k=kpiLatest(l); if(!k) return false; const f=KPI_DEF.filter(d=>k[d.k]!==undefined&&k[d.k]!==''&&k[d.k]!==null); return f.length>0&&f.every(d=>!kpiBad(l,d.k,k[d.k])); }
+const lineLight=l=>lineCapOk(l)&&l.cust==='y'&&lineKpiOk(l)?'g':'y';   // 綠燈＝軟體能力達標 + 客戶 commit + KPI 達標
+const lightWhy=l=>lineLight(l)==='g'?'綠燈：軟體能力達標、客戶已 commit、KPI 達標':'黃燈：'+[lineCapOk(l)?'':'軟體能力未達標（有未滿足或待新增的需求）',l.cust==='y'?'':'客戶尚未 commit',lineKpiOk(l)?'':(kpiLatest(l)?'KPI 未達標':'還沒有 KPI')].filter(Boolean).join('、');
 function needTechs(iids,forms){ const s=new Set(); iids.forEach(id=>itemTechs(byId('items',id)).forEach(t=>s.add(t.id))); formPre(forms).forEach(t=>s.add(t.id)); return [...s].map(id=>byId('techs',id)); }
 /** 比對每個軟體版本：需要的技術能力是否已釋出、是否支援這些型態 */
 function platFit(iids,forms){
@@ -1511,10 +1513,10 @@ function segPtr(){ document.querySelectorAll('.sgp').forEach(p=>{ const c=p.pare
 const SEG_KMAX=10;
 /** 段別卡片的統計：台數、綠 / 黃燈、已量產 / 導入中、缺口 / 卡關 / 逾期 */
 function segStats(ls){
-  const s={n:ls.length,g:0,y:0,mass:0,gap:0,blocked:0,overdue:0,cap:0,cust:0};   // cap＝黃燈但不是缺口（開發中、未設定、待新增需求）；cust＝客戶未 commit
+  const s={n:ls.length,g:0,y:0,mass:0,gap:0,blocked:0,overdue:0,cap:0,cust:0,kpi:0};   // cap＝黃燈但不是缺口（開發中、未設定、待新增需求）；cust＝客戶未 commit
   for(const l of ls){ s[lineLight(l)]++; if(isMass(l)) s.mass++; const gp=lineGaps(l); if(gp) s.gap++; if(l.blocked) s.blocked++; if(isOverdue(l)) s.overdue++;
-    if(!gp&&!lineCapOk(l)) s.cap++; if(l.cust!=='y') s.cust++; }
-  s.intro=s.n-s.mass; s.capOk=s.n-s.gap-s.cap; s.cu=s.n-s.cust; return s;   // capOk＝檢測能力達標台數；cu＝客戶已 commit 台數
+    if(!gp&&!lineCapOk(l)) s.cap++; if(l.cust!=='y') s.cust++; if(lineKpiOk(l)) s.kpi++; }
+  s.intro=s.n-s.mass; s.capOk=s.n-s.gap-s.cap; s.cu=s.n-s.cust; return s;   // kpi＝KPI 達標台數   // capOk＝檢測能力達標台數；cu＝客戶已 commit 台數
 }
 function segSection(L,regions){
   const bs=ovBlocks();
@@ -1543,10 +1545,10 @@ function segBlock(L,b,mains,cols){
     return `<div class="card sgc ${on?'on':''} ${g.k?'':'nos'}" data-seg="${esc(g.k)}" onclick="ovSegTg(this)" title="${on?'收合':'點一下展開 '+esc(nm)+' 的各台機台'}">
       <div class="sg-h"><span class="code">${esc(nm)}</span>${g.k?'':GI('noseg')}<span class="sg-n"><b>${s.n}</b>台</span></div>
       <div class="sg-lt"><span class="lt g" title="綠燈 ${s.g} 台"><i></i><b>${s.g}</b></span><span class="lt y" title="黃燈 ${s.y} 台"><i></i><b>${s.y}</b></span>${GI('light')}</div>
-      <div class="sg-kk"><span class="sg-k ${s.capOk===s.n?'ok':''}" title="檢測能力達標的台數（綠燈條件之一）">能力 <b>${s.capOk}</b>/${s.n}</span><span class="sg-k ${s.cu===s.n?'ok':''}" title="客戶已 commit 的台數（綠燈條件之二）：產線編輯 →「檢測項目」或能力矩陣「快速編輯」勾選">commit <b>${s.cu}</b>/${s.n}</span></div>
+      <div class="sg-kk"><span class="sg-k ${s.capOk===s.n?'ok':''}" title="軟體能力達標的台數（綠燈條件之一）：軟體版本的功能可對應所有檢測需求">軟體能力 <b>${s.capOk}</b>/${s.n}</span><span class="sg-k ${s.cu===s.n?'ok':''}" title="客戶已 commit 的台數（綠燈條件之二）：產線編輯 →「檢測項目」或能力矩陣「快速編輯」勾選">commit <b>${s.cu}</b>/${s.n}</span><span class="sg-k ${s.kpi===s.n?'ok':''}" title="KPI 達標的台數（綠燈條件之三）：最近一筆上線後 KPI（過檢率、漏檢率、稼動率）有填的項目都在目標內；還沒填 KPI 的不算">KPI <b>${s.kpi}</b>/${s.n}</span></div>
       <div class="sg-bar">${s.g?`<i class="g" style="flex:${s.g}"></i>`:''}${s.y?`<i class="y" style="flex:${s.y}"></i>`:''}</div>
       ${on?`${sub}<div class="sg-m"><span>已量產<b>${s.mass}</b></span><span>導入中<b>${s.intro}</b></span></div>`:''}
-      <div class="sg-s ${say.length?'bad':s.cap?'warn':'ok'}" title="${s.cap?'能力未達標：有開發中、主檔未設定演算法，或產品別 × 型態還沒設定需求項目':''}">${say.length?'⚠ '+[...say,...(s.cap?[s.cap+' 台能力未達標']:[])].join('、'):s.cap?'● '+s.cap+' 台能力未達標':'✓ 檢測能力全部達標'+(s.cust?'':'，客戶都已 commit')}</div>   <!-- 客戶 commit 改在上面的「commit N/M」顯示，說明列只講要處理的問題（Johnny 2026-10-31） -->
+      <div class="sg-s ${say.length?'bad':s.cap?'warn':'ok'}" title="${s.cap?'能力未達標：有開發中、主檔未設定演算法，或產品別 × 型態還沒設定需求項目':''}">${say.length?'⚠ '+[...say,...(s.cap?[s.cap+' 台能力未達標']:[])].join('、'):s.cap?'● '+s.cap+' 台能力未達標':'✓ 軟體能力全部達標'+(s.cust?'':'，客戶都已 commit')}</div>   <!-- 客戶 commit 改在上面的「commit N/M」顯示，說明列只講要處理的問題（Johnny 2026-10-31） -->
       <div class="sg-x">${on?'▴ 收合':'▾ 展開 '+s.n+' 台'}</div>
     </div>${on?segPanel(g,b):''}`; }).join('');
   return `<div class="sgs" style="--n:${cols}">${cards}</div>`;
@@ -1736,7 +1738,7 @@ function matrixTable(ls,items,techs){
   let h=`<table class="mx ${UI.mf.edit?'edit':''}"><thead><tr class="h1">
     <th class="stk c-ln" rowspan="2" style="vertical-align:bottom;text-align:left">線別<div class="dim" style="font-weight:500">型態 · 相機${GI('hw')}</div></th>
     ${items.length?`<th class="g-it" colspan="${items.length}">檢測項目${GI('itemst')}</th>`:''}
-    <th class="c-cu" rowspan="2" style="vertical-align:bottom" title="客戶是否已 commit 我們的檢測能力（能力達標 + 客戶已 commit 才是綠燈）">客戶<br>commit${GI('light')}</th>
+    <th class="c-cu" rowspan="2" style="vertical-align:bottom" title="客戶是否已 commit 我們的檢測能力（軟體能力達標 + 客戶已 commit + KPI 達標才是綠燈）">客戶<br>commit${GI('light')}</th>
     <th rowspan="2" style="vertical-align:bottom;text-align:left">軟體版本${GI('sw')}</th>
     ${TC?`<th class="g-te t-sum-h" rowspan="2" onclick="setMF({techOpen:true})" title="點一下展開技術能力（${techs.length} 項）">技術能力${GI('tech')}<div class="t-tg">▸ 展開</div></th>`:TCATS.map((g,gi)=>{ const n=techs.filter(t=>tcat(t)===g.k).length; const first=!techs.some(t=>TCAT_IDX[tcat(t)]<gi); return n?`<th class="g-te tc-${g.k}" colspan="${n}">${first&&!UI.mf.edit?`<button class="t-tgb" onclick="setMF({techOpen:false})" title="收合技術能力">◂</button>`:''}${g.k==='meas'||g.k==='det'?'演算法・':''}${g.t}${first?GI('tech'):''}</th>`:''; }).join('')}
     <th class="g-op" colspan="${OPTICS.length}">光學調整${GI('optic')}</th>
@@ -1949,7 +1951,7 @@ function renderDrawer(){
     </details>
 
     <details class="ds" data-sec="items" ${ED.open.items?'open':''}><summary><h4>檢測項目${GI('itemst')} <small>自動推算，可手動調整</small><span class="r sumtxt">${req.length?`需求 ${req.length} 項${nMan?`（手動 ${nMan}）`:''}：${['ok','off','dev','gap','unk'].filter(s=>cnt[s]).map(s=>`<b class="s-${s}">${IST[s].sym}</b>${cnt[s]}`).join(' ')}`:'<span class="muted">先選產品別</span>'} · ${w.cust==='y'?'<b style="color:var(--green)">客戶已 commit</b>':'客戶未 commit'}</span></h4></summary>
-      <div class="srow cust-r"><span class="n">客戶 commit${GI('light')}<div class="muted" style="font-size:11px">客戶同意採用我們的檢測能力；檢測能力達標 + 客戶已 commit，總覽才是綠燈</div></span>
+      <div class="srow cust-r"><span class="n">客戶 commit${GI('light')}<div class="muted" style="font-size:11px">客戶同意採用我們的檢測能力；軟體能力達標 + 客戶已 commit + KPI 達標，總覽才是綠燈</div></span>
         <span class="seg"><button class="v-x ${w.cust==='y'?'':'on'}" data-set="cust" data-v="">未 commit</button><button class="v-on ${w.cust==='y'?'on':''}" data-set="cust" data-v="y">✓ 已 commit</button></span></div>
       <div class="muted" style="font-size:11px;margin:2px 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${ext?'<span style="flex-basis:100%"><b>外購設備</b>：每一項選「可檢 / 不可檢」（再點一次改回未填），需求項目都可檢才算檢測能力達標。</span>':''}<span>需求項目依「產品別 × 型態」自動帶入；這條線實際要檢的不同，可逐項改「需要 / 不需要」。選了目前版本做不到的項目會顯示為缺口，代表要升版。</span>
         ${nMan?`<button class="lkb" data-reqreset="1">全部改回自動</button>`:''}</div>
@@ -3202,7 +3204,7 @@ const GL={
   seg:['段別','產品設定每一筆的段別（CT1 / CT2 / PBI1 / PBI2 / SKD / BIM / FD1 / FD2 / Set / EOL，在下拉選單選；選「未設定」清除），同一個產品別在不同段別要檢的項目不一樣，所以各自一筆。<br>產線的段別由它選的產品別帶出；總覽「依段別」每個段別一張卡片。下拉選單最下面「其他（自行輸入）…」可以自己輸入新的段別。'],
   noseg:['未分段','這些機台選的產品別在「主檔設定 → 產品設定」還沒有填段別。到主檔幫該產品別選段別，或在產線改選有段別的產品別。'],
   ext:['外購設備','向外部廠商購買的 AOI 設備，不是用本廠的畫檢軟體。<br>標成<b>外購設備</b>後，這條線<b>不套用軟體版本 → 技術能力的推算</b>，改成在「檢測項目」逐項選<b>可檢 / 不可檢</b>（能力矩陣「快速編輯」也可以直接點格子切換）。<br>燈號規則相同：需求項目都可檢 + 客戶已 commit 才是綠燈。能力矩陣的篩選可以只看外購或本廠。'],
-  light:['綠燈 / 黃燈','<b style="color:#36b37e">綠燈</b>＝<b>檢測能力達標</b> + <b>客戶已 commit</b> 我們的能力，兩個都要。<br>檢測能力達標：這台的需求檢測項目全部做得到（全部已具備；版本支援但這台沒開啟的算缺口）。<br>客戶 commit：在產線編輯 →「檢測項目」勾選「✓ 已 commit」。<br><b style="color:#d99400">黃燈</b>：其中一個還沒做到——有未滿足的項目（缺口、開發中、主檔還沒設定演算法）、有<b>待新增需求</b>（「產品別 × 型態」主檔還沒設定、或還沒有需求檢測項目），或客戶還沒 commit。'],
+  light:['綠燈 / 黃燈','<b style="color:#36b37e">綠燈</b>＝<b>軟體能力達標</b> + <b>客戶已 commit</b> + <b>KPI 達標</b>，三個都要。<br>KPI 達標：最近一筆上線後 KPI（過檢率、漏檢率、稼動率）有填的項目都在目標內；還沒填 KPI 的算黃燈。<br>軟體能力達標：這台的需求檢測項目全部做得到（全部已具備；版本支援但這台沒開啟的算缺口）。<br>客戶 commit：在產線編輯 →「檢測項目」勾選「✓ 已 commit」。<br><b style="color:#d99400">黃燈</b>：其中一個還沒做到——有未滿足的項目（缺口、開發中、主檔還沒設定演算法）、有<b>待新增需求</b>（「產品別 × 型態」主檔還沒設定、或還沒有需求檢測項目），、客戶還沒 commit，或 KPI 還沒填 / 未達標。'],
   floor:['樓層 / 區域','機台所在的樓層或區域，例如 F1、F7、1C、3D，填在「線別」左邊的小格。總覽「依段別」可以用它篩選。<br>沒填時會從線別名稱開頭推測（F7-PBI-10#-3 → F7），存檔時自動帶入，推測錯了直接改掉就好。'],
   req:['需求檢測項目','這條線的「產品別 × 型態」組合在主檔「產品設定」勾選的檢測項目（多個組合取聯集）。矩陣用淡藍底標示，沒具備的就算缺口。'],
   quick:['例行更新（PDCA）','右上角「<b>PDCA 關卡 ▾</b>」勾選這條線要追蹤哪些時間點；沒勾的不顯示，也不算進完成度與時程。<br>每週例行只要做三件事：<b>完成的關卡打勾</b>、<b>更新預計日</b>、<b>有沒有卡關</b>。<br>狀態沒有變化時，按面板最下面的「<b>✓ 無變動</b>」，會重設「待更新」提醒。'],

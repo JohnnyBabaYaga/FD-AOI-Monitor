@@ -598,6 +598,9 @@ button.oa:hover{filter:brightness(.96);}
 .mx-top .mbar label.ck{gap:4px;}
 .mx-top .mleg{padding:0 2px 8px;}
 .dd{position:relative;}
+.pf-row{margin-top:10px;}
+.ldd .dd-b{width:100%;display:flex;align-items:center;gap:6px;font-weight:500;} .ldd .dd-b span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;} .ldd .dd-b i{font-style:normal;color:var(--sub);}
+.ldd .dd-b.ph span{color:var(--sub);} .ldd .dd-m{right:0;max-height:50vh;overflow:auto;} .ldd .dd-g:last-child{border-bottom:0;}
 .dd .dd-b{max-width:none!important;cursor:pointer;text-align:left;font-weight:600;white-space:nowrap;}
 .dd-m{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:60;min-width:220px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(20,40,80,.18);padding:8px 10px;}
 .dd.on .dd-m{display:block;}
@@ -1711,7 +1714,8 @@ function mxFit(){ const t=$('#pg-matrix .mx-top'), mw=$('#pg-matrix .mwrap'); if
   mw.style.maxHeight=innerWidth>760?Math.max(260,innerHeight-$('header').offsetHeight-t.offsetHeight-16)+'px':''; }
 let MXDD='';   // 目前展開的下拉：'sd' 廠區 / 'fd' 篩選
 function mxDD(e,k){ e.stopPropagation(); MXDD=MXDD===k?'':k; ['sd','fd'].forEach(x=>{ const d=$('#mx-'+x); if(d) d.classList.toggle('on',MXDD===x); }); }
-document.addEventListener('click',e=>{ if(ED&&ED.stepDD&&!e.target.closest('#dw-sd')){ ED.stepDD=false; const d=$('#dw-sd'); if(d) d.classList.remove('on'); } });
+document.addEventListener('click',e=>{ if(ED&&ED.stepDD&&!e.target.closest('#dw-sd')){ ED.stepDD=false; const d=$('#dw-sd'); if(d) d.classList.remove('on'); }
+  if(ED&&ED.ldd&&!e.target.closest('.ldd')){ ED.ldd=''; $$('#drawer .ldd.on').forEach(d=>d.classList.remove('on')); } });
 document.addEventListener('click',e=>{ if(MXDD&&!e.target.closest('.dd')){ MXDD=''; $$('#pg-matrix .dd.on').forEach(d=>d.classList.remove('on')); } });
 function matrixTable(ls,items,techs){
   const TC=!UI.mf.techOpen&&!UI.mf.edit;   // 技術能力收合成一欄摘要
@@ -1893,10 +1897,13 @@ function renderDrawer(){
         :w.owner===so?`🔗 與 <b>${esc(w.site)}</b> 廠區負責人相同`
         :`🏭 <b>${esc(w.site)}</b> 廠區負責人：${esc(so)} · 本線另外指定 <b>${esc(w.owner)}</b> <button class="lkb" data-set="owner" data-v="">改回沿用廠區負責人</button>`)
         :`🏭 <b>${esc(w.site)}</b> 尚未設定廠區負責人<span class="muted">（主檔設定 → 廠區；設定後，負責人留空的產線會自動沿用）</span>`}</div>
-      <div class="sub-t">產品別 *（可複選）${GI('prodset')}</div>
-      <div class="reqs">${prodsSorted().map(x=>`<button class="chip ${lineProds(w).includes(x.id)?'on':''}" data-prod="${x.id}">${esc(prodFull(x))}</button>`).join('')}</div>
-      <div class="sub-t">型態（可複選）${GI('forms')}</div>
-      <div class="reqs">${liveSorted('forms').map(f=>`<button class="chip ${(w.forms||[]).includes(f.id)?'on':''}" data-form="${f.id}">${esc(f.name)}</button>`).join('')}</div>
+      <div class="fg pf-row">
+        <div class="f"><label>產品別 *（可複選）${GI('prodset')}</label>${lddBox('prod',lineProds(w).map(id=>byId('products',id)).filter(Boolean).map(prodFull),
+          (()=>{ const g=[]; prodsSorted().forEach(x=>{ const t=g[g.length-1]; if(t&&t.k===x.name) t.a.push(x); else g.push({k:x.name,a:[x]}); });
+            return g.map(f=>`<div class="dd-g"><span class="dd-gt">${esc(f.k)}</span>${f.a.map(x=>`<label class="ck"><input type="checkbox" data-prodchk="${x.id}" ${lineProds(w).includes(x.id)?'checked':''}>${esc((x.seg||'').trim()||x.name)}</label>`).join('')}</div>`).join(''); })())}</div>
+        <div class="f"><label>型態（可複選）${GI('forms')}</label>${lddBox('form',(w.forms||[]).map(id=>byId('forms',id)).filter(Boolean).map(f=>f.name),
+          `<div class="dd-g">${liveSorted('forms').map(f=>`<label class="ck"><input type="checkbox" data-formchk="${f.id}" ${(w.forms||[]).includes(f.id)?'checked':''}>${esc(f.name)}</label>`).join('')}</div>`)}</div>
+      </div>
       ${unset.length?`<div class="warnline">⚠ 主檔還沒設定「${esc(unset.join('、'))}」的檢測項目，請到「主檔設定 → 產品設定」加入這個型態</div>`:''}
       <div class="fg" style="margin-top:10px">
         <datalist id="dl-floor">${[...new Set(liveLines().filter(l=>l.site===w.site).map(lineFloor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant',{numeric:true})).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
@@ -1975,8 +1982,15 @@ function addKpi(){
   if(!Object.keys(rec).length){ toast('請至少輸入一項 KPI','err'); return; }
   ED.w.kpi=ED.w.kpi||{}; ED.w.kpi[d]=Object.assign({},ED.w.kpi[d]||{},rec); renderDrawer();
 }
+/** 產線編輯的複選下拉（產品別、型態）：按鈕顯示已選項目，選單裡勾選；ED.ldd 記目前打開哪一個 */
+function lddBox(k,sel,menu){ const txt=sel.join('、');
+  return `<div class="dd ldd ${ED.ldd===k?'on':''}" id="dw-${k}"><button type="button" class="in dd-b ${sel.length?'':'ph'}" data-ldd="${k}" title="${esc(txt)}"><span>${sel.length?esc(txt):'— 選擇 —'}</span><i>▾</i></button><div class="dd-m">${menu}</div></div>`; }
 function onDrawerInput(e){
   const t=e.target; if(!ED) return;
+  if(t.dataset.prodchk||t.dataset.formchk){ if(e.type!=='change') return;
+    if(t.dataset.prodchk){ const a=lineProds(ED.w).filter(x=>x!==t.dataset.prodchk); if(t.checked) a.push(t.dataset.prodchk); ED.w.products=a; ED.w.product=a[0]||''; }
+    else { const f=(ED.w.forms||[]).filter(x=>x!==t.dataset.formchk); if(t.checked) f.push(t.dataset.formchk); ED.w.forms=f; }
+    renderDrawer(); return; }
   if(t.dataset.stepchk){ if(e.type!=='change') return; const id=t.dataset.stepchk, off=(ED.w.stepsOff||[]).filter(x=>x!==id);
     if(!t.checked){ if(stepsSorted().filter(s=>!off.includes(s.id)).length<=1){ t.checked=true; toast('至少要保留一個關卡','err'); return; } off.push(id); }
     if(off.length) ED.w.stepsOff=off; else delete ED.w.stepsOff; ED.stepDD=true; renderDrawer(); return; }
@@ -1996,6 +2010,7 @@ function onDrawerClick(e){
     if(want&&!auto) add.push(id); if(!want&&auto) off.push(id);
     if(add.length) ED.w.reqAdd=add; else delete ED.w.reqAdd; if(off.length) ED.w.reqOff=off; else delete ED.w.reqOff; renderDrawer(); return; }
   if(t.dataset.reqreset){ delete ED.w.reqAdd; delete ED.w.reqOff; renderDrawer(); return; }
+  const ld=t.closest('[data-ldd]'); if(ld){ e.stopPropagation(); ED.ldd=ED.ldd===ld.dataset.ldd?'':ld.dataset.ldd; ['prod','form'].forEach(k=>{ const d=$('#dw-'+k); if(d) d.classList.toggle('on',ED.ldd===k); }); return; }
   if(t.dataset.stepdd){ e.stopPropagation(); ED.stepDD=!ED.stepDD; const d=$('#dw-sd'); if(d) d.classList.toggle('on',ED.stepDD); return; }
   if(t.dataset.opt){ const o=ED.w.optic=Object.assign({},ED.w.optic||{}), k=t.dataset.opt, v=t.dataset.v;
     if(v==='ok'){ const s=opSt(ED.w,k); if(s!=='ok'&&s!=='pend') o[k]={d:todayStr(),v:''}; } else if(v==='na') o[k]='na'; else delete o[k];

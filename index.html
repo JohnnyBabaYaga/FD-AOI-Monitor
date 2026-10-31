@@ -1549,7 +1549,7 @@ function segBlock(L,b,mains,cols){
     return `<div class="card sgc ${on?'on':''} ${g.k?'':'nos'}" data-seg="${esc(g.k)}" onclick="ovSegTg(this)" title="${on?'收合':'點一下展開 '+esc(nm)+' 的各台機台'}">
       <div class="sg-h"><span class="code">${esc(nm)}</span>${g.k?'':GI('noseg')}<span class="sg-n"><b>${s.n}</b>台</span></div>
       <div class="sg-lt"><span class="lt g" title="綠燈 ${s.g} 台"><i></i><b>${s.g}</b></span><span class="lt y" title="黃燈 ${s.y} 台"><i></i><b>${s.y}</b></span>${GI('light')}</div>
-      <div class="sg-kk"><span class="sg-k ${s.capOk===s.n?'ok':''}" title="軟體能力達標的台數（綠燈條件之一）：軟體版本的功能可對應所有檢測需求">軟體能力 <b>${s.capOk}</b>/${s.n}</span><span class="sg-k ${s.cu===s.n?'ok':''}" title="客戶已 commit 的台數（綠燈條件之二）：產線編輯 →「檢測項目」或能力矩陣「快速編輯」勾選">commit <b>${s.cu}</b>/${s.n}</span><span class="sg-k ${s.kpi===s.n?'ok':''}" title="KPI 達標的台數（綠燈條件之三）：最近一筆上線後 KPI 的過檢率、漏檢率都在目標內（稼動率不列入）；還沒填的不算">KPI <b>${s.kpi}</b>/${s.n}</span></div>
+      <div class="sg-kk"><span class="sg-k ${s.capOk===s.n?'ok':''}" title="軟體能力達標的台數（綠燈條件之一）：軟體版本的功能可對應所有檢測需求">軟體能力 <b>${s.capOk}</b>/${s.n}</span><span class="sg-k ${s.cu===s.n?'ok':''}" title="客戶已 commit 的台數（綠燈條件之二）：產線編輯 →「上線後 KPI 監控」或能力矩陣「快速編輯」勾選">commit <b>${s.cu}</b>/${s.n}</span><span class="sg-k ${s.kpi===s.n?'ok':''}" title="KPI 達標的台數（綠燈條件之三）：最近一筆上線後 KPI 的過檢率、漏檢率都在目標內（稼動率不列入）；還沒填的不算">KPI <b>${s.kpi}</b>/${s.n}</span></div>
       <div class="sg-bar">${s.g?`<i class="g" style="flex:${s.g}"></i>`:''}${s.y?`<i class="y" style="flex:${s.y}"></i>`:''}</div>
       ${on?`${sub}<div class="sg-m"><span>已量產<b>${s.mass}</b></span><span>導入中<b>${s.intro}</b></span></div>`:''}
       <div class="sg-s ${say.length?'bad':s.cap?'warn':'ok'}" title="${s.cap?'能力未達標：有開發中、主檔未設定演算法，或產品別 × 型態還沒設定需求項目':''}">${say.length?'⚠ '+[...say,...(s.cap?[s.cap+' 台能力未達標']:[])].join('、'):s.cap?'● '+s.cap+' 台能力未達標':'✓ 軟體能力全部達標'+(s.cust?'':'，客戶都已 commit')}</div>   <!-- 客戶 commit 改在上面的「commit N/M」顯示，說明列只講要處理的問題（Johnny 2026-10-31） -->
@@ -1939,9 +1939,7 @@ function renderDrawer(){
       `}
     </details>
 
-    <details class="ds" data-sec="items" ${ED.open.items?'open':''}><summary><h4>檢測項目${GI('itemst')} <small>自動推算，可手動調整</small><span class="r sumtxt">${req.length?`需求 ${req.length} 項${nMan?`（手動 ${nMan}）`:''}：${['ok','off','dev','gap','unk'].filter(s=>cnt[s]).map(s=>`<b class="s-${s}">${IST[s].sym}</b>${cnt[s]}`).join(' ')}`:'<span class="muted">先選產品別</span>'} · ${w.cust==='y'?'<b style="color:var(--green)">客戶已 commit</b>':'客戶未 commit'}</span></h4></summary>
-      <div class="srow cust-r"><span class="n">客戶 commit${GI('light')}<div class="muted" style="font-size:11px">客戶同意採用我們的檢測能力；軟體能力達標 + 客戶已 commit + KPI 達標，總覽才是綠燈</div></span>
-        <span class="seg"><button class="v-x ${w.cust==='y'?'':'on'}" data-set="cust" data-v="">未 commit</button><button class="v-on ${w.cust==='y'?'on':''}" data-set="cust" data-v="y">✓ 已 commit</button></span></div>
+    <details class="ds" data-sec="items" ${ED.open.items?'open':''}><summary><h4>檢測項目${GI('itemst')} <small>自動推算，可手動調整</small><span class="r sumtxt">${req.length?`需求 ${req.length} 項${nMan?`（手動 ${nMan}）`:''}：${['ok','off','dev','gap','unk'].filter(s=>cnt[s]).map(s=>`<b class="s-${s}">${IST[s].sym}</b>${cnt[s]}`).join(' ')}`:'<span class="muted">先選產品別</span>'}</span></h4></summary>
       <div class="muted" style="font-size:11px;margin:2px 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${ext?'<span style="flex-basis:100%"><b>外購設備</b>：每一項選「可檢 / 不可檢」（再點一次改回未填），需求項目都可檢才算檢測能力達標。</span>':''}<span>需求項目依「產品別 × 型態」自動帶入；這條線實際要檢的不同，可逐項改「需要 / 不需要」。選了目前版本做不到的項目會顯示為缺口，代表要升版。</span>
         ${nMan?`<button class="lkb" data-reqreset="1">全部改回自動</button>`:''}</div>
       ${items.map(i=>{ const c=itemCap(w,i.id), v=itemSt(w,i.id), src=reqSrc(w,i.id), on=req.includes(i.id);
@@ -1963,7 +1961,9 @@ function renderDrawer(){
 </details>`):''}</div>`; }).join('')}
     </details>
 
-    <details class="ds" data-sec="kpi" ${ED.open.kpi?'open':''}><summary><h4>上線後 KPI 監控${GI('kpi')} <small>量產後記錄</small><span class="r sumtxt muted">${kd.length?`${kd.length} 筆紀錄，最新 ${md(kd[kd.length-1])}`:'尚無紀錄'}</span></h4></summary>
+    <details class="ds" data-sec="kpi" ${ED.open.kpi?'open':''}><summary><h4>上線後 KPI 監控${GI('kpi')} <small>量產後記錄</small><span class="r sumtxt">${w.cust==='y'?'<b style="color:var(--green)">客戶已 commit</b>':'客戶未 commit'}<span class="muted"> · ${kd.length?`${kd.length} 筆紀錄，最新 ${md(kd[kd.length-1])}`:'尚無紀錄'}</span></span></h4></summary>
+      <div class="srow cust-r"><span class="n">客戶 commit${GI('light')}<div class="muted" style="font-size:11px">客戶同意採用我們的檢測能力；軟體能力達標 + 客戶已 commit + KPI 達標，總覽才是綠燈</div></span>
+        <span class="seg"><button class="v-x ${w.cust==='y'?'':'on'}" data-set="cust" data-v="">未 commit</button><button class="v-on ${w.cust==='y'?'on':''}" data-set="cust" data-v="y">✓ 已 commit</button></span></div>
       <div class="fg c3">${KPI_DEF.map(d=>`<div class="f"><label>目標 ${d.name}（${d.unit}，${d.better==='low'?'≤':'≥'}）${GI(d.k)}</label><input class="in" type="number" step="any" data-p="kpiT.${d.k}" data-num="1" value="${esc((w.kpiT||{})[d.k]??'')}" placeholder="${d.def}"></div>`).join('')}</div>
       <div style="display:flex;gap:6px;align-items:flex-end;margin-top:10px;flex-wrap:wrap">
         <div class="f"><label>日期</label><input class="in" type="date" id="kpi-d" value="${todayStr()}"></div>
@@ -3208,7 +3208,7 @@ const GL={
   seg:['段別','產品設定每一筆的段別（CT1 / CT2 / PBI1 / PBI2 / SKD / BIM / FD1 / FD2 / Set / EOL，在下拉選單選；選「未設定」清除），同一個產品別在不同段別要檢的項目不一樣，所以各自一筆。<br>產線的段別由它選的產品別帶出；總覽「依段別」每個段別一張卡片。下拉選單最下面「其他（自行輸入）…」可以自己輸入新的段別。'],
   noseg:['未分段','這些機台選的產品別在「主檔設定 → 產品設定」還沒有填段別。到主檔幫該產品別選段別，或在產線改選有段別的產品別。'],
   ext:['外購設備','向外部廠商購買的 AOI 設備，不是用本廠的畫檢軟體。<br>標成<b>外購設備</b>後，這條線<b>不套用軟體版本 → 技術能力的推算</b>，改成在「檢測項目」逐項選<b>可檢 / 不可檢</b>（能力矩陣「快速編輯」也可以直接點格子切換）。<br>燈號規則相同：需求項目都可檢 + 客戶已 commit 才是綠燈。能力矩陣的篩選可以只看外購或本廠。'],
-  light:['綠燈 / 黃燈','<b style="color:#36b37e">綠燈</b>＝<b>軟體能力達標</b> + <b>客戶已 commit</b> + <b>KPI 達標</b>，三個都要。<br>KPI 達標：最近一筆上線後 KPI 的<b>過檢率、漏檢率</b>都有填且在目標內（稼動率不列入）；還沒填的算黃燈。<br>軟體能力達標：這台的需求檢測項目全部做得到（全部已具備；版本支援但這台沒開啟的算缺口）。<br>客戶 commit：在產線編輯 →「檢測項目」勾選「✓ 已 commit」。<br><b style="color:#d99400">黃燈</b>：其中一個還沒做到——有未滿足的項目（缺口、開發中、主檔還沒設定演算法）、有<b>待新增需求</b>（「產品別 × 型態」主檔還沒設定、或還沒有需求檢測項目），、客戶還沒 commit，或 KPI 還沒填 / 未達標。'],
+  light:['綠燈 / 黃燈','<b style="color:#36b37e">綠燈</b>＝<b>軟體能力達標</b> + <b>客戶已 commit</b> + <b>KPI 達標</b>，三個都要。<br>KPI 達標：最近一筆上線後 KPI 的<b>過檢率、漏檢率</b>都有填且在目標內（稼動率不列入）；還沒填的算黃燈。<br>軟體能力達標：這台的需求檢測項目全部做得到（全部已具備；版本支援但這台沒開啟的算缺口）。<br>客戶 commit：在產線編輯 →「上線後 KPI 監控」勾選「✓ 已 commit」。<br><b style="color:#d99400">黃燈</b>：其中一個還沒做到——有未滿足的項目（缺口、開發中、主檔還沒設定演算法）、有<b>待新增需求</b>（「產品別 × 型態」主檔還沒設定、或還沒有需求檢測項目），、客戶還沒 commit，或 KPI 還沒填 / 未達標。'],
   floor:['樓層 / 區域','機台所在的樓層或區域，例如 F1、F7、1C、3D，填在「線別」左邊的小格。總覽「依段別」可以用它篩選。<br>沒填時會從線別名稱開頭推測（F7-PBI-10#-3 → F7），存檔時自動帶入，推測錯了直接改掉就好。'],
   req:['需求檢測項目','這條線的「產品別 × 型態」組合在主檔「產品設定」勾選的檢測項目（多個組合取聯集）。矩陣用淡藍底標示，沒具備的就算缺口。'],
   quick:['例行更新（PDCA）','右上角「<b>PDCA 關卡 ▾</b>」勾選這條線要追蹤哪些時間點；沒勾的不顯示，也不算進完成度與時程。<br>每週例行只要做三件事：<b>完成的關卡打勾</b>、<b>更新預計日</b>、<b>有沒有卡關</b>。<br>狀態沒有變化時，按面板最下面的「<b>✓ 無變動</b>」，會重設「待更新」提醒。'],

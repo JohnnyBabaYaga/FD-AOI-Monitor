@@ -1742,11 +1742,11 @@ function matrixTable(ls,items,techs){
   let h=`<table class="mx ${UI.mf.edit?'edit':''}"><thead><tr class="h1">
     <th class="stk c-ln" rowspan="2" style="vertical-align:bottom;text-align:left">線別<div class="dim" style="font-weight:500">型態 · 相機${GI('hw')}</div></th>
     ${items.length?`<th class="g-it" colspan="${items.length}">檢測項目${GI('itemst')}</th>`:''}
-    <th class="c-cu" rowspan="2" style="vertical-align:bottom" title="客戶是否已 commit 我們的檢測能力（軟體能力達標 + 客戶已 commit + KPI 達標才是綠燈）">客戶<br>commit${GI('light')}</th>
     <th rowspan="2" style="vertical-align:bottom;text-align:left">軟體版本${GI('sw')}</th>
     ${TC?`<th class="g-te t-sum-h" rowspan="2" onclick="setMF({techOpen:true})" title="點一下展開技術能力（${techs.length} 項）">技術能力${GI('tech')}<div class="t-tg">▸ 展開</div></th>`:TCATS.map((g,gi)=>{ const n=techs.filter(t=>tcat(t)===g.k).length; const first=!techs.some(t=>TCAT_IDX[tcat(t)]<gi); return n?`<th class="g-te tc-${g.k}" colspan="${n}">${first&&!UI.mf.edit?`<button class="t-tgb" onclick="setMF({techOpen:false})" title="收合技術能力">◂</button>`:''}${g.k==='meas'||g.k==='det'?'演算法・':''}${g.t}${first?GI('tech'):''}</th>`:''; }).join('')}
     <th class="g-op" colspan="${OPTICS.length}">軟硬體確認${GI('optic')}</th>
     <th class="g-pd" colspan="2">PDCA 進度${GI('pdca')}</th>
+    <th class="c-cu" rowspan="2" style="vertical-align:bottom" title="客戶是否已 commit 我們的檢測能力（軟體能力達標 + 客戶已 commit + KPI 達標才是綠燈）">客戶<br>commit${GI('light')}</th>
     <th rowspan="2" style="vertical-align:bottom">上線後 KPI${GI('kpi')}</th><th rowspan="2" style="vertical-align:bottom;text-align:left">更新</th>
   </tr><tr class="h2">
     ${items.map(i=>`<th class="vt g-it" title="${esc(i.name)}（${esc(i.cat||'')}）\n需要：${esc(itemTechs(i).map(t=>t.name).join('、')||'未設定')}"><div>${esc(i.name)}</div></th>`).join('')}
@@ -1771,7 +1771,6 @@ function matrixTable(ls,items,techs){
     h+=`<tr class="ln ${isWatch(l.id)?'watch':''}" data-l="${l.id}">
       <td class="stk c-ln"><div class="ln-n">${watchBtn(l.id)}${esc(l.line||'?')} ${l.blocked?'<span class="tag red" title="'+esc(l.blockReason||'')+'">卡關</span>':''}${dupIds.has(l.id)?'<span class="tag red" title="同廠區、同線別、產品別重疊的產線有多筆，到總覽處理">重複</span>':''}${l.demo?'<span class="tag amb">示範例</span>':''}${isExt(l)?`<span class="tag blu" title="外購設備${l.vendor?'（'+esc(l.vendor)+'）':''}：檢測能力逐項手動填，不套用本廠軟體版本">外購</span>`:''}</div><div class="ln-s" title="${esc(l.vendor||'')}">${esc(lineSub(l))||'&nbsp;'}</div></td>
       ${items.map(i=>{ const v=itemSt(l,i.id), c=itemCap(l,i.id); return `<td class="s s-${v} ${isReq(l,i.id)?'req':''}" data-t="i" data-k="${i.id}" title="${esc(i.name)}：${IST[v].t}${v==='av'?'（軟體有這個功能）':''}${isReq(l,i.id)?(reqSrc(l,i.id)==='add'?'（需求項目・手動加入）':'（需求項目）'):reqSrc(l,i.id)==='off'?'（手動排除）':''}${c.why&&v!=='na'?'\n'+esc(c.why):''}">${IST[v].sym}</td>`; }).join('')}
-      <td class="s c-cu ${l.cust==='y'?'cu-y':'cu-n'}" data-t="c" title="${l.cust==='y'?'客戶已 commit':'客戶尚未 commit'}${UI.mf.edit?'（點一下切換）':''}">${l.cust==='y'?'✓':'—'}</td>
       ${ext?`<td class="swc"><div class="sw" title="外購設備不套用本廠軟體版本">外購</div><div class="dim">${esc(l.vendor||'—')}</div></td>`:`<td class="swc"><div class="sw" style="color:${swOff?'var(--amber)':'inherit'}" title="${swOff?esc(`「${platShort(fit.p)}」${fit.lvl==='dev'?'仍在開發：'+fit.dev.map(t=>t.name).join('、'):fit.lvl==='shape'?'不支援此型態':'不支援：'+fit.miss.map(t=>t.name).join('、')}`):''}">${esc(platName(sw.plat)?platShort(byId('plats',sw.plat)):'未設定')}</div><div class="dim" title="${esc(platName(sw.plat)||'')}">${esc(sw.ver||'—')}</div></td>`}
       ${TC?(()=>{ const rel=techs.filter(t=>techPlat(t,sw.plat)==='ok'), on=rel.filter(t=>lineTech(l,t.id)==='on'), off=rel.filter(t=>lineTech(l,t.id)!=='on');
         return ext?'<td class="t-sum" title="外購設備不套用本廠技術能力">—</td>':`<td class="t-sum" title="${sw.plat?`已釋出 ${rel.length} 項，開啟 ${on.length} 項${off.length?'\n未開啟：'+esc(off.map(t=>t.name).join('、')):''}`:'尚未選擇軟體版本'}">${sw.plat?`<b>${on.length}</b><span>/${rel.length}</span>${off.length?`<i class="s-off">○${off.length}</i>`:''}`:'—'}</td>`; })():''}
@@ -1781,6 +1780,7 @@ function matrixTable(ls,items,techs){
       ${OPTICS.map(o=>{ const v=opSt(l,o.k), x=opVal(l,o.k); return `<td class="s ${v==='ok'?'s-ok':v==='pend'?'s-dev':v==='na'?'s-na':'s-off'}" data-t="o" data-k="${o.k}" title="${esc(o.t)}：${v==='ok'?'已完成 '+esc(x.d)+'\n參考值：'+esc(x.v):v==='pend'?'選了完成，但還沒填齊完成日 / 參考值':v==='na'?'不適用':'未確認'}">${v==='ok'?'●':v==='pend'?'◐':v==='na'?'·':'○'}</td>`; }).join('')}
       <td>${pdMini(l)}<span class="pct">${p.pct}%</span></td>
       <td class="wrap">${p.complete?'<span style="color:var(--green);font-weight:700">✓ 全部完成</span>':esc(p.cur?p.cur.name:'—')}${nx&&l.nextNote&&l.nextNote!==nx.step.name?`<div class="dim">${esc(l.nextNote)}</div>`:''}${nx&&nx.due?`<div class="dim">${dueTag(nx.due)} ${md(nx.due)}</div>`:''}${l.blocked&&l.blockReason?`<div class="dim" style="color:var(--warn)">⚠ ${esc(l.blockReason)}</div>`:''}</td>
+      <td class="s c-cu ${l.cust==='y'?'cu-y':'cu-n'}" data-t="c" title="${l.cust==='y'?'客戶已 commit':'客戶尚未 commit'}${UI.mf.edit?'（點一下切換）':''}">${l.cust==='y'?'✓':'—'}</td>
       <td>${k?`<div class="kc">${KPI_DEF.map(d=>k[d.k]!==undefined&&k[d.k]!==''?`<span class="${kpiBad(l,d.k,k[d.k])?'bad':''}" title="${d.name}（目標 ${d.better==='low'?'≤':'≥'} ${kpiTarget(l,d.k)}${d.unit}）">${d.name.slice(0,2)} <b>${k[d.k]}</b>${d.unit}</span>`:'').join('')}<span class="dim">${md(k.d)}</span></div>`:'<span class="dim">—</span>'}</td>
       <td><div style="font-size:11px;color:${isStale(l)?'var(--amber)':'inherit'}">${relTime(l.updatedAt)}</div><div class="dim">${esc(l.updatedBy||'')}</div></td>
     </tr>`;

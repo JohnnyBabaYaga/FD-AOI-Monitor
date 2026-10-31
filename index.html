@@ -471,6 +471,14 @@ details.adv summary{font-size:11px;color:var(--sub);cursor:pointer;margin:2px 0 
 .ips-ok{background:#E1F5EE;color:#0F6E56;} .ips-dev{background:#FAEEDA;color:#854F0B;} .ips-plan{background:#eef2f7;color:#3d4d66;}
 .ips-no{background:#fff;border-color:var(--border);color:#a0aab9;} .ips-unk{background:#f1ecfb;color:#6b4fb3;}
 #m-techs tr.flash td{animation:mflash 4s ease;}
+.mt.tp th.pg-h{font-size:11px;color:var(--sub);font-weight:700;border-bottom:1px solid var(--border);border-left:2px solid #fff;}
+.mt.tp .ph-b{white-space:nowrap;border:0;background:none;cursor:pointer;font:inherit;font-size:11px;font-weight:700;color:var(--accent-deep);line-height:1.35;padding:2px 4px;border-radius:6px;}
+.mt.tp .ph-b:hover{background:var(--surf2);text-decoration:underline;}
+.mt.tp tr.pv-r td{border-top:1px solid #edf1f6;padding:4px;font-size:12px;} .mt.tp tr.pv-r td:first-child{font-weight:600;color:var(--text);}
+.mt.tp tr.pv-r .vr-v{height:24px;width:96px;font-family:Consolas,ui-monospace,monospace;font-size:11px;text-align:center;padding:0 4px;}
+.mt.tp .pv-n{font-size:11px;color:var(--sub);} .tcat-h.tc-ver{background:#e8eef8;color:var(--accent-deep);}
+.mt.tp .pfd .dd-b{height:24px;width:76px;font-size:11px;padding:0 6px;text-align:center;margin:0 auto;} .mt.tp .pfd .dd-b.ph{color:var(--sub);}
+.mt.tp .pfd .dd-m{left:50%;transform:translateX(-50%);min-width:130px;text-align:left;} .mt.tp .pfd label.ck{display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0;cursor:pointer;white-space:nowrap;}
 #m-techs td.hl .pst{box-shadow:0 0 0 2px var(--accent);}
 @keyframes mflash{0%,70%{background:#fff6d6;}100%{background:transparent;}}
 .lnk-h{font-size:12px;color:var(--text);margin-top:6px;display:flex;gap:4px;align-items:center;flex-wrap:wrap;line-height:1.6;}
@@ -2444,9 +2452,22 @@ function mGoCard(id){ const k=MC_PAIR[id]||id; if((UI.mc||{})[k]) mcToggle(k); r
 function mJumpPlatCol(pid){ const cd=mGoCard('m-techs'); if(!cd) return; $$('#m-techs td.hl').forEach(x=>x.classList.remove('hl'));
   const tds=$$(`#m-techs td[data-pid="${pid}"]`); tds.forEach(x=>x.classList.add('hl')); (tds[0]||cd).scrollIntoView({behavior:'smooth',block:'center'});
   clearTimeout(mJumpPlatCol.t); mJumpPlatCol.t=setTimeout(()=>tds.forEach(x=>x.classList.remove('hl')),4000); }
-/** 型態清單 → 點版本格子：捲到「軟體版本」那一列（支援型態只在軟體版本修改） */
-function mJumpPlat(pid){ mGoCard('m-plats'); const r=document.getElementById('pr-'+pid); if(!r) return; $$('#m-plats tr.flash').forEach(x=>x.classList.remove('flash'));
-  r.classList.add('flash'); r.scrollIntoView({behavior:'smooth',block:'center'}); clearTimeout(mJumpPlat.t); mJumpPlat.t=setTimeout(()=>r.classList.remove('flash'),4000); }
+/** 型態清單 → 點版本格子：捲到「軟體版本 × 技術能力」標亮那個版本那一欄（支援型態在那裡改） */
+function mJumpPlat(pid){ mJumpPlatCol(pid); }
+/** 支援型態下拉（複選）：MPF＝目前打開的版本；勾選後重畫時保持打開 */
+let MPF='';
+function mPfDD(e,pid){ e.stopPropagation(); MPF=MPF===pid?'':pid; $$('#m-techs .pfd').forEach(d=>d.classList.toggle('on',d.dataset.pid===MPF)); }
+document.addEventListener('click',e=>{ if(MPF&&!e.target.closest('.pfd')){ MPF=''; $$('#m-techs .pfd.on').forEach(d=>d.classList.remove('on')); } });
+/** 版本名稱、簡稱、說明、排序、刪除（欄位標題點一下） */
+function mPlatEdit(pid){ const p=byId('plats',pid); if(!p) return;
+  openModal(`<div class="md-h"><b>✎ 軟體版本</b><button class="x" onclick="closeModal()">✕</button></div>
+  <div class="md-f"><label>版本類別名稱</label><input class="in" id="pe-name" value="${esc(p.name||'')}"></div>
+  <div class="md-f"><label>簡稱（留空自動產生：${esc(platShortAuto(p.name))}）</label><input class="in" id="pe-short" value="${esc(p.short||'')}" placeholder="${esc(platShortAuto(p.name))}"></div>
+  <div class="md-f"><label>說明</label><input class="in" id="pe-note" value="${esc(p.note||'')}" placeholder="例：Win10 矩形版"></div>
+  <div class="md-b"><button class="btn sm" onclick="closeModal();mMove('plats','${pid}',-1)">← 左移</button><button class="btn sm" onclick="closeModal();mMove('plats','${pid}',1)">右移 →</button><button class="btn sm" style="color:var(--red,#b8391f)" onclick="closeModal();mDel('plats','${pid}')">刪除</button>
+    <span class="r"><button class="btn" onclick="closeModal()">取消</button><button class="btn pri" onclick="mPlatSave('${pid}')">儲存</button></span></div>`); }
+function mPlatSave(pid){ const p=byId('plats',pid), n=clone(p), v=id=>$('#'+id).value.trim(); n.name=v('pe-name')||p.name; n.short=v('pe-short'); n.note=v('pe-note');
+  if(!n.short) delete n.short; closeModal(); if(!eq(n,p)) commit('plats',n,`軟體版本「${p.name}」${n.name!==p.name?'改名為「'+n.name+'」':'更新簡稱 / 說明'}`); }
 /** 一般使用者看主檔（v4.10）：輸入與下拉改唯讀、新增 / 刪除 / 排序 / 編輯鍵隱藏，其他按鈕停用；收合、全部收合、「N 條線 ›」照常可用 */
 function masterRO(el){ const ro=!isAdmin(); el.classList.toggle('m-ro',ro); const old=el.querySelector('.ro-banner'); if(old) old.remove(); if(!ro) return;
   el.querySelector('.sec-t').insertAdjacentHTML('afterend','<div class="banner ro-banner"><span>👁 你目前是<b>一般使用者</b>：主檔設定只能查看，修改請找管理員（管理員用管理員權杖連線，見 ☁ 雲端設定）。</span></div>');
@@ -2457,6 +2478,7 @@ function renderMaster(){
   const el=$('#pg-master'), items=liveSorted('items'), plats=liveSorted('plats'), techs=techsSorted(), forms=liveSorted('forms'), prods=prodsSorted();
   const inp=(c,id,f,v,ph,w,type)=>`<input class="in" ${type?`type="${type}"`:''} ${w?`style="width:${w}"`:''} value="${esc(v??'')}" placeholder="${esc(ph||'')}" onchange="mSet('${c}','${id}','${f}',this.value)">`;
   const mv=(c,id)=>`<button class="x" title="上移" onclick="mMove('${c}','${id}',-1)">↑</button><button class="x" title="下移" onclick="mMove('${c}','${id}',1)">↓</button><button class="x" title="刪除" onclick="mDel('${c}','${id}')">✕</button>`;
+  const pcols=platGroups(plats).flatMap(g=>g.ps);   // 軟體版本 × 技術能力：欄位依主版本分組（v4.10 合併兩塊，Johnny 2026-10-31）
   const L=liveLines(), icats=[...new Set(items.map(i=>(i.cat||'').trim()).filter(Boolean))];   // 檢測項目類別：由現有項目整理出來（依項目順序）
   const chips=(arr,on,fn)=>`<div class="reqs">${arr.map(x=>`<button class="chip ${on(x)?'on':''}" onclick="${fn(x)}">${esc(x.name)}</button>`).join('')}</div>`;
   el.innerHTML=`
@@ -2475,27 +2497,19 @@ function renderMaster(){
       ${prods.length?prodMatrix(prods,items,forms,plats,L):'<div class="empty">尚無產品別</div>'}
     </div>
 
-    <div class="card mcard full" id="m-plats"><h3>🧩 軟體版本${GI('plat')}<small>依主版本分組；文字直接點一下就能改。簡稱留空會自動產生（用在產品設定等空間小的地方），支援型態只在這裡設定</small><button class="btn sm" onclick="mAdd('plats',{name:'新版本',forms:['f01'],note:''})">＋ 新增版本</button></h3>
-      <div class="mt-scroll"><table class="mt pv-t"><colgroup><col style="width:250px"><col style="width:120px"><col style="width:190px"><col><col style="width:150px"><col style="width:80px"><col style="width:92px"></colgroup>
-      <thead><tr><th>版本類別 / 說明</th><th>簡稱</th><th>最新版本號</th><th>支援型態（點選切換）</th><th>已釋出功能</th><th class="pc">使用中</th><th></th></tr></thead>
-      ${platGroups(plats).map(g=>`<tbody><tr class="vg-h"><td colspan="7"><span class="vg-n">${esc(g.k)}</span><span class="muted">${g.ps.length} 個版本</span></td></tr>
-      ${g.ps.map(p=>{ const okN=techs.filter(t=>techPlat(t,p.id)==='ok').length, n=L.filter(l=>(l.sw||{}).plat===p.id).length, pf=p.forms||shapeForms(p.shape);
-        return `<tr class="vr" id="pr-${p.id}"><td><input class="in soft vr-n" value="${esc(p.name)}" placeholder="版本類別名稱" onchange="mSet('plats','${p.id}','name',this.value)"><input class="in soft vr-d" value="${esc(p.note||'')}" placeholder="＋ 說明" onchange="mSet('plats','${p.id}','note',this.value)"></td>
-        <td><input class="in soft vr-s ${p.short?'':'auto'}" value="${esc(p.short||'')}" placeholder="${esc(platShortAuto(p.name))}" title="簡稱${p.short?'':'（目前自動產生；輸入文字可自訂）'}" onchange="mSet('plats','${p.id}','short',this.value)"></td>
-        <td><input class="in soft vr-v ${p.latest?'':'none'}" value="${esc(p.latest||'')}" placeholder="— 未填" title="最新版本號，例：2.0.3_20260918" onchange="mSet('plats','${p.id}','latest',this.value)"></td>
-        <td>${chips(forms,f=>pf.includes(f.id),f=>`mTogglePlatForm('${p.id}','${f.id}')`)}</td>
-        <td><button class="vr-p" onclick="mJumpPlatCol('${p.id}')" title="已釋出 ${okN} / ${techs.length} 項技術能力；點一下到「技術能力 × 版本」看這個版本那一欄"><span class="pbar"><i style="width:${techs.length?Math.round(okN/techs.length*100):0}%"></i></span><b>${okN}</b> / ${techs.length}</button></td>
-        <td class="pc">${n?`<button class="lkb" onclick="gotoMatrix({plat:'${p.id}'})" title="到能力矩陣看使用這個版本的產線">${n} 條 ›</button>`:'<span class="muted" style="font-size:11px">0 條</span>'}</td><td class="ac">${mv('plats',p.id)}</td></tr>`; }).join('')}</tbody>`).join('')}</table></div></div>
-
-    <div class="card mcard full" id="m-techs"><h3>🧠 技術能力 × 版本開發進度${GI('pst')}<small>點狀態切換：— 不支援 → ○ 規劃中 → ◐ 開發中 → ● 已釋出（版本號統一填在上方「軟體版本」）</small><button class="btn sm" onclick="mAdd('techs',{name:'新技術',note:'',cat:'det',plat:{}})">＋ 新增技術能力</button></h3>
-      <div class="mt-scroll"><table class="mt tp"><colgroup><col style="width:200px"><col style="width:132px">${plats.map(()=>'<col style="width:104px">').join('')}<col><col style="width:58px"><col style="width:92px"></colgroup>
-      <thead><tr class="gh"><th colspan="2"></th><th colspan="${plats.length}" class="pc">各版本開發進度</th><th colspan="3"></th></tr>
-      <tr><th>技術能力</th><th>分類${GI('tcat')}</th>${plats.map(p=>`<th class="pc" title="${esc(p.name)}">${platHead(p.name)}</th>`).join('')}<th>可檢測項目 / 用在型態</th><th class="pc">開啟中</th><th></th></tr></thead>
+    <div class="card mcard full" id="m-techs"><h3>🧩 軟體版本 × 技術能力${GI('pst')}<small>每一欄是一個軟體版本（點版本名稱可改名稱、簡稱、說明、排序或刪除）；上方是版本資料，下方是各技術能力的開發進度，點狀態切換：— 不支援 → ○ 規劃中 → ◐ 開發中 → ● 已釋出</small><span class="h3r"><button class="btn sm" onclick="mAdd('plats',{name:'新版本',forms:['f01'],note:''})">＋ 新增版本</button><button class="btn sm" onclick="mAdd('techs',{name:'新技術',note:'',cat:'det',plat:{}})">＋ 新增技術能力</button></span></h3>
+      <div class="mt-scroll"><table class="mt tp"><colgroup><col style="width:200px"><col style="width:132px">${pcols.map(()=>'<col style="width:104px">').join('')}<col><col style="width:58px"><col style="width:92px"></colgroup>
+      <thead><tr><th>技術能力</th><th>分類${GI('tcat')}</th>${pcols.map(p=>`<th class="pc"><button class="ph-b" onclick="mPlatEdit('${p.id}')" title="${esc(p.name)}${p.note?'\n'+esc(p.note):''}\n（點一下編輯名稱、簡稱、說明、排序）">${esc(platShort(p))}</button></th>`).join('')}<th>可檢測項目 / 用在型態</th><th class="pc">開啟中</th><th></th></tr></thead>
+      <tbody class="pv-b"><tr class="cat-r"><td colspan="${pcols.length+5}"><span class="tcat-h tc-ver">版本資料</span></td></tr>
+        <tr class="pv-r"><td colspan="2">最新版本號</td>${pcols.map(p=>`<td class="pc"><input class="in soft vr-v ${p.latest?'':'none'}" value="${esc(p.latest||'')}" placeholder="— 未填" title="${esc(p.name)} 最新版本號，例：2.0.3_20260918" onchange="mSet('plats','${p.id}','latest',this.value)"></td>`).join('')}<td colspan="3" class="pv-n">產線選版本類別時，帶出的最新版本號</td></tr>
+        <tr class="pv-r"><td colspan="2">支援型態</td>${pcols.map(p=>{ const pf=(p.forms||shapeForms(p.shape)).filter(f=>forms.some(x=>x.id===f));
+          return `<td class="pc"><div class="dd pfd ${MPF===p.id?'on':''}" data-pid="${p.id}"><button class="in dd-b ${pf.length?'':'ph'}" onclick="mPfDD(event,'${p.id}')" title="${esc(p.name)} 支援：${esc(pf.map(formName).join('、')||'未設定')}">${pf.length} 種 ▾</button><div class="dd-m">${forms.map(f=>`<label class="ck"><input type="checkbox" ${pf.includes(f.id)?'checked':''} onchange="MPF='${p.id}';mTogglePlatForm('${p.id}','${f.id}')">${esc(f.name)}</label>`).join('')}</div></div></td>`; }).join('')}<td colspan="3" class="pv-n">型態決定產線能選哪些版本；滑鼠停在格子上看是哪幾種</td></tr>
+        <tr class="pv-r"><td colspan="2">使用中</td>${pcols.map(p=>{ const n=L.filter(l=>(l.sw||{}).plat===p.id).length; return `<td class="pc">${n?`<button class="lkb" onclick="gotoMatrix({plat:'${p.id}'})" title="到能力矩陣看使用這個版本的產線">${n} 條 ›</button>`:'<span class="muted" style="font-size:11px">0 條</span>'}</td>`; }).join('')}<td colspan="3"></td></tr></tbody>
       <tbody>${techs.map((t,ti)=>{ const g=tcat(t), its=items.filter(i=>(i.techs||[]).includes(t.id)), fs=forms.filter(f=>(f.pre||[]).includes(t.id));
         return `${ti===0||tcat(techs[ti-1])!==g?`<tr class="cat-r"><td colspan="${plats.length+5}"><span class="tcat-h tc-${g}">${g==='meas'||g==='det'?'演算法・':''}${(TCATS.find(x=>x.k===g)||{}).t}</span><span class="cat-n">${techs.filter(x=>tcat(x)===g).length} 項</span></td></tr>`:''}
         <tr class="tr-t" id="tr-${t.id}"><td>${inp('techs',t.id,'name',t.name)}</td>
         <td><select class="in" onchange="mSet('techs','${t.id}','cat',this.value)">${TCATS.map(x=>`<option value="${x.k}" ${g===x.k?'selected':''}>${x.k==='meas'||x.k==='det'?'演算法・':''}${x.t}</option>`).join('')}</select></td>
-        ${plats.map(p=>{ const s=techPlat(t,p.id); return `<td class="pc" data-pid="${p.id}"><div class="pcell"><button class="pst pst-${s||'no'}" title="${esc(p.name)}：${PST.find(x=>x.k===s).t}（點一下切換）" onclick="mCyclePlat('${t.id}','${p.id}')">${PSYM[s]}</button></div></td>`; }).join('')}
+        ${pcols.map(p=>{ const s=techPlat(t,p.id); return `<td class="pc" data-pid="${p.id}"><div class="pcell"><button class="pst pst-${s||'no'}" title="${esc(p.name)}：${PST.find(x=>x.k===s).t}（點一下切換）" onclick="mCyclePlat('${t.id}','${p.id}')">${PSYM[s]}</button></div></td>`; }).join('')}
         <td><div class="reqs">${its.map(i=>`<span class="tag it-t">${esc(i.name)}</span>`).join('')}${fs.map(f=>`<span class="tag fm-t">型態：${esc(f.name)}</span>`).join('')}${!its.length&&!fs.length?'<span class="muted">—</span>':''}</div></td>
         <td class="pc muted" style="font-size:11px">${L.filter(l=>lineTech(l,t.id)==='on').length} 條</td><td class="ac">${mv('techs',t.id)}</td></tr>`; }).join('')}</tbody></table></div></div>
 
@@ -2525,7 +2539,7 @@ ${esc(tip)}" onclick="mJumpTech('${i.id}','${p.id}')">${IPS[s][0]}</button></td>
       <thead><tr class="gh"><th colspan="2"></th><th colspan="${plats.length}" class="pc">支援的軟體版本</th><th colspan="2"></th></tr>
       <tr><th>名稱</th><th>需要的前處理${GI('tcat')}</th>${plats.map(p=>`<th class="pc" title="${esc(p.name)}">${platHead(p.name)}</th>`).join('')}<th class="pc">產線</th><th></th></tr></thead>
       <tbody>${forms.map(f=>`<tr><td>${inp('forms',f.id,'name',f.name)}</td><td><div class="reqs">${techs.filter(t=>tcat(t)==='pre').map(t=>`<button class="chip ${(f.pre||[]).includes(t.id)?'on':''}" onclick="mToggleFormPre('${f.id}','${t.id}')">${esc(t.name)}</button>`).join('')||'<span class="muted" style="font-size:11px">尚無前處理類技術</span>'}</div></td>
-        ${plats.map(p=>{ const on=(p.forms||shapeForms(p.shape)).includes(f.id); return `<td class="pc"><button class="fsp ro ${on?'on':''}" title="${esc(p.name)}：${on?'支援':'不支援'}（點一下到「軟體版本」修改）" onclick="mJumpPlat('${p.id}')">${on?'✓':'—'}</button></td>`; }).join('')}
+        ${plats.map(p=>{ const on=(p.forms||shapeForms(p.shape)).includes(f.id); return `<td class="pc"><button class="fsp ro ${on?'on':''}" title="${esc(p.name)}：${on?'支援':'不支援'}（點一下到「軟體版本 × 技術能力」修改）" onclick="mJumpPlat('${p.id}')">${on?'✓':'—'}</button></td>`; }).join('')}
         <td class="pc muted" style="font-size:11px">${L.filter(l=>(l.forms||[]).includes(f.id)).length} 條</td><td class="ac">${mv('forms',f.id)}</td></tr>`).join('')}</tbody></table></div></div>
 
     <div class="card mcard" id="m-steps"><h3>🔁 PDCA 關卡<small>每條線依這些關卡勾選完成、填預計日；標「里程碑」的會畫在總覽時程圖</small></h3>
@@ -3270,8 +3284,7 @@ const GUIDES={
     {el:()=>$gd('m-sites'),t:'廠區',d:'<b>地區</b>相同的廠區在總覽會放在一起（例如「廈門 XM」）。<b>廠區負責人</b>會顯示在總覽卡片上。<br>未來有新廠區（包含歐美）按「＋ 新增廠區」。'},
     {el:()=>$gd('m-hws'),t:'相機（硬體）',d:'畫檢設備上用的相機型號清單，產線編輯時從這裡選。'},
     {el:()=>$gd('m-prod'),t:'產品設定',d:'<b>產品別 → 加入型態 → 勾選檢測項目</b>，右邊自動算出<b>建議軟體版本</b>（✓ 完全支援、◐ 有功能開發中、✕ 不支援）。<br>加入新型態時會先複製這個產品別已設定的檢測項目，再增減就好；可以新增產品別。'},
-    {el:()=>$gd('m-plats'),t:'軟體版本',d:'畫檢軟體的版本類別。點選<b>支援的型態</b>；每條線先選類別、再填版本號。'},
-    {el:()=>$gd('m-techs'),t:'技術能力 × 版本開發進度',d:'技術能力依<b>前處理 → 演算法（量測 / 檢測）→ 判定 / 整合</b>分組，可在「分類」欄調整。每項在每個版本的進度，點格子切換（不支援 → 規劃中 → 開發中 → 已釋出），旁邊可填從哪個版本號開始。只有「已釋出」的功能，產線才會開啟。'},
+    {el:()=>$gd('m-techs'),t:'軟體版本 × 技術能力',d:'每一欄是一個軟體版本（點版本名稱可改名、排序）。上方「版本資料」填<b>最新版本號</b>、下拉選<b>支援型態</b>。下方技術能力依<b>前處理 → 演算法（量測 / 檢測）→ 判定 / 整合</b>分組，可在「分類」欄調整。每項在每個版本的進度，點格子切換（不支援 → 規劃中 → 開發中 → 已釋出），旁邊可填從哪個版本號開始。只有「已釋出」的功能，產線才會開啟。'},
     {el:()=>$gd('m-items'),t:'檢測項目 → 需要的演算法',d:'每個檢測項目<b>需要哪些演算法</b>（全部具備才算能檢）：點「✎ 選擇」開視窗，從上方技術能力清單勾選。前處理一般不用在這裡勾，改由型態決定。右側自動顯示各版本能否檢測。矩陣上的檢測狀態就是依這個自動推算；還沒設定的項目會顯示「?」。'},
     {el:()=>$gd('m-tree'),t:'樹狀檢視',d:'把上面幾張表串起來看：每個版本有哪些功能、每個功能能檢哪些項目、這個版本總共能檢幾項。'},
     {el:()=>$gd('m-forms'),t:'型態清單',d:'型態名稱（矩形、異形、曲面異形…），可以新增。<b>需要的前處理</b>：例如異形需要「異形 / 曲面面板對位」，產線選了這個型態，系統就會一起檢查版本有沒有這項前處理。'},

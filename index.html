@@ -214,6 +214,7 @@ table.mx{border-collapse:separate;border-spacing:0;font-size:12px;background:#ff
 .mx .stk{position:sticky;z-index:2;background:#fff;}
 .mx thead .stk{z-index:4;background:#f5f8fc;}
 .mx .c-ln{left:0;min-width:150px;box-shadow:2px 0 0 #e3e9f1;}
+.mx tr.ln td.c-ln{padding-left:48px;}   /* 線別縮排到樓層名稱底下：廠區 → 產品別 → 樓層 → 線別 一階一階（Johnny 2026-10-31） */
 .mx tbody tr.ln{cursor:pointer;}
 .mx tbody tr.ln:hover td{background:#f6f9fe;}
 .mx tbody tr.ln:hover td.stk{background:#f6f9fe;}
@@ -923,7 +924,7 @@ details.ds[open]>summary h4{margin-bottom:8px;}
 .sgk .k2{display:flex;align-items:center;gap:6px;min-width:0;color:var(--sub);}
 .sgk .kt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .sgk .kd{font-size:11px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;} .sgk .kd.od{color:var(--warn);}
-.sgk .k3{display:flex;gap:4px;flex-wrap:wrap;}
+.sgk .k3{display:flex;gap:4px;flex-wrap:wrap;align-items:center;min-width:0;} .sgk .k3 .kw{flex:1 1 0;min-width:0;font-size:11px;color:#8a5d00;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sgmore{border:1px dashed var(--border2);background:transparent;border-radius:8px;padding:6px;font-size:12px;font-weight:700;color:var(--accent-deep);cursor:pointer;}
 .sgmore:hover{background:#fff;}
 .sgkg .sgk{min-width:0;}
@@ -1266,6 +1267,11 @@ function itemCap(l,iid){
 function itemSt(l,iid){ const c=itemCap(l,iid).st; return isReq(l,iid)?(c==='off'?'gap':c):(c==='ok'||c==='off'?'av':'na'); }
 const lineGaps=l=>reqItems(l).filter(i=>itemSt(l,i)==='gap').length;
 /** 檢測能力達標：需求檢測項目全部「已具備」（v4.5.1 起版本有但這台沒開也算缺口）；有缺口 / 開發中 / 未設定演算法，或「產品別 × 型態」主檔還沒設定、沒有需求項目（待新增需求）都不算 */
+/** 能力未達標的原因（沒有缺口、但不是每項都「已具備」）：Johnny 2026-10-31「能力未達標的看不出來是哪幾台」 */
+function capWhy(l){ const r=reqItems(l), u=unsetCombos(lineProds(l),lineForms(l)), out=[];
+  if(u.length) out.push('主檔還沒設定：'+u.join('、')); if(!r.length&&!u.length) out.push('沒有需求檢測項目');
+  ['dev','off','unk'].forEach(k=>{ const n=r.filter(i=>itemSt(l,i)===k).map(i=>(byId('items',i)||{}).name||i); if(n.length) out.push(IST[k].t+'：'+n.join('、')); });
+  return out.join('；'); }
 function lineCapOk(l){ const r=reqItems(l); if(!r.length||unsetCombos(lineProds(l),lineForms(l)).length) return false; return r.every(i=>itemSt(l,i)==='ok'); }
 /** 燈號（v4.3）：綠＝檢測能力達標 + 客戶已 commit 我們的能力（lines.cust='y'）；其他都是黃 */
 const lineLight=l=>lineCapOk(l)&&l.cust==='y'?'g':'y';
@@ -1550,23 +1556,23 @@ function segPanel(g,b){
   const f=b.sf, fa=l=>lineFloor(l);   // 沒填樓層 / 區域的排在該廠區最後
   const cur=g.subs.includes(b.sub)?b.sub:'', grpSub=g.subs.length>1&&!cur, grpSite=!f.site||f.site.startsWith('rg:'), grpFloor=!f.floor, grp=grpSub||grpSite||grpFloor;
   const sl=x=>x===g.k?g.k+' 未分 1 / 2':x;
-  const pr=l=>l.blocked||isOverdue(l)||lineGaps(l)?0:lineLight(l)==='y'?1:2;
+  const pr=l=>l.blocked||isOverdue(l)||lineGaps(l)?0:!lineCapOk(l)?1:lineLight(l)==='y'?2:3;
   const ls=g.ls.filter(l=>!cur||lineSeg(l)===cur).sort((a,b)=>(grpSub?segRank(lineSeg(a))-segRank(lineSeg(b)):0)||siteCmp(a.site,b.site)||(fa(a)?0:1)-(fa(b)?0:1)||fa(a).localeCompare(fa(b),'zh-Hant',{numeric:true}));
   const sub=[]; for(const l of ls){ const key=[grpSub?lineSeg(l):'',grpSite?l.site:'',grpFloor?fa(l):''].join('\u0001'); let t=sub[sub.length-1]; if(!t||t.key!==key) sub.push(t={key,ls:[]}); t.ls.push(l); }
-  const kid=l=>{ const p=lineProg(l), nx=nextOf(l), od=isOverdue(l), gp=lineGaps(l), lc=lineLight(l);
+  const kid=l=>{ const p=lineProg(l), nx=nextOf(l), od=isOverdue(l), gp=lineGaps(l), lc=lineLight(l), cw=!gp&&!lineCapOk(l)?capWhy(l)||'能力未達標':'';
     return `<div class="sgk ${lc}" onclick="openLine('${l.id}')" title="${esc(l.site+' · '+lineLabel(l))}（點一下開啟）">
       <div class="k1"><span class="lt ${lc}" title="${esc(lightWhy(l))}"><i></i></span><b>${esc(l.line||'?')}</b><span class="kp">${esc(prodsLabel(l))}</span></div>
       <div class="k2">${pdMini(l,true)}<span class="kt">${p.complete?'✓ 全部完成':esc(nx?nx.text:'')}</span>${nx&&nx.due?`<span class="kd ${od?'od':''}">${md(nx.due)}</span>`:''}</div>
-      ${isMass(l)||gp||l.blocked||od||isExt(l)?`<div class="k3">${isExt(l)?'<span class="tag blu">外購</span>':''}${isMass(l)?'<span class="tag grn">已量產</span>':''}${gp?`<span class="tag red">缺口 ${gp}</span>`:''}${l.blocked?'<span class="tag red">卡關</span>':''}${od?'<span class="tag amb">逾期</span>':''}</div>`:''}
+      ${isMass(l)||gp||cw||l.blocked||od||isExt(l)?`<div class="k3">${isExt(l)?'<span class="tag blu">外購</span>':''}${isMass(l)?'<span class="tag grn">已量產</span>':''}${gp?`<span class="tag red">缺口 ${gp}</span>`:''}${cw?`<span class="tag amb" title="${esc(cw)}">能力未達標</span><span class="kw">${esc(cw)}</span>`:''}${l.blocked?'<span class="tag red">卡關</span>':''}${od?'<span class="tag amb">逾期</span>':''}</div>`:''}
     </div>`; };
   const body=sub.map(t=>{ const k=g.k+'|'+t.key, off=grp&&b.fc.includes(k), all=b.all.includes(k), s=segStats(t.ls), [sg,st,fl]=t.key.split('\u0001');
     const kl=t.ls.slice().sort((a,b)=>pr(a)-pr(b)||String(a.line).localeCompare(String(b.line),'zh-Hant',{numeric:true})), show=all?kl:kl.slice(0,SEG_KMAX);
-    const say=[s.gap?`<span class="tag red">缺口 ${s.gap}</span>`:'',s.blocked?`<span class="tag red">卡關 ${s.blocked}</span>`:'',s.overdue?`<span class="tag amb">逾期 ${s.overdue}</span>`:''].join('');
+    const say=[s.gap?`<span class="tag red">缺口 ${s.gap}</span>`:'',s.cap?`<span class="tag amb">能力未達標 ${s.cap}</span>`:'',s.blocked?`<span class="tag red">卡關 ${s.blocked}</span>`:'',s.overdue?`<span class="tag amb">逾期 ${s.overdue}</span>`:''].join('');
     const h=grp?`<div class="sgg ${off?'off':''}" data-k="${esc(k)}" onclick="ovSegFc(this)" title="${off?'展開':'收合'}這一區"><span class="car">▾</span><b>${[grpSub?esc(sl(sg)):'',grpSite?esc(st):'',grpFloor?(fl?esc(fl):'未填樓層'):''].filter(Boolean).join(' · ')}</b><span>${s.n} 台</span><span class="lt g"><i></i><b>${s.g}</b></span><span class="lt y"><i></i><b>${s.y}</b></span>${say}</div>`:'';
     return h+(off?'':`<div class="sgkg">${show.map(kid).join('')}${kl.length>SEG_KMAX?`<button class="sgmore" data-k="${esc(k)}" onclick="ovSegAll(this)">${all?'▴ 只顯示前 '+SEG_KMAX+' 台':'▾ 顯示全部 '+kl.length+' 台（另 '+(kl.length-SEG_KMAX)+' 台）'}</button>`:''}</div>`); }).join('');
   const tabs=g.subs.length>1?`<span class="seg vw">${['',...g.subs].map(x=>{ const n=x?g.ls.filter(l=>lineSeg(l)===x).length:g.ls.length;
     return `<button class="${cur===x?'on':''}" data-s="${esc(x)}" onclick="ovSegSub(this)" ${n?'':'disabled'}>${x?esc(x===g.k?'未分':x):'全部'} ${n}</button>`; }).join('')}</span>`:'';
-  return `<div class="sgp"><div class="sgp-h"><span class="code">${esc(g.k?segLb(g.k):'未分段')}</span>${tabs}<span>${ls.length} 台 · 有缺口、卡關、逾期或黃燈的排前面</span><button class="btn sm" data-seg="${esc(g.k)}" onclick="ovSegTg(this)">▴ 收合</button></div>${body||'<div class="empty">沒有機台</div>'}</div>`;
+  return `<div class="sgp"><div class="sgp-h"><span class="code">${esc(g.k?segLb(g.k):'未分段')}</span>${tabs}<span>${ls.length} 台 · 有缺口、卡關、逾期、能力未達標的排前面</span><button class="btn sm" data-seg="${esc(g.k)}" onclick="ovSegTg(this)">▴ 收合</button></div>${body||'<div class="empty">沒有機台</div>'}</div>`;
 }
 function siteCard(s){
   const st=siteStats(s.id), MAXL=6;

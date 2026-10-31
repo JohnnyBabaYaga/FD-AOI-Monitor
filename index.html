@@ -53,6 +53,9 @@ header .logo{width:30px;height:30px;border-radius:50%;object-fit:cover;backgroun
 /* 版本切換選單（與 AOI Calculator 同一套）：正式版在網址根目錄、Beta 在 beta/，兩版共用同一份雲端資料 */
 .ver-btn:hover,.ver-wrap.open .ver-btn{background:rgba(255,255,255,.18);}
 .ver-btn.solo{cursor:default;} .ver-btn.solo:hover{background:none;}
+#userBtn.adm .lb::after{content:'管理員';margin-left:6px;font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.9);color:var(--accent-deep);}
+#pg-master.m-ro .in:disabled{background:transparent;border-color:transparent;color:var(--text);opacity:1;-webkit-appearance:none;appearance:none;cursor:default;}
+#pg-master.m-ro button:disabled{cursor:default;} #pg-master.m-ro .pmx:disabled,#pg-master.m-ro .fsp:disabled{opacity:1;}
 .ver-btn i{font-style:normal;font-size:10px;opacity:.85;margin-left:5px;}
 .ver-menu{display:none;position:absolute;top:calc(100% + 8px);left:0;min-width:272px;z-index:60;background:#fff;color:var(--text);
   border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-2);padding:5px;}
@@ -988,8 +991,8 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,[t
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.9.1', APP_BUILD='2026-10-31', APP_BETA=false, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
-const LS={db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
+const APP_VER='4.10', APP_BUILD='2026-10-31', APP_BETA=false, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const LS={role:'aoim_role_v1',db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
   {k:'P',name:'規劃',en:'Plan',  desc:'需求確認、架構評估、設備規劃'},
@@ -1144,8 +1147,11 @@ function nextOrder(c){ return Math.max(0,...live(c).map(x=>x.order||0))+1; }
 function dirtyCount(){ return COLLS.reduce((n,c)=>n+Object.keys(DIRTY[c]).length,0); }
 const hasDemo=()=>DB.lines.some(l=>l.demo&&!l.deleted)||DB.products.some(p=>p.demo&&!p.deleted);
 
+/** 主檔守門（v4.10，Johnny 2026-10-31）：產線以外的集合（廠區、產品設定、型態、版本、技術能力、檢測項目、相機、PDCA 關卡）只有管理員能改；示範資料不擋 */
+function masterLocked(c,obj){ if(c==='lines'||(obj&&obj.demo)||isAdmin()) return false; toast('主檔設定只有管理員可以修改（目前的權杖是一般使用者）','err',5000); renderAll(); return true; }
 /** 提交一筆實體的新版本：記錄修改前的版本（3-way merge 的 base）、標記待上傳 */
 function commit(c,obj,msg){
+  if(masterLocked(c,obj)) return;
   const arr=DB[c], i=arr.findIndex(x=>x.id===obj.id), prev=i>=0?arr[i]:undefined;
   if(!has(DIRTY[c],obj.id)) DIRTY[c][obj.id]=prev?clone(prev):null;
   obj.updatedAt=new Date().toISOString(); obj.updatedBy=USER.name||'未具名';
@@ -1155,6 +1161,7 @@ function commit(c,obj,msg){
 }
 /** 安靜存檔：只同步資料，不改 updatedAt / updatedBy、不寫變更紀錄（用在個人的特別關注，避免誤觸「待更新」提醒與最新動態） */
 function commitQuiet(c,obj){
+  if(masterLocked(c,obj)) return;
   const arr=DB[c], i=arr.findIndex(x=>x.id===obj.id), prev=i>=0?arr[i]:undefined;
   if(!has(DIRTY[c],obj.id)) DIRTY[c][obj.id]=prev?clone(prev):null;
   if(i>=0) arr[i]=obj; else arr.push(obj);
@@ -2428,6 +2435,12 @@ function mJumpPlatCol(pid){ const cd=mGoCard('m-techs'); if(!cd) return; $$('#m-
 /** 型態清單 → 點版本格子：捲到「軟體版本」那一列（支援型態只在軟體版本修改） */
 function mJumpPlat(pid){ mGoCard('m-plats'); const r=document.getElementById('pr-'+pid); if(!r) return; $$('#m-plats tr.flash').forEach(x=>x.classList.remove('flash'));
   r.classList.add('flash'); r.scrollIntoView({behavior:'smooth',block:'center'}); clearTimeout(mJumpPlat.t); mJumpPlat.t=setTimeout(()=>r.classList.remove('flash'),4000); }
+/** 一般使用者看主檔（v4.10）：輸入與下拉改唯讀、新增 / 刪除 / 排序 / 編輯鍵隱藏，其他按鈕停用；收合、全部收合、「N 條線 ›」照常可用 */
+function masterRO(el){ const ro=!isAdmin(); el.classList.toggle('m-ro',ro); const old=el.querySelector('.ro-banner'); if(old) old.remove(); if(!ro) return;
+  el.querySelector('.sec-t').insertAdjacentHTML('afterend','<div class="banner ro-banner"><span>👁 你目前是<b>一般使用者</b>：主檔設定只能查看，修改請找管理員（管理員用管理員權杖連線，見 ☁ 雲端設定）。</span></div>');
+  el.querySelectorAll('input,select,textarea').forEach(x=>{ x.disabled=true; });
+  el.querySelectorAll('button').forEach(b=>{ if(b.closest('.ro-banner')||/\b(pb-tg|lkb|mc-tg)\b/.test(b.className)||/allbtn$/.test(b.id)||/收合|展開/.test(b.textContent)) return;
+    if(b.classList.contains('x')||/^\s*[＋+✎↑↓]/.test(b.textContent)||b.closest('.pg-mv')) b.style.display='none'; else b.disabled=true; }); }
 function renderMaster(){
   const el=$('#pg-master'), items=liveSorted('items'), plats=liveSorted('plats'), techs=techsSorted(), forms=liveSorted('forms'), prods=prodsSorted();
   const inp=(c,id,f,v,ph,w,type)=>`<input class="in" ${type?`type="${type}"`:''} ${w?`style="width:${w}"`:''} value="${esc(v??'')}" placeholder="${esc(ph||'')}" onchange="mSet('${c}','${id}','${f}',this.value)">`;
@@ -2518,7 +2531,7 @@ ${esc(tip)}" onclick="mJumpTech('${i.id}','${p.id}')">${IPS[s][0]}</button></td>
         · 刪除的資料會保留「已刪除」標記 90 天以便同步給其他人；GitHub 每次儲存都是一個版本，可隨時找回。<br>
         · 「清除本機快取」會丟掉這台電腦的資料（含未上傳的修改），再從雲端重新讀取。</div></div>
   </div>`;
-  mcApply();
+  mcApply(); masterRO(el);
   if(!el.dataset.mcl){ el.dataset.mcl=1; el.addEventListener('click',e=>{ const h=e.target.closest('.mcard>h3'); if(!h||e.target.closest('button,input,select,a,.gi')) return; mcToggle(h.parentElement.dataset.mc); }); }
 }
 function mSet(c,id,f,v){ const o=byId(c,id); if(!o) return; const n=clone(o); n[f]=v.trim(); if(eq(n,o)) return;
@@ -2703,6 +2716,7 @@ function exportCSV(all){
 async function importJSON(file){
   let d; try{ d=JSON.parse(await file.text()); }catch(e){ toast('檔案不是有效的 JSON','err'); return; }
   if(!d||!d.meta||d.meta.app!=='aoi-monitor'){ toast('這不是本平台匯出的資料檔','err'); return; }
+  if(!isAdmin()&&COLLS.some(c=>c!=='lines'&&(d[c]||[]).length)){ toast('檔案裡有主檔資料（產品設定、型態…），只有管理員可以匯入','err',6000); return; }
   const n=COLLS.reduce((s,c)=>s+((d[c]||[]).length),0);
   if(!(await confirmBox(`匯入 ${n} 筆資料？\n相同 ID 的資料會以檔案內容為準，並同步上傳。`,'匯入'))) return;
   for(const c of COLLS) for(const x of (d[c]||[])){ const i=DB[c].findIndex(y=>y.id===x.id), prev=i>=0?DB[c][i]:undefined;
@@ -2736,6 +2750,7 @@ function mergeDemo(db,gen){
   return {products:db.products,lines:db.lines.filter(x=>!x.demo).concat(lines),log:db.log.filter(e=>!e.demo).concat(log)};
 }
 async function loadDemo(){
+  if(ghReady()&&!isAdmin()){ toast('發布示範例到雲端只有管理員可以做','err'); return; }
   if(ghReady()){
     if(!(await confirmBox('把 5 條示範例發布到雲端？\n\n· 全部門同仁都會看到（畫面上會清楚標示「示範資料」）\n· 用來讓大家熟悉平台怎麼填、怎麼看\n· 之後在總覽或主檔設定按「清除示範資料」即可一次移除（會同步給所有人）','發布示範資料'))) return;
     const prev={}; for(const c of ['products','lines']) for(const x of DB[c]) prev[c+'|'+x.id]=x;
@@ -2779,6 +2794,17 @@ let GH=loadJSON(LS.gh)||{}, GH_SHA=localStorage.getItem(LS.sha)||null, PUSH_T=nu
 let SYNC={state:'off',msg:''};
 const ghReady=()=>!!(GH&&GH.enabled&&GH.owner&&GH.repo&&GH.path&&GH.token);
 const apiBase=()=>(GH.api||'https://api.github.com').replace(/\/+$/,'');
+/** 管理員判斷（比照 AOI Calculator 知識庫）：用權杖對「管理員 repo」（預設 <owner>/FD-AOI-Monitor-Admin）試寫一次。
+ *  故意送不完整的 PUT：有寫入權限回 422（什麼都不會建立），沒有回 403 / 404。一般同仁共用的權杖只開資料 repo，管理員權杖多開管理員 repo。
+ *  結果存本機 LS.role（記權杖指紋，換權杖就重測）；沒設定雲端（只在本機用）時當管理員，不影響單機使用 */
+const ADMIN_REPO_DEF='FD-AOI-Monitor-Admin';
+const tokFp=t=>{ let h=0; for(const ch of String(t||'')) h=(h*31+ch.charCodeAt(0))|0; return (h>>>0).toString(36); };
+let ROLE=loadJSON(LS.role)||{};
+const isAdmin=()=>!GH.token||(ROLE.fp===tokFp(GH.token)&&!!ROLE.admin);
+async function probeAdmin(g){ g=g||GH; const base=(g.api||'https://api.github.com').replace(/\/+$/,''), repo=g.adminRepo||ADMIN_REPO_DEF;
+  const r=await fetch(`${base}/repos/${encodeURIComponent(g.owner)}/${encodeURIComponent(repo)}/contents/.admin-probe`,{method:'PUT',headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+g.token,'Content-Type':'application/json'},body:JSON.stringify({message:'permission probe'})});
+  return r.status===422; }
+async function refreshRole(){ if(!GH.token||!GH.owner) return; try{ const admin=await probeAdmin(); const was=isAdmin(); ROLE={fp:tokFp(GH.token),admin,at:Date.now()}; saveJSON(LS.role,ROLE); if(was!==isAdmin()) renderAll(); }catch(e){} }
 function ghHeaders(json){ const h={'Accept':'application/vnd.github+json'}; if(GH.token) h.Authorization='Bearer '+GH.token; if(json) h['Content-Type']='application/json'; return h; }
 function ghUrl(){ return `${apiBase()}/repos/${encodeURIComponent(GH.owner)}/${encodeURIComponent(GH.repo)}/contents/${GH.path.split('/').map(encodeURIComponent).join('/')}`; }
 function withLock(fn){ const p=LOCK.then(fn,fn); LOCK=p.catch(()=>{}); return p; }
@@ -2976,7 +3002,8 @@ function openCloud(note){
   <div class="md-f"><label>你的個人權杖（Fine-grained Personal Access Token）</label><input class="in" id="g-token" type="password" value="${esc(g.token||'')}" placeholder="github_pat_…">
     <div class="muted" style="font-size:10px;margin-top:4px;line-height:1.5">只需對資料 repo 開 <b>Contents：Read and write</b>（只看不改可開 Read-only）。權杖只存在這台電腦的瀏覽器，不會寫進 HTML 或上傳。<b>請勿與 AOI Calculator / Manager Platform 共用權杖。</b></div></div>
   <details class="adv"><summary>進階：API 位址（GitHub Enterprise 才需要改）</summary>
-    <div class="md-f"><label>API Base URL</label><input class="in" id="g-api" value="${esc(g.api||'')}" placeholder="https://api.github.com"></div></details>
+    <div class="md-f"><label>API Base URL</label><input class="in" id="g-api" value="${esc(g.api||'')}" placeholder="https://api.github.com"></div>
+    <div class="md-f"><label>管理員 repo（用來判斷是否為管理員）</label><input class="in" id="g-adm" value="${esc(g.adminRepo||'')}" placeholder="${ADMIN_REPO_DEF}"></div></details>
   <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" id="g-en" ${g.enabled||!g.repo?'checked':''} style="margin-top:3px"><span>啟用雲端同步（停止編輯幾秒後自動上傳；開啟頁面、每 5 分鐘、切回分頁時自動讀取最新）</span></label>
   <div id="cl-msg"></div>
   <div class="warnbox">⚠ 資安提醒：資料會離開本機存到 GitHub。請確認符合 AUO 資安規範（含大陸廠區資料出境規定），務必使用 <b>private</b> repo，並只邀請部門同仁為 collaborator。</div>
@@ -2984,11 +3011,11 @@ function openCloud(note){
     ${ghReady()?`<button class="btn sm" onclick="closeModal();pullNow({force:true,loud:true})">⬇ 立即讀取</button><button class="btn sm" onclick="closeModal();pushNow({force:true})">⬆ 立即上傳</button>`:''}
     <span class="r"><button class="btn pri" onclick="saveCloud()">儲存設定</button></span></div>`,true);
 }
-function readCloudForm(){ const v=id=>($('#'+id).value||'').trim(); return {owner:v('g-owner'),repo:v('g-repo'),branch:v('g-branch')||'main',path:v('g-path')||'aoi-monitor-data.json',token:v('g-token'),api:v('g-api'),enabled:$('#g-en').checked}; }
+function readCloudForm(){ const v=id=>($('#'+id).value||'').trim(); return {owner:v('g-owner'),repo:v('g-repo'),branch:v('g-branch')||'main',path:v('g-path')||'aoi-monitor-data.json',token:v('g-token'),api:v('g-api'),adminRepo:v('g-adm'),enabled:$('#g-en').checked}; }
 function saveCloud(){
   const n=readCloudForm(), changed=n.owner!==GH.owner||n.repo!==GH.repo||n.path!==GH.path||n.branch!==GH.branch||(n.api||'')!==(GH.api||'');
   GH=n; saveJSON(LS.gh,GH); if(changed){ GH_SHA=null; localStorage.removeItem(LS.sha); }
-  closeModal(); if(ghReady()) pullNow({force:true,init:true,loud:true}); else setSync('off'); renderAll();
+  closeModal(); if(ghReady()) pullNow({force:true,init:true,loud:true}); else setSync('off'); renderAll(); refreshRole();
 }
 async function testCloud(){
   const el=$('#cl-msg'), g=readCloudForm(); const say=(c,t)=>{ el.style.color=c; el.textContent=t; };
@@ -3003,7 +3030,8 @@ async function testCloud(){
     const repo=await rr.json(), canWrite=!repo.permissions||repo.permissions.push;
     const fr=await fetch(`${base}/repos/${encodeURIComponent(g.owner)}/${encodeURIComponent(g.repo)}/contents/${g.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(g.branch)}`,{headers:H,cache:'no-store'});
     const priv=repo.private?'':'　⚠ 注意：此 repo 是公開的！';
-    if(fr.status===200) return say(priv?'var(--warn)':'var(--green)',`✅ 連線成功，已找到資料檔。${canWrite?'可讀寫':'（唯讀）'}${priv}`);
+    let role=''; try{ role=(await probeAdmin(g))?'　👑 管理員權杖：可以修改主檔設定':'　一般使用者權杖：主檔設定只能查看'; }catch(e){}
+    if(fr.status===200) return say(priv?'var(--warn)':'var(--green)',`✅ 連線成功，已找到資料檔。${canWrite?'可讀寫':'（唯讀）'}${role}${priv}`);
     if(fr.status===404) return say(priv?'var(--warn)':'var(--green)',`✅ repo 可存取，但還沒有資料檔（儲存設定後可建立）。${canWrite?'':'（唯讀，無法建立）'}${priv}`);
     say('var(--warn)','⚠ 讀取資料檔 HTTP '+fr.status);
   }catch(e){ say('var(--warn)','⚠ 連線失敗：'+e.message+'（若在大陸廠區，可能是網路無法連到 GitHub）'); }
@@ -3017,6 +3045,7 @@ function copyShare(){
 /** 給使用者看的版本更新紀錄（目前這個大版本的每一版，新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點（**粗體** 標重點詞）。
  *  升大版本時：把這裡整理成一行一版搬進 ERAS 上一代的 t，這裡清空重新開始 */
 const CHANGELOG=[   // v＝版本（更新提示用），r＝涵蓋的版本（v4.0～4.8 依主題整理成三段）
+  {v:'4.10',d:'2026-10-31',t:['**管理員 / 一般使用者分級**：主檔設定只有管理員可以修改；一般使用者照常看得到主檔，但只能查看','用管理員權杖連線時，標題列名字旁邊會出現「**管理員**」；☁ 雲端設定的「測試連線」會告訴你目前是哪一種權杖','產線的更新、新增、刪除、匯入產線，一般使用者都照常可以做','產線編輯的**產品別、型態改成下拉選單**（可複選），兩個放在同一行']},
   {v:'4.9',d:'2026-10-31',t:['總覽段別卡片把綠燈的兩個條件分開：**能力 N/M**、**commit N/M**；說明列只寫要處理的問題（缺口、卡關、逾期、能力未達標）','「需要注意」的缺口改成**台數**，和段別卡片一致','能力矩陣更精簡：拿掉重複的產品別欄，「下一步」併進「目前關卡」；**不需檢改成小空心圈 ◦**（和 ○ 未開分得出來）；灰色說明字加深、比較好讀']},
   {v:'4.8',r:'v4.6～4.8',d:'2026-10-30',t:['主檔「**產品設定**」改成 產品別 → 段別 → 型態：產品別可以收合，每個段別直接列出各型態**要檢哪些項目**與建議版本；按「✎ 編輯檢測項目」才出現勾選表，可以「複製自…」','能力矩陣新增「**客戶 commit**」欄（快速編輯點格子切換、可篩選），依 **產品別 → 樓層 / 區域** 兩層收合（工具列一鍵全部收合 / 展開），篩選加「樓層 / 區域」','總覽：廠區篩選改三欄（亞洲 / 歐洲 / 美洲），**Set 與 EOL** 合成同一段別，黃燈寫出原因（能力未達標 / 客戶未 commit）','排序：廠區依代號、產品別 **NB → DT → TV → Set → FIDM**、軟體版本 **2.0 排在 1.x 後面**；產線編輯的樓層併進「線別」欄']},
   {v:'4.5',r:'v4.3～4.5',d:'2026-10-29',t:['**綠燈條件：檢測能力達標 + 客戶已 commit**，兩個都要；產線編輯 →「檢測項目」最上面勾「✓ 已 commit」','產線可以標成**外購設備**：不套用本廠軟體版本，檢測項目逐項選可檢 / 不可檢','檢測項目分清楚：**要檢 ●**、**不需檢但軟體有 ○**、**要檢卻沒開 ✕（缺口）**；能力矩陣「快速編輯」可以直接點格子切換需要 / 不需要','CT / PBI / FD 從線別名稱自動分 1、2（例 2B-CT1-1# → CT1）']},
@@ -3350,7 +3379,7 @@ function showPage(pg){
   renderAll(); window.scrollTo(0,0); guideHintSoon();
 }
 function renderAll(){
-  $('#userLb').textContent=USER.name||'未設定';
+  $('#userLb').textContent=USER.name||'未設定'; $('#userBtn').classList.toggle('adm',!!GH.token&&isAdmin()); $('#userBtn').title=GH.token&&isAdmin()?'使用者設定（管理員：可以修改主檔設定）':'使用者設定';
   if(UI.page==='overview') renderOverview(); else if(UI.page==='matrix') renderMatrix(); else if(UI.page==='guide') renderGuide(); else renderMaster();
   stickySoon();
   if(SYNC.state!=='sync') setSync(ghReady()?(SYNC.state==='off'?'ok':SYNC.state==='ok'&&dirtyCount()?'dirty':SYNC.state==='dirty'&&!dirtyCount()?'ok':SYNC.state):'off',SYNC.msg);
@@ -3381,7 +3410,7 @@ function init(){
   showPage(UI.page||'overview'); watchMigrate(); updNotice();
   if(m&&!GH.token) openCloud('🔗 已從連結帶入 repo 設定，請貼上<b>你自己的</b> GitHub 權杖後按「儲存設定」。');
   else if(!USER.name) openUser();
-  let bootPull=null;
+  let bootPull=null; refreshRole();
   if(ghReady()){ const bt=$('#boot-t'); if(bt) bt.textContent='同步雲端…'; bootPull=pullNow({init:true}); }
   // 收掉載入畫面：畫面畫完＋雲端讀完；雲端最多等 5 秒，網路慢也不會一直擋著
   const pull=bootPull?Promise.race([bootPull.catch(()=>{}),new Promise(r=>setTimeout(r,5000))]):Promise.resolve();

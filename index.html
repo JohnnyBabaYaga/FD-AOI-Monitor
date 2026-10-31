@@ -1198,7 +1198,7 @@ const segCanon=s=>{ const t=String(s||'').trim(), x=segSplit(t); if(x.i<0) retur
 /** 產品設定只填主段別（CT / PBI / FD，沒分 1、2）時，從線別名稱找子段別（2B-CT1-1# → CT1、2B-CT2-9#1 → CT2）；找不到就維持主段別（總覽歸「未分」） */
 const segFromName=(name,subs)=>{ for(const tok of String(name||'').toUpperCase().split(/[-_\s]+/)) for(const s of subs){ const u=s.toUpperCase(); if(tok.startsWith(u)&&!/\d/.test(tok.charAt(u.length))) return s; } return ''; };
 const lineSeg=l=>{ const s=segCanon((byId('products',l.product)||{}).seg), x=segSplit(s), sub=x.i>=0&&!x.n&&SEG_MAIN[x.i].sub;
-  return (sub&&segFromName(l.line,sub))||s; };
+  return sub?(segFromName(l.line,sub)||sub[0]):s; };   // 線別名稱看不出 1 / 2 的，預設歸第 1 段（FD → FD1、CT → CT1、PBI → PBI1；Johnny 2026-10-31，原本歸「未分」）
 const segRank=s=>{ const x=segSplit(s); return x.i<0?9999:x.i*100+(x.n||(SEG_MAIN[x.i].sub?99:0)); };   // 有分 1、2 的段別，只填主段別（沒編號）的排在最後
 const segList=()=>[...new Set(live('products').map(p=>(p.seg||'').trim()).filter(Boolean))].sort((a,b)=>segRank(a)-segRank(b)||a.localeCompare(b));
 /** 樓層 / 區域（lines.floor，v3.15）：沒填時由線別名稱推測（F7-PBI-10#-3 → F7、1C-CT2-13#-1 → 1C），只用來顯示，存檔時才帶入 */

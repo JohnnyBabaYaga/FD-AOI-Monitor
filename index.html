@@ -52,7 +52,7 @@ header .logo{width:30px;height:30px;border-radius:50%;object-fit:cover;backgroun
   border-top:0;border-bottom:0;border-left:0;background:none;border-radius:999px 0 0 999px;cursor:pointer;transition:background .15s;}
 /* 版本切換選單（與 AOI Calculator 同一套）：正式版在網址根目錄、Beta 在 beta/，兩版共用同一份雲端資料 */
 .ver-btn:hover,.ver-wrap.open .ver-btn{background:rgba(255,255,255,.18);}
-.ver-btn.solo{cursor:default;} .ver-btn.solo:hover{background:none;}
+.ver-btn.solo{cursor:default;} .ver-btn.solo:hover{background:none;} .ver-btn .vcode{margin-left:5px;font-weight:500;opacity:.85;}   /* 版本代號（Kepler）跟在版本號後面 */
 #userBtn.adm .lb::after{content:'管理員';margin-left:6px;font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.9);color:var(--accent-deep);}
 #pg-master.m-ro .in:disabled{background:transparent;border-color:transparent;color:var(--text);opacity:1;-webkit-appearance:none;appearance:none;cursor:default;}
 #pg-master.m-ro button:disabled{cursor:default;} #pg-master.m-ro .pmx:disabled,#pg-master.m-ro .fsp:disabled{opacity:1;}
@@ -3135,7 +3135,7 @@ const verHref=x=>(APP_BETA?'../':'')+x.dir||'./';
 function verMenuInit(){
   const cur=VERS.find(x=>!!x.beta===APP_BETA)||{v:APP_VER,code:APP_CODE,beta:APP_BETA,d:''}, other=VERS.find(x=>x!==cur);   // VERS 沒對上（例：開 Beta 卻忘了補那筆）也不要整頁壞掉
   const solo=VERS.length<2;   // 沒有其他版本可切換時，版本號只顯示、不能點（工作規範 §2.2）；版本更新紀錄在右下角 i →「關於本平台」
-  $('#verBtn').innerHTML=`v${APP_VER}${APP_BETA?' Beta':''}${solo?'':'<i aria-hidden="true">▾</i>'}`; $('#verBtn').title=solo?`v${APP_VER} ${cur.code}（更新於 ${APP_BUILD}）`:`切換版本 / 版本更新紀錄（更新於 ${APP_BUILD}）`;
+  $('#verBtn').innerHTML=`v${APP_VER}<span class="vcode">${esc(cur.code||'')}</span>${APP_BETA?' Beta':''}${solo?'':'<i aria-hidden="true">▾</i>'}`; $('#verBtn').title=solo?`v${APP_VER} ${cur.code}（更新於 ${APP_BUILD}）`:`切換版本 / 版本更新紀錄（更新於 ${APP_BUILD}）`;
   $('#verBtn').classList.toggle('solo',solo); if(solo){ $('#verBtn').onclick=null; return; }
   $('#ver-menu').innerHTML=VERS.map(x=>x===cur
       ?`<span class="ver-it on">v${APP_VER} ${x.code}${x.beta?' Beta':''}<small>${x.d}</small></span>`

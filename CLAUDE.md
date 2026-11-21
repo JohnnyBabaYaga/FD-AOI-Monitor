@@ -7,7 +7,7 @@
 ## 這是什麼
 - 部門追蹤各廠區畫檢 AOI 導入進度的單檔網頁：總覽、能力矩陣（產線 × 軟體版本能力）、產線面板（PDCA 關卡、光學調整）、主檔設定（軟體版本 → 技術能力 → 檢測項目）、導入指引
 - 給部門同仁一起編輯；光學計算不自己做，連到 AOI Calculator（`AOI_CALC_URL`）算完填回
-- 網站 `https://johnnybabayaga.github.io/FD-AOI-Monitor/`（repo 只有 `index.html`＋`auo-logo.png`）；資料在私有 repo `FD-AOI-Monitor-Data` 的 `aoi-monitor-data.json`
+- 網站 `https://johnnybabayaga.github.io/FD-AOI-Monitor/`（repo：`index.html`、`auo-logo.png`、平台 icon `icons/`、`beta/` 轉址頁，加上 `CLAUDE.md`／`CONTEXT_MAP.md`／`notes/`）；資料在私有 repo `FD-AOI-Monitor-Data` 的 `aoi-monitor-data.json`
 - 主要在公司電腦開發
 
 ## 開工讀這些

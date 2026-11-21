@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>畫檢 AOI 監控平台</title>
+  <defs>
+    
+    <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#80bc49" stop-opacity="0"/><stop offset="1" stop-color="#80bc49" stop-opacity=".42"/></linearGradient>
+    <clipPath id="ring"><circle cx="256" cy="256" r="176"/></clipPath>
+    <clipPath id="inner"><circle cx="256" cy="256" r="155"/></clipPath>
+  </defs>
+  
+  <g transform="translate(256 256) scale(1.1931818181818181) translate(-256 -256)">
+    <circle cx="256" cy="256" r="176" fill="#ffffff"/>
+    <rect x="80" y="206" width="352" height="96" fill="url(#beam)" clip-path="url(#inner)"/>
+    <polygon clip-path="url(#ring)" fill="#0f3e76" points="212,138 270,138 356,404 298,404 241,228 188,404 126,404"/>
+    <line x1="80" y1="306" x2="300" y2="306" stroke="#ffffff" stroke-width="30" clip-path="url(#ring)"/>
+    <polygon fill="#80bc49" points="292,138 342,138 396,300 346,300"/>
+    <line x1="80" y1="306" x2="432" y2="306" stroke="#80bc49" stroke-width="13" clip-path="url(#inner)"/>
+    <circle cx="256" cy="256" r="176" fill="none" stroke="#0f3e76" stroke-width="34"/>
+  </g>
+  
+</svg>

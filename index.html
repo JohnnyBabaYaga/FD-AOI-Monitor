@@ -1009,7 +1009,7 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,[t
 // ═══════════════════════════════════════════
 // 常數 & 預設主檔
 // ═══════════════════════════════════════════
-const APP_VER='4.11.1', APP_BUILD='2026-11-24', APP_BETA=false, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
+const APP_VER='4.12', APP_BUILD='2026-11-25', APP_BETA=false, SCHEMA=5, STALE_DAYS=14, LOG_CAP=1500, SYNC_MS=5*60*1000, PUSH_IDLE=3000, PUSH_MAX=15000;   // 自動讀取：每 5 分鐘；自動上傳：停止編輯 3 秒後（連續編輯時最多 15 秒也會先送一次），期間的修改合併成一次
 const LS={role:'aoim_role_v1',db:'aoim_db_v1',dirty:'aoim_dirty_v1',gh:'aoim_gh_v1',user:'aoim_user_v1',sha:'aoim_sha_v1',ui:'aoim_ui_v1',lastPush:'aoim_lastpush_v1'};
 const COLLS=['sites','products','forms','plats','techs','items','hws','steps','lines'];
 const STAGES=[
@@ -1038,8 +1038,9 @@ const PSHAPES=[{k:'rect',t:'矩形'},{k:'free',t:'異形'},{k:'both',t:'矩形 +
 const MS_DEF=[{k:'install',name:'機台進廠'},{k:'sat',name:'驗收 SAT'},{k:'golive',name:'量產上線'}];
 const KPI_DEF=[
   {k:'ok',name:'過檢率',unit:'%',  better:'low', def:1.0},
-  {k:'uk',name:'漏檢率',unit:'ppm',better:'low', def:200},
-  {k:'up',name:'稼動率',unit:'%',  better:'high',def:95}];
+  {k:'uk',name:'漏檢率',unit:'%',  better:'low', def:0.02},
+  {k:'up',name:'稼動率',unit:'%',  better:'high',def:95,rec:false}];   // rec:false＝只設目標，KPI 記錄不填（記錄改填生產 Model）
+const KPI_REC=KPI_DEF.filter(d=>d.rec!==false);
 const DEF_SITES=[
   {id:'XM-S11',name:'S11',region:'廈門 XM',order:1},{id:'XM-S17',name:'S17',region:'廈門 XM',order:2},{id:'XM-S19',name:'S19',region:'廈門 XM',order:3},
   {id:'SZ-S01',name:'S01',region:'蘇州 SZ',order:4},{id:'SZ-S02',name:'S02',region:'蘇州 SZ',order:5},{id:'SZ-S06',name:'S06',region:'蘇州 SZ',order:6}];
@@ -1799,7 +1800,7 @@ function matrixTable(ls,items,techs){
       <td>${pdMini(l)}<span class="pct">${p.pct}%</span></td>
       <td class="wrap">${p.complete?'<span style="color:var(--green);font-weight:700">✓ 全部完成</span>':esc(p.cur?p.cur.name:'—')}${nx&&l.nextNote&&l.nextNote!==nx.step.name?`<div class="dim">${esc(l.nextNote)}</div>`:''}${nx&&nx.due?`<div class="dim">${dueTag(nx.due)} ${md(nx.due)}</div>`:''}${l.blocked&&l.blockReason?`<div class="dim" style="color:var(--warn)">⚠ ${esc(l.blockReason)}</div>`:''}</td>
       <td class="s c-cu ${l.cust==='y'?'cu-y':'cu-n'}" data-t="c" title="${l.cust==='y'?'客戶已 commit':'客戶尚未 commit'}${UI.mf.edit?'（點一下切換）':''}">${l.cust==='y'?'✓':'—'}</td>
-      <td>${k?`<div class="kc">${KPI_DEF.map(d=>k[d.k]!==undefined&&k[d.k]!==''?`<span class="${kpiBad(l,d.k,k[d.k])?'bad':''}" title="${d.name}（目標 ${d.better==='low'?'≤':'≥'} ${kpiTarget(l,d.k)}${d.unit}）">${d.name.slice(0,2)} <b>${k[d.k]}</b>${d.unit}</span>`:'').join('')}<span class="dim">${md(k.d)}</span></div>`:'<span class="dim">—</span>'}</td>
+      <td>${k?`<div class="kc">${KPI_REC.map(d=>k[d.k]!==undefined&&k[d.k]!==''?`<span class="${kpiBad(l,d.k,k[d.k])?'bad':''}" title="${d.name}（目標 ${d.better==='low'?'≤':'≥'} ${kpiTarget(l,d.k)}${d.unit}）">${d.name.slice(0,2)} <b>${k[d.k]}</b>${d.unit}</span>`:'').join('')}${k.model?`<span title="生產 Model">${esc(k.model)}</span>`:''}<span class="dim">${md(k.d)}</span></div>`:'<span class="dim">—</span>'}</td>
       <td><div style="font-size:11px;color:${isStale(l)?'var(--amber)':'inherit'}">${relTime(l.updatedAt)}</div><div class="dim">${esc(l.updatedBy||'')}</div></td>
     </tr>`;
     lastProd=prodsLabel(l);
@@ -1986,10 +1987,11 @@ function renderDrawer(){
       <div class="fg c3">${KPI_DEF.map(d=>`<div class="f"><label>目標 ${d.name}（${d.unit}，${d.better==='low'?'≤':'≥'}）${GI(d.k)}</label><input class="in" type="number" step="any" data-p="kpiT.${d.k}" data-num="1" value="${esc((w.kpiT||{})[d.k]??'')}" placeholder="${d.def}"></div>`).join('')}</div>
       <div style="display:flex;gap:6px;align-items:flex-end;margin-top:10px;flex-wrap:wrap">
         <div class="f"><label>日期</label><input class="in" type="date" id="kpi-d" value="${todayStr()}"></div>
-        ${KPI_DEF.map(d=>`<div class="f" style="width:96px"><label>${d.name}（${d.unit}）</label><input class="in" type="number" step="any" id="kpi-${d.k}"></div>`).join('')}
+        ${KPI_REC.map(d=>`<div class="f" style="width:96px"><label>${d.name}（${d.unit}）</label><input class="in" type="number" step="any" id="kpi-${d.k}"></div>`).join('')}
+        <div class="f" style="width:150px"><label>生產 Model${GI('model')}</label><input class="in" id="kpi-model" list="dl-kpimodel" placeholder="例：M156XX"><datalist id="dl-kpimodel">${[...new Set(kd.slice().reverse().map(d=>k[d].model).filter(Boolean))].map(m=>`<option value="${esc(m)}">`).join('')}</datalist></div>
         <button class="btn" onclick="addKpi()">＋ 記錄</button></div>
-      ${kd.length?`${sparkHtml(w)}<table class="kt"><tr><th>日期</th>${KPI_DEF.map(d=>`<th>${d.name}（${d.unit}）</th>`).join('')}<th></th></tr>
-        ${kd.slice().reverse().map(d=>`<tr><td>${esc(d)}</td>${KPI_DEF.map(x=>`<td style="color:${kpiBad(w,x.k,k[d][x.k])?'var(--warn)':'inherit'}">${esc(k[d][x.k]??'—')}</td>`).join('')}<td style="width:1%"><button class="x" data-delkpi="${esc(d)}" title="刪除">✕</button></td></tr>`).join('')}</table>`:''}
+      ${kd.length?`${sparkHtml(w)}<table class="kt"><tr><th>日期</th>${KPI_REC.map(d=>`<th>${d.name}（${d.unit}）</th>`).join('')}<th>生產 Model</th><th></th></tr>
+        ${kd.slice().reverse().map(d=>`<tr><td>${esc(d)}</td>${KPI_REC.map(x=>`<td style="color:${kpiBad(w,x.k,k[d][x.k])?'var(--warn)':'inherit'}">${esc(k[d][x.k]??'—')}</td>`).join('')}<td>${esc(k[d].model||'—')}</td><td style="width:1%"><button class="x" data-delkpi="${esc(d)}" title="刪除">✕</button></td></tr>`).join('')}</table>`:''}
     </details>
 
     <div class="ds"><h4>備註</h4><textarea class="in" style="width:100%" data-p="note" placeholder="其他補充說明、風險、決議…">${esc(w.note||'')}</textarea></div>
@@ -2003,7 +2005,7 @@ function renderDrawer(){
 }
 function sparkHtml(w){
   const k=w.kpi||{}, ds=Object.keys(k).sort();
-  return `<div class="spark">${KPI_DEF.map(d=>{
+  return `<div class="spark">${KPI_REC.map(d=>{
     const pts=ds.map(x=>k[x][d.k]).map(v=>v===undefined||v===''?null:+v);
     const vals=pts.filter(v=>v!==null); if(vals.length<1) return '';
     const t=kpiTarget(w,d.k), lo=Math.min(...vals,t), hi=Math.max(...vals,t), Wd=160, Hd=34, rng=(hi-lo)||1;
@@ -2016,8 +2018,9 @@ function sparkHtml(w){
 }
 function addKpi(){
   const d=$('#kpi-d').value; if(!d){ toast('請選擇日期','err'); return; }
-  const rec={}; KPI_DEF.forEach(x=>{ const v=$('#kpi-'+x.k).value; if(v!=='') rec[x.k]=+v; });
-  if(!Object.keys(rec).length){ toast('請至少輸入一項 KPI','err'); return; }
+  const rec={}; KPI_REC.forEach(x=>{ const v=$('#kpi-'+x.k).value; if(v!=='') rec[x.k]=+v; });
+  const m=$('#kpi-model').value.trim(); if(m) rec.model=m;
+  if(!Object.keys(rec).length){ toast('請至少輸入一項 KPI 或生產 Model','err'); return; }
   ED.w.kpi=ED.w.kpi||{}; ED.w.kpi[d]=Object.assign({},ED.w.kpi[d]||{},rec); renderDrawer();
 }
 /** 產線編輯的複選下拉（產品別、型態）：按鈕顯示已選項目，選單裡勾選；ED.ldd 記目前打開哪一個 */
@@ -2749,12 +2752,12 @@ function exportJSON(){ download(`aoi-monitor-backup-${todayStr()}.json`,JSON.str
 function exportCSV(all){
   const ls=all?sortLines(liveLines()):filteredLines(), items=liveSorted('items'), techs=techsSorted(), st=stepsSorted();
   const head=['廠區','地區','段別','樓層/區域','產品別','線別','型態','相機','負責人','線體負責人(FAB Owner)','設備廠商','設備來源','PDCA 階段','完成度%','目前關卡','下一步說明','預計日','卡關','卡關原因','客戶 commit','軟體版本類別','版本號',
-    ...techs.map(t=>'技術:'+t.name),...items.map(i=>'檢測:'+i.name),...OPTICS.map(o=>'確認:'+o.t),...st.flatMap(s=>[s.name+'(預計)',s.name+'(完成)']),...KPI_DEF.map(d=>`${d.name}(${d.unit})`),'KPI 日期','更新時間','更新者'];
+    ...techs.map(t=>'技術:'+t.name),...items.map(i=>'檢測:'+i.name),...OPTICS.map(o=>'確認:'+o.t),...st.flatMap(s=>[s.name+'(預計)',s.name+'(完成)']),...KPI_REC.map(d=>`${d.name}(${d.unit})`),'生產 Model','KPI 日期','更新時間','更新者'];
   const rows=ls.map(l=>{ const p=lineProg(l), s=byId('sites',l.site)||{}, k=kpiLatest(l)||{}, nx=nextOf(l)||{};
     return [l.site,s.region,lineSeg(l),lineFloor(l),prodsLabel(l),l.line,formLabel(l.forms),hwName(l.hw),lineOwner(l),l.fabOwner,l.vendor,isExt(l)?'外購':'本廠',
       p.complete?'完成':p.stage+' '+STAGES[STG_IDX[p.stage]].name,p.pct,p.cur?p.cur.name:'',l.nextNote,nx.due,l.blocked?'Y':'',l.blockReason,l.cust==='y'?'已 commit':'未 commit',platFull((l.sw||{}).plat),(l.sw||{}).ver,
       ...techs.map(t=>({on:'已開啟',off:'未開啟','':'未釋出'})[lineTech(l,t.id)]),...items.map(i=>IST[itemSt(l,i.id)].t),...OPTICS.map(o=>{ const s=opSt(l,o.k), x=opVal(l,o.k); return s==='ok'?`${x.d} / ${x.v}`:({pend:'待補',na:'不適用','':''})[s]; }),...st.flatMap(x=>(l.stepsOff||[]).includes(x.id)?['不適用','不適用']:[(l.plan||{})[x.id],(l.done||{})[x.id]]),
-      ...KPI_DEF.map(d=>k[d.k]),k.d,l.updatedAt?new Date(l.updatedAt).toLocaleString('zh-TW',{hour12:false}):'',l.updatedBy]; });
+      ...KPI_REC.map(d=>k[d.k]),k.model,k.d,l.updatedAt?new Date(l.updatedAt).toLocaleString('zh-TW',{hour12:false}):'',l.updatedBy]; });
   const csv=[head,...rows].map(r=>r.map(v=>{ v=v==null?'':String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(',')).join('\r\n');
   download(`aoi-monitor-${todayStr()}.csv`,'﻿'+csv,'text/csv');
 }
@@ -2784,7 +2787,7 @@ function mergeDemo(db,gen){
     const done={}, plan={}, dn=Math.min(x.dn,steps.length);
     steps.forEach((s,i)=>{ if(i<dn){ done[s.id]=addDays(T,-(dn-i)*25); plan[s.id]=addDays(done[s.id],-3); } else plan[s.id]=addDays(T,(i-dn)*30+(i===dn?(x.late?-6:12):20)); });
     const techs={}; (x.off||[]).forEach(t=>techs[t]='off');
-    const kpi={}; if(x.kpi) for(let m=5;m>=0;m--){ kpi[addDays(T,-m*30-3)]={ok:+(0.7+m*.3).toFixed(2),uk:Math.round(70+m*40),up:+(93+(5-m)*.6).toFixed(1)}; }
+    const kpi={}; if(x.kpi) for(let m=5;m>=0;m--){ kpi[addDays(T,-m*30-3)]={ok:+(0.7+m*.3).toFixed(2),uk:+(0.007+m*.004).toFixed(3),model:m>2?'M156A':'M173B'}; }
     const upd=new Date(now-x.upd*864e5).toISOString(), pids=x.prods.map(prod).filter(Boolean);
     const l={id:`L-demo-${k+1}`,site:x.site,product:pids[0]||'',products:pids,line:x.line,forms:x.forms,hw:hw(x.hw),vendor:x.vendor,owner:x.owner,
       sw:{plat:x.plat,ver:x.ver},techs,done,plan,kpi,kpiT:{},blocked:x.blocked?true:undefined,blockReason:x.blocked,note:'示範例',updatedAt:upd,updatedBy:x.owner,demo:true,demoGen:gen};
@@ -3095,6 +3098,7 @@ function copyShare(){
 /** 給使用者看的版本更新紀錄（目前這個大版本的每一版，新的在上面）。每次發布在最上面加一筆：v、日期、2～4 條白話重點（**粗體** 標重點詞）。
  *  升大版本時：把這裡整理成一行一版搬進 ERAS 上一代的 t，這裡清空重新開始 */
 const CHANGELOG=[   // v＝版本（更新提示用），r＝涵蓋的版本（v4.0～4.8 依主題整理成三段）
+  {v:'4.12',d:'2026-11-25',t:['上線後 KPI 的**漏檢率**單位改成 **%**（原本是 ppm），預設目標 0.02%','KPI 記錄的**稼動率**欄改成填**生產 Model**，表格和匯出的 CSV 也一起改；目標稼動率照舊可以設']},
   {v:'4.11',d:'2026-11-24',t:['平台有了自己的 **icon**：瀏覽器分頁、書籤都會顯示，用 AUO 的藍圈、A 和綠色線條組成檢測準星；標題列左上角也換成這個 icon','手機用「加入主畫面」時，桌面上也會是這個 icon','產線編輯換**版本類別**時，**版本號**會自動換成該類別的最新版本號；版本號欄也能從清單挑該類別用過的版本號']},
   {v:'4.10',d:'2026-10-31',t:['**管理員 / 一般使用者分級**：主檔設定只有管理員可以修改；一般使用者照常看得到主檔，但只能查看','用管理員權杖連線時，標題列名字旁邊會出現「**管理員**」；☁ 雲端設定的「測試連線」會告訴你目前是哪一種權杖','產線的更新、新增、刪除、匯入產線，一般使用者都照常可以做','產線編輯的**產品別、型態改成下拉選單**（可複選），兩個放在同一行']},
   {v:'4.9',d:'2026-10-31',t:['總覽段別卡片把綠燈的兩個條件分開：**能力 N/M**、**commit N/M**；說明列只寫要處理的問題（缺口、卡關、逾期、能力未達標）','「需要注意」的缺口改成**台數**，和段別卡片一致','能力矩陣更精簡：拿掉重複的產品別欄，「下一步」併進「目前關卡」；**不需檢改成小空心圈 ◦**（和 ○ 未開分得出來）；灰色說明字加深、比較好讀']},
@@ -3250,10 +3254,11 @@ const GL={
   ms:['里程碑','PDCA 中標「里程碑」的關卡：<b>機台進廠、SAT 驗收、量產上線</b>。勾選完成就是實際日，不用另外填；總覽的「量產上線時程」用的是量產上線這一關。'],
   hw:['硬體（相機）','這條線畫檢設備用的<b>相機型號</b>（例如 151MP、AIL151-55）。清單在「主檔設定 → 硬體管理」維護（品牌、型號、備註）；矩陣可以用「全部硬體」篩選，快速找出用同一款相機的線。'],
   sw:['軟體版本','這條線使用的<b>版本類別</b>與<b>版本號</b>（版本號本身就看得出日期）。版本類別不在這條線（產品別 + 型態）的建議版本內時會標<b style="color:#d99400">黃色</b>，滑鼠移上去可以看缺哪些功能。'],
-  kpi:['上線後 KPI','量產後定期記錄過檢率、漏檢率、稼動率，看趨勢有沒有變好。<b style="color:#e0563f">紅色</b>＝沒達到目標（目標每條線可以自己設）。'],
+  kpi:['上線後 KPI','量產後定期記錄過檢率、漏檢率和當時生產的 Model，看趨勢有沒有變好。稼動率只設目標，不用每次記錄。<b style="color:#e0563f">紅色</b>＝沒達到目標（目標每條線可以自己設）。'],
   ok:['過檢率','AOI 判 NG、但人工複判其實是 OK 的比例（誤判）。<b>越低越好</b>，太高會增加複判人力。'],
-  uk:['漏檢率','真正的不良品被 AOI 放過的比例（ppm＝百萬分之一）。<b>越低越好</b>，這是品質風險。'],
-  up:['稼動率','機台實際可用於生產的時間比例。<b>越高越好</b>。'],
+  uk:['漏檢率','真正的不良品被 AOI 放過的比例（%）。<b>越低越好</b>，這是品質風險。'],
+  up:['稼動率','機台實際可用於生產的時間比例。<b>越高越好</b>。只設目標，KPI 記錄不用填。'],
+  model:['生產 Model','記錄這筆 KPI 時產線在生產的 Model（機種）。換 Model 後過檢、漏檢有變化時，可以對照是哪個 Model。'],
   verdict:['評估結論','<b style="color:#0F6E56">可直接橫展</b>：必要能力部門都有，照參考產線做<br><b style="color:#854F0B">有條件可行</b>：有項目部門還在開發中<br><b style="color:#A32D2D">需新開發</b>：有項目部門完全沒有'],
   ref:['參考產線','部門內<b>最適合拿來參考</b>的一條線：能力覆蓋最多、已量產、同產品、同廠區優先；卡關的線會往後排。'],
   sched:['建議時程','從目標量產日<b>往回推</b> C → D → P 各要幾週。<br>週數優先用你填的；沒填就用<b>部門歷史中位數</b>（至少 2 條線有完整紀錄）；再沒有就用預設值。旁邊會標明是哪一種。'],
@@ -3316,7 +3321,7 @@ const GUIDES={
     {el:dsBy('例行更新'),t:'例行更新',d:'平常只需要這一區：<b>勾選完成的關卡</b>（自動記完成日）、<b>填預計日</b>、有卡關就勾起來。<br>「下一步」自動就是目前關卡，需要補充才寫說明。'},
     {el:dsBy('建線資料'),t:'建線資料（填一次）',d:'產品別、型態、相機、軟體版本、技術能力。<b>新增產線時會從同廠區、同產品別的線自動帶入</b>，不同的再改；平常收起來不用動。'},
     {el:dsBy('檢測項目'),t:'檢測項目（自動推算）',d:'<b>不用填</b>：依版本與已開啟的技術能力，自動判斷這條線（產品別 + 型態）的每個需求項目能不能檢，並寫出原因。'},
-    {el:dsBy('KPI'),t:'上線後 KPI',d:'量產後記錄過檢率、漏檢率、稼動率（之後會再討論怎麼簡化）。'},
+    {el:dsBy('KPI'),t:'上線後 KPI',d:'量產後記錄過檢率、漏檢率和生產的 Model。'},
     {el:gq('#drawer .dw-f'),t:'儲存',d:'按「<b>💾 儲存</b>」寫入並同步，變更紀錄會記下你改了什麼。'}],
 };
 const GD_NAME={overview:'總覽',matrix:'能力矩陣',guide:'導入指引',master:'主檔設定',line:'產線編輯'};
